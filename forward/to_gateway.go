@@ -2,7 +2,7 @@ package forward
 
 import (
 	"github.com/liasece/micserver/msg"
-	// "base/logger"
+	// "base/log"
 	// "base/subnet"
 	// "encoding/json"
 	// "fmt"
@@ -27,7 +27,7 @@ func SendCallBack(iv interface{}) {
 		return
 	}
 	msg := iv.(*base.MessageBinary)
-	// logger.Debug("[SendCallBack] %d 回收成功", msg.CmdID)
+	// log.Debug("[SendCallBack] %d 回收成功", msg.CmdID)
 	msg.Free()
 }
 
@@ -41,7 +41,7 @@ func GatewayToWebSocket(task TargetTask, towsid uint64, v base.MsgStruct) error 
 	sendmsg.Cmdid = v.GetMsgId()
 	sendmsg.Cmdlen = submsg.DataLen
 	sendmsg.Cmddatas = submsg.ProtoData
-	// logger.Debug("[GatewayToWebSocket] 发送 [%s] [%+v]", v.GetMsgName(), v)
+	// log.Debug("[GatewayToWebSocket] 发送 [%s] [%+v]", v.GetMsgName(), v)
 	return task.SendCmdWithCallback(sendmsg, SendCallBack, submsg)
 }
 
@@ -57,7 +57,7 @@ func GatewayBroadcastToClient(task TargetTask, touuid []uint64,
 	sendmsg.Cmdlen = submsg.DataLen
 	sendmsg.Cmddatas = submsg.ProtoData
 	sendmsg.ThreadHash = threadHash
-	// logger.Debug("[GatewayToWebSocket] 发送 [%s] [%+v]", v.GetMsgName(), v)
+	// log.Debug("[GatewayToWebSocket] 发送 [%s] [%+v]", v.GetMsgName(), v)
 	return task.SendCmdWithCallback(sendmsg, SendCallBack, submsg)
 }
 
@@ -73,6 +73,6 @@ func GatewayBroadcastBytesToClient(task TargetTask, touuid []uint64,
 	sendmsg.Cmdlen = submsg.DataLen
 	sendmsg.Cmddatas = submsg.ProtoData
 	sendmsg.ThreadHash = threadHash
-	// logger.Debug("[GatewayToWebSocket] 发送 [%s] [%+v]", v.GetMsgName(), v)
+	// log.Debug("[GatewayToWebSocket] 发送 [%s] [%+v]", v.GetMsgName(), v)
 	return task.SendCmdWithCallback(sendmsg, SendCallBack, submsg)
 }

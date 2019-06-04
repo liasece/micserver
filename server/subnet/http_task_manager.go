@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"sync"
 	//	"compress/gzip"
-	"base/encode"
-	"base/logger"
 	"encoding/base64"
+	"github.com/liasece/micserver/encode"
+	"github.com/liasece/micserver/log"
 	"io"
 	"io/ioutil"
 	"math"
@@ -41,20 +41,20 @@ func WriterReturnHttpStr(writer http.ResponseWriter, str string) {
 	writer.Header().Add("Pragma", "no-cache")
 	writer.Header().Set("connection", "keep-alive")
 	writer.WriteHeader(http.StatusOK)
-	logger.Debug("%s", str)
+	log.Debug("%s", str)
 
 	if writer.Header().Get("Use-Encrypt") == "Yes" {
 		aesstr, _ := encode.AesEncrypt([]byte(str))
 		encodeString := base64.StdEncoding.EncodeToString(aesstr)
 		n, err := io.WriteString(writer, encodeString)
 		if err != nil {
-			logger.Error("[WriterReturnHttpStr] io.WriteString Err[%s] N[%d]",
+			log.Error("[WriterReturnHttpStr] io.WriteString Err[%s] N[%d]",
 				err.Error(), n)
 		}
 	} else {
 		n, err := io.WriteString(writer, str)
 		if err != nil {
-			logger.Error("[WriterReturnHttpStr] io.WriteString Err[%s] N[%d]",
+			log.Error("[WriterReturnHttpStr] io.WriteString Err[%s] N[%d]",
 				err.Error(), n)
 		}
 	}
@@ -106,7 +106,7 @@ func HttpDecode(writer http.ResponseWriter, request *http.Request) {
 	buf := new(bytes.Buffer)
 	n, err := buf.ReadFrom(request.Body)
 	if err != nil {
-		logger.Error("[HttpDecode] buf.ReadFrom Err[%s] N[%d]",
+		log.Error("[HttpDecode] buf.ReadFrom Err[%s] N[%d]",
 			err.Error(), n)
 		return
 	}
@@ -120,7 +120,7 @@ func HttpDecode(writer http.ResponseWriter, request *http.Request) {
 	message = strings.Replace(message, "{", "", -1)
 	message = strings.Replace(message, "}", "", -1)
 	message = strings.Replace(message, "\"", "", -1)
-	logger.Debug("aes message:%s", message)
+	log.Debug("aes message:%s", message)
 
 	var newstr string
 	split_msg := strings.Split(message, ",")
@@ -134,7 +134,7 @@ func HttpDecode(writer http.ResponseWriter, request *http.Request) {
 	}
 	newlen := int64(math.Dim(float64(len(newstr)), 1))
 	newstr = newstr[:newlen]
-	logger.Debug("aes newstr:%s len=%d", newstr, newlen)
+	log.Debug("aes newstr:%s len=%d", newstr, newlen)
 
 	s := strings.NewReader(string(newstr))
 	request.Body = ioutil.NopCloser(s)
@@ -192,7 +192,7 @@ func (this *GBHttpTaskManger) AddHttpTask(
 	curtime := uint64(time.Now().Unix())
 	wstask.Tempid = (curtime << 32) + this.starttempid
 	this.allsockets[wstask.Tempid] = wstask
-	logger.Debug("添加新的HTTP连接,%d,%d", wstask.Tempid,
+	log.Debug("添加新的HTTP连接,%d,%d", wstask.Tempid,
 		len(this.allsockets))
 
 	notify := writer.(http.CloseNotifier).CloseNotify()
@@ -201,7 +201,7 @@ func (this *GBHttpTaskManger) AddHttpTask(
 		this.mutex.Lock()
 		defer this.mutex.Unlock()
 		delete(this.allsockets, wstask.Tempid) // 这里应该需要加锁
-		logger.Debug("删除关闭的的HTTP连接,%d,%d", wstask.Tempid,
+		log.Debug("删除关闭的的HTTP连接,%d,%d", wstask.Tempid,
 			len(this.allsockets))
 	}()
 	return wstask
@@ -212,7 +212,7 @@ func (this *GBHttpTaskManger) RemoveHttpTask(tempid uint64) {
 	defer this.mutex.Unlock()
 	if _, found := this.allsockets[tempid]; found {
 		delete(this.allsockets, tempid) // 这里应该需要加锁
-		logger.Debug("删除HTTP连接,%d,%d", tempid, len(this.allsockets))
+		log.Debug("删除HTTP连接,%d,%d", tempid, len(this.allsockets))
 	}
 }
 
@@ -230,7 +230,7 @@ func HttpRpcStart(serverinfo string, serviceMethod string,
 
 	// client, err := rpc.DialHTTP("tcp", serverinfo)
 	// if err != nil {
-	// 	logger.Error("[RPC] 链接rpc服务器失败 [DialHTTP] "+
+	// 	log.Error("[RPC] 链接rpc服务器失败 [DialHTTP] "+
 	// 		"Method[%s] ServerInfo[%s] Error[%s]",
 	// 		serviceMethod, serverinfo, err.Error())
 	// 	return err
@@ -238,11 +238,11 @@ func HttpRpcStart(serverinfo string, serviceMethod string,
 	// defer client.Close()
 	// err = client.Call(serviceMethod, args, reply)
 	// if err != nil {
-	// 	logger.Error("[RPC] 链接rpc服务器失败 "+
+	// 	log.Error("[RPC] 链接rpc服务器失败 "+
 	// 		"Method[%s] ServerInfo[%s] Error[%s]",
 	// 		serviceMethod, serverinfo, err.Error())
 	// } else {
-	// 	logger.Debug("[RPC] 链接rpc服务器成功 "+
+	// 	log.Debug("[RPC] 链接rpc服务器成功 "+
 	// 		"Method[%s] ServerInfo[%s]",
 	// 		serviceMethod, serverinfo)
 	// 	return nil

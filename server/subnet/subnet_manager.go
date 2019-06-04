@@ -1,13 +1,13 @@
 package subnet
 
 import (
-	"base"
-	"base/logger"
+	"github.com/liasece/micserver"
+	"github.com/liasece/micserver/log"
 	// "bytes"
 	// "encoding/binary"
 	// "encoding/json"
-	"base/tcpconn"
 	"fmt"
+	"github.com/liasece/micserver/tcpconn"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,9 +17,9 @@ import (
 	// "strconv"
 	// "strings"
 	// "encoding/hex"
-	"base/def"
-	"base/subnet/serconfs"
-	"base/util"
+	"github.com/liasece/micserver/def"
+	"github.com/liasece/micserver/subnet/serconfs"
+	"github.com/liasece/micserver/util"
 	"strings"
 	"sync"
 	"syscall"
@@ -115,7 +115,7 @@ type ServerManager interface {
 }
 
 func StartMain(server IServerHandler, manager ServerManager) {
-	logger.Debug("[SubNetManager.StartMain] " +
+	log.Debug("[SubNetManager.StartMain] " +
 		"Main is start------")
 	// 初始化参数
 	GetSubnetManager().servermanger = manager
@@ -126,7 +126,7 @@ func StartMain(server IServerHandler, manager ServerManager) {
 	// 这是服务器加入内部网络的基础
 	err := BindMyTCPServer(server)
 	if err != nil {
-		logger.Error("[StartMain] BindMyTCPServer Err[%s]", err)
+		log.Error("[StartMain] BindMyTCPServer Err[%s]", err)
 		return
 	}
 
@@ -153,7 +153,7 @@ func StartMain(server IServerHandler, manager ServerManager) {
 
 	// 当程序即将结束时
 	server.OnFinal()
-	logger.Debug("[SubNetManager.StartMain] " +
+	log.Debug("[SubNetManager.StartMain] " +
 		"All server is over add save datas")
 
 	// 等日志打完
@@ -171,7 +171,7 @@ func OnServerLogin(tcptask *tcpconn.ServerConn,
 	oldtcptask := GetGBTCPTaskManager().GetTCPTask(uint64(tarinfo.Serverid))
 	if oldtcptask != nil {
 		// 已经连接成功过了，非法连接
-		logger.Error("[SubNetManager.OnServerLogin] "+
+		log.Error("[SubNetManager.OnServerLogin] "+
 			"收到了重复的Server连接请求 Msg[%s]",
 			tarinfo.GetJson())
 		retmsg := &servercomm.SLoginRetCommand{}
@@ -182,7 +182,7 @@ func OnServerLogin(tcptask *tcpconn.ServerConn,
 	}
 	if !CheckServerType(tarinfo.Servertype) {
 		// 未知的服务器类型
-		logger.Error("[SubNetManager.OnServerLogin] "+
+		log.Error("[SubNetManager.OnServerLogin] "+
 			"收到未知的服务器类型 Msg[%s]",
 			tarinfo.GetJson())
 		retmsg := &servercomm.SLoginRetCommand{}
@@ -211,7 +211,7 @@ func OnServerLogin(tcptask *tcpconn.ServerConn,
 		oldtcptask = GetGBTCPTaskManager().GetTCPTask(uint64(tarinfo.Serverid))
 		if oldtcptask != nil {
 			// 已经连接成功过了，非法连接
-			logger.Error("[SubNetManager.OnServerLogin] "+
+			log.Error("[SubNetManager.OnServerLogin] "+
 				"收到了重复的Server连接请求 2 Msg[%s]",
 				tarinfo.GetJson())
 			retmsg := &servercomm.SLoginRetCommand{}
@@ -225,7 +225,7 @@ func OnServerLogin(tcptask *tcpconn.ServerConn,
 	if serverconfig.Serverid == 0 || !sameip ||
 		serverconfig.Servertype != tarinfo.Servertype {
 		// 如果获取信息不成功
-		logger.Error("[SubNetManager.OnServerLogin] "+
+		log.Error("[SubNetManager.OnServerLogin] "+
 			"连接分配异常 未知服务器连接 "+
 			"Addr[%s] Msg[%s]",
 			remoteaddr, tarinfo.GetJson())
@@ -252,7 +252,7 @@ func OnServerLogin(tcptask *tcpconn.ServerConn,
 	tcptask.Serverinfo = serverconfig
 	GetGBTCPTaskManager().ChangeTCPTaskTempid(tcptask,
 		uint64(tcptask.Serverinfo.Serverid))
-	logger.Debug("[SubNetManager.OnServerLogin] "+
+	log.Debug("[SubNetManager.OnServerLogin] "+
 		"客户端连接验证成功 "+
 		" SerID[%d] IP[%s] Type[%d] Port[%d] Name[%s]",
 		serverconfig.Serverid, serverconfig.Serverip,
@@ -283,7 +283,7 @@ func BindMyHttpServer() {
 		httpportstr := fmt.Sprintf(":%d",
 			base.GetGBServerConfigM().Myserverinfo.Httpport)
 		if usehttps == "true" {
-			logger.Debug("[SubNetManager.BindMyHttpServer] "+
+			log.Debug("[SubNetManager.BindMyHttpServer] "+
 				"服务器https绑定成功 HTTPPort[%s] use https",
 				httpportstr)
 			httpscertfile := base.GetGBServerConfigM().
@@ -297,7 +297,7 @@ func BindMyHttpServer() {
 				// return err
 			}
 		} else {
-			logger.Debug("[SubNetManager.BindMyHttpServer] "+
+			log.Debug("[SubNetManager.BindMyHttpServer] "+
 				"服务器http绑定成功,%s", httpportstr)
 			err := http.ListenAndServe(httpportstr, nil)
 			if err != nil {
@@ -313,7 +313,7 @@ func BindMyHttpsServer() error {
 	if base.GetGBServerConfigM().Myserverinfo.Httpsport > 0 {
 		httpportstr := fmt.Sprintf(":%d",
 			base.GetGBServerConfigM().Myserverinfo.Httpsport)
-		logger.Debug("[SubNetManager.BindMyHttpsServer] "+
+		log.Debug("[SubNetManager.BindMyHttpsServer] "+
 			"服务器https绑定成功 HTTPPort[%s] use https",
 			httpportstr)
 		httpscertfile := base.GetGBServerConfigM().
@@ -335,11 +335,11 @@ func startTestCpuProfile() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			logger.Error("[startTestCpuProfile] "+
+			log.Error("[startTestCpuProfile] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
-	logger.Debug("[SubNetManager.startTestCpuProfile] " +
+	log.Debug("[SubNetManager.startTestCpuProfile] " +
 		"[性能分析] StartTestCpuProfile start")
 	filename := base.GetGBServerConfigM().GetProp("profile_filename")
 	testtime := base.GetGBServerConfigM().GetPropInt("profile_time")
@@ -349,7 +349,7 @@ func startTestCpuProfile() {
 	}
 	err = pprof.StartCPUProfile(f)
 	if err != nil {
-		logger.Error("[startTestCpuProfile] pprof.StartCPUProfile Err[%s]",
+		log.Error("[startTestCpuProfile] pprof.StartCPUProfile Err[%s]",
 			err.Error())
 		return
 	}
@@ -358,7 +358,7 @@ func startTestCpuProfile() {
 	}
 	pprof.StopCPUProfile()
 	f.Close()
-	logger.Debug("[SubNetManager.startTestCpuProfile] " +
+	log.Debug("[SubNetManager.startTestCpuProfile] " +
 		"[性能分析] StartTestCpuProfile end")
 }
 
@@ -370,7 +370,7 @@ func SignalListen(manager ServerManager) {
 		syscall.SIGUSR2)
 	for {
 		s := <-c
-		logger.Debug("[SubNetManager.SignalListen] "+
+		log.Debug("[SubNetManager.SignalListen] "+
 			"Get signal Signal[%d]", s)
 		manager.OnSignal(s)
 		switch s {
@@ -394,7 +394,7 @@ func SignalListen(manager ServerManager) {
 			// 捕捉到就退不出了
 			buf := make([]byte, 1<<20)
 			stacklen := runtime.Stack(buf, true)
-			logger.Debug("[SubNetManager.SignalListen] "+
+			log.Debug("[SubNetManager.SignalListen] "+
 				"Received SIGQUIT, \n: Stack[%s]", buf[:stacklen])
 		}
 	}

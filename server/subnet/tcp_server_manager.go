@@ -1,12 +1,12 @@
 package subnet
 
 import (
-	"base"
-	"base/logger"
+	"github.com/liasece/micserver"
+	"github.com/liasece/micserver/log"
 	// "bytes"
-	"base/util"
 	"errors"
 	"fmt"
+	"github.com/liasece/micserver/util"
 	"net"
 )
 
@@ -14,7 +14,7 @@ import (
 func BindMyTCPServer(server IServerHandler) error {
 	serverid := base.GetGBServerConfigM().Myserverinfo.Serverid
 	if serverid == 0 {
-		logger.Error("[BindMyTCPServer] 本服务器ID为0 无法绑定本机ServerPort")
+		log.Error("[BindMyTCPServer] 本服务器ID为0 无法绑定本机ServerPort")
 		return errors.New("server id is 0")
 	}
 	serverip := base.GetGBServerConfigM().Myserverinfo.Serverip
@@ -23,7 +23,7 @@ func BindMyTCPServer(server IServerHandler) error {
 		portstr := fmt.Sprintf("%d", serverport)
 		return BindTCPServer(serverip, portstr, server)
 	} else {
-		logger.Error("[BindMyTCPServer] 本服务器serverport为0 " +
+		log.Error("[BindMyTCPServer] 本服务器serverport为0 " +
 			"无法绑定本机ServerPort")
 		return errors.New("server port is 0")
 	}
@@ -37,14 +37,14 @@ func BindTCPServer(serverip string, serverport string,
 	serverinfo := serverip + ":" + serverport
 	netlisten, err := net.Listen("tcp", serverinfo)
 	if err != nil {
-		logger.Error("[SubNetManager.BindTCPServer] "+
+		log.Error("[SubNetManager.BindTCPServer] "+
 			"服务器绑定失败 ServerID[%d] IP[%s] Port[%s] Err[%s]",
 			base.GetGBServerConfigM().Myserverinfo.Serverid, serverip,
 			serverport, err.Error())
 		return err
 	}
 	myservertype := base.GetGBServerConfigM().Myserverinfo.Servertype
-	logger.Debug("[SubNetManager.BindTCPServer] "+
+	log.Debug("[SubNetManager.BindTCPServer] "+
 		"服务器绑定成功 IP[%s] Port[%s] Type[%d]", serverip, serverport,
 		myservertype)
 
@@ -58,7 +58,7 @@ func TCPServerListenerProcess(listener net.Listener,
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			logger.Error("[TCPServerListenerProcess] "+
+			log.Error("[TCPServerListenerProcess] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -74,7 +74,7 @@ func mTCPServerListener(listener net.Listener,
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
-			logger.Error("mTCPServerListener "+
+			log.Error("mTCPServerListener "+
 				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -82,12 +82,12 @@ func mTCPServerListener(listener net.Listener,
 	for !base.GetGBServerConfigM().TerminateServer {
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Error("[SubNetManager.TCPServerListenerProcess] "+
+			log.Error("[SubNetManager.TCPServerListenerProcess] "+
 				"服务器端口监听异常 Err[%s]",
 				err.Error())
 			continue
 		}
-		logger.Debug("[SubNetManager.BindTCPServer] "+
+		log.Debug("[SubNetManager.BindTCPServer] "+
 			"收到新的TCP连接 Addr[%s]",
 			conn.RemoteAddr().String())
 		tcptask := GetGBTCPTaskManager().AddTCPTask(conn)

@@ -2,8 +2,8 @@ package tcpconn
 
 import (
 	//	"os"
-	"base"
-	"base/logger"
+	"github.com/liasece/micserver"
+	"github.com/liasece/micserver/log"
 	// "math/rand"
 	"net"
 	// "servercomm"
@@ -177,25 +177,25 @@ func (this *ClientConn) GetLogHead() string {
 
 func (this *ClientConn) Debug(fmt string, args ...interface{}) {
 	fmt = this.GetLogHead() + fmt
-	logger.Debug(fmt, args...)
+	log.Debug(fmt, args...)
 }
 
 func (this *ClientConn) Warn(fmt string, args ...interface{}) {
 	fmt = this.GetLogHead() + fmt
-	logger.Warn(fmt, args...)
+	log.Warn(fmt, args...)
 }
 
 func (this *ClientConn) Info(fmt string, args ...interface{}) {
 	fmt = this.GetLogHead() + fmt
-	logger.Info(fmt, args...)
+	log.Info(fmt, args...)
 }
 
 func (this *ClientConn) Error(fmt string, args ...interface{}) {
 	fmt = this.GetLogHead() + fmt
-	logger.Error(fmt, args...)
+	log.Error(fmt, args...)
 }
 
 func (this *ClientConn) Fatal(fmt string, args ...interface{}) {
 	fmt = this.GetLogHead() + fmt
-	logger.Fatal(fmt, args...)
+	log.Fatal(fmt, args...)
 }

@@ -1,8 +1,8 @@
 package mail
 
 import (
-	"base/logger"
-	"base/util"
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/util"
 	"sync"
 	"time"
 )
@@ -56,7 +56,7 @@ func (this *MailNotifyBuffer) syncSendMail() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			logger.Error("[syncSendMail] "+
+			log.Error("[syncSendMail] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -65,7 +65,7 @@ func (this *MailNotifyBuffer) syncSendMail() {
 		if this.WContent != "" &&
 			this.wlastappendsec+this.wlatertime < uint64(time.Now().Unix()) {
 			GetMailManager().SendMailServerWarning(this.WContent)
-			logger.Debug("[SendMail] [%s]", this.WContent)
+			log.Debug("[SendMail] [%s]", this.WContent)
 			this.WContent = ""
 		}
 		this.wmailbuffermutex.Unlock()
@@ -74,7 +74,7 @@ func (this *MailNotifyBuffer) syncSendMail() {
 		if this.EContent != "" &&
 			this.elastappendsec+this.elatertime < uint64(time.Now().Unix()) {
 			GetMailManager().SendMailServerError(this.EContent)
-			logger.Debug("[SendMail] [%s]", this.EContent)
+			log.Debug("[SendMail] [%s]", this.EContent)
 			this.EContent = ""
 		}
 		this.emailbuffermutex.Unlock()

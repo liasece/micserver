@@ -11,7 +11,7 @@ package subnet
 
 import (
 	"base"
-	"base/logger"
+	"base/log"
 	// "encoding/xml"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
@@ -43,7 +43,7 @@ func GetGBRedisManager() *GBRedisManager {
 // 连接到redis
 func (this *GBRedisManager) connectRedisServer(address string) bool {
 	if _, founded := this.redispools[address]; founded {
-		logger.Error("[redis] connect redis failed Addr[%s] 重复连接",
+		log.Error("[redis] connect redis failed Addr[%s] 重复连接",
 			address)
 		return false
 	}
@@ -53,7 +53,7 @@ func (this *GBRedisManager) connectRedisServer(address string) bool {
 		Wait:        true,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			logger.Debug("[redis] Connect redis succeed. "+
+			log.Debug("[redis] Connect redis succeed. "+
 				" Addr[%s] 连接到redis服务器成功", address)
 			return redis.Dial("tcp", address)
 		},
@@ -67,11 +67,11 @@ func (this *GBRedisManager) connectRedisServer(address string) bool {
 func (this *GBRedisManager) InitRedisManager() {
 	for _, v := range base.GetGBServerConfigM().RedisConfig.RedisList {
 		address := fmt.Sprintf("%s:%d", v.IP, v.Port)
-		logger.Debug("[GBRedisManager.InitRedisManager] "+
+		log.Debug("[GBRedisManager.InitRedisManager] "+
 			"初始化Redis连接 IPPort[%s]", address)
 		this.connectRedisServer(address)
 	}
-	logger.Debug("[GBRedisManager.InitRedisManager] "+
+	log.Debug("[GBRedisManager.InitRedisManager] "+
 		"启动初始化成功,连接数量:%d", len(this.redispools))
 }
 
@@ -81,7 +81,7 @@ func (this *GBRedisManager) GetString(key string) (string, error) {
 		defer conn.Close()
 		tmpvalue, err := redis.String(conn.Do("GET", key))
 		if err != nil {
-			logger.Debug("[redis] 读取数据异常 "+
+			log.Debug("[redis] 读取数据异常 "+
 				"Index[%s] Key[%s] Error[%s] Conn[%p] CountConn[%d]",
 				index, key, err.Error(), conn, value.ActiveCount())
 			return "", err
@@ -101,7 +101,7 @@ func (this *GBRedisManager) GetInt(key string) (int, error) {
 		defer conn.Close()
 		tmpvalue, err := redis.Int(conn.Do("GET", key))
 		if err != nil {
-			logger.Debug("[redis] 读取数据异常 "+
+			log.Debug("[redis] 读取数据异常 "+
 				"Index[%s] Key[%s] Error[%s] Conn[%p] CountConn[%d]",
 				index, key, err.Error(), conn, value.ActiveCount())
 			return 0, err
@@ -121,7 +121,7 @@ func (this *GBRedisManager) GetUint64(key string) (uint64, error) {
 		defer conn.Close()
 		tmpvalue, err := redis.Uint64(conn.Do("GET", key))
 		if err != nil {
-			logger.Debug("[redis] 读取数据异常 "+
+			log.Debug("[redis] 读取数据异常 "+
 				"Index[%s] Key[%s] Error[%s] Conn[%p] CountConn[%d]",
 				index, key, err.Error(), conn, value.ActiveCount())
 			return 0, err
@@ -142,7 +142,7 @@ func (this *GBRedisManager) Set(key string, args interface{}) error {
 
 		_, err := conn.Do("SET", key, args)
 		if err != nil {
-			logger.Error("[redis] 存取数据异常 "+
+			log.Error("[redis] 存取数据异常 "+
 				"Index[%s] Key[%s] Error[%s] Conn[%p] CountConn[%d]",
 				index, key, err.Error(), conn, value.ActiveCount())
 			return err
@@ -160,7 +160,7 @@ func (this *GBRedisManager) Expire(key string, timeoffset uint64) error {
 
 		_, err := conn.Do("EXPIRE", key, timeoffset)
 		if err != nil {
-			logger.Error("[redis] 数据设置过期时间异常,%s,%s,%s",
+			log.Error("[redis] 数据设置过期时间异常,%s,%s,%s",
 				index, key, err.Error())
 			return err
 		} else {
@@ -177,7 +177,7 @@ func (this *GBRedisManager) MSet(args ...interface{}) error {
 
 		_, err := conn.Do("MSET", args...)
 		if err != nil {
-			logger.Error("[redis] 存取数据异常 "+
+			log.Error("[redis] 存取数据异常 "+
 				"Index[%s] Error[%s] Conn[%p] CountConn[%d]",
 				index, err.Error(), conn, value.ActiveCount())
 			return err
@@ -220,7 +220,7 @@ func (this *GBRedisManager) AddUserServerIDByUUID(
 	rediskey := this.GetUUIDToUServerIdKey(uuid)
 	err := this.Set(rediskey, serverid)
 	if err != nil {
-		logger.Error("[GBRedisManager.AddUserServerIDByUUID] Err[%s]",
+		log.Error("[GBRedisManager.AddUserServerIDByUUID] Err[%s]",
 			err.Error())
 	}
 }
@@ -240,7 +240,7 @@ func (this *GBRedisManager) AddUserServerIDByUUIDMuch(
 	for len(arge) > 10000*2*2 {
 		err := this.MSet(arge[:10000*2*2]...)
 		if err != nil {
-			logger.Error("[GBRedisManager.AddUserServerIDByUUIDMuch] "+
+			log.Error("[GBRedisManager.AddUserServerIDByUUIDMuch] "+
 				"MSet 1 Err[%s]",
 				err.Error())
 		}
@@ -249,7 +249,7 @@ func (this *GBRedisManager) AddUserServerIDByUUIDMuch(
 	if len(arge) > 0 {
 		err := this.MSet(arge...)
 		if err != nil {
-			logger.Error("[GBRedisManager.AddUserServerIDByUUIDMuch] "+
+			log.Error("[GBRedisManager.AddUserServerIDByUUIDMuch] "+
 				"MSet 2 Err[%s]",
 				err.Error())
 		}
@@ -262,7 +262,7 @@ func (this *GBRedisManager) AddUserServerIDByOpenid(
 	rediskey := this.GetOpenIdToUServerIdKey(openid)
 	err := this.Set(rediskey, serverid)
 	if err != nil {
-		logger.Error("[GBRedisManager.AddUserServerIDByOpenid] Err[%s]",
+		log.Error("[GBRedisManager.AddUserServerIDByOpenid] Err[%s]",
 			err.Error())
 	}
 }
@@ -274,14 +274,14 @@ func (this *GBRedisManager) AddUserServerIDByOpenidWithDeadline(
 	rediskey := this.GetOpenIdToUServerIdKey(openid)
 	err := this.Set(rediskey, serverid)
 	if err != nil {
-		logger.Error("[GBRedisManager.AddUserServerIDByOpenidWithDeadline] "+
+		log.Error("[GBRedisManager.AddUserServerIDByOpenidWithDeadline] "+
 			"Set Err[%s]",
 			err.Error())
 		return
 	}
 	err = this.Expire(rediskey, timeoffset)
 	if err != nil {
-		logger.Error("[GBRedisManager.AddUserServerIDByOpenidWithDeadline] "+
+		log.Error("[GBRedisManager.AddUserServerIDByOpenidWithDeadline] "+
 			"Expire Err[%s]",
 			err.Error())
 		return
@@ -303,7 +303,7 @@ func (this *GBRedisManager) AddUserServerIDByOpenidMuch(
 	for len(arge) > 10000*2*2 {
 		err := this.MSet(arge[:10000*2*2]...)
 		if err != nil {
-			logger.Error("[GBRedisManager.AddUserServerIDByOpenidMuch] "+
+			log.Error("[GBRedisManager.AddUserServerIDByOpenidMuch] "+
 				"MSet 1 Err[%s]",
 				err.Error())
 		}
@@ -312,7 +312,7 @@ func (this *GBRedisManager) AddUserServerIDByOpenidMuch(
 	if len(arge) > 0 {
 		err := this.MSet(arge...)
 		if err != nil {
-			logger.Error("[GBRedisManager.AddUserServerIDByOpenidMuch] "+
+			log.Error("[GBRedisManager.AddUserServerIDByOpenidMuch] "+
 				"MSet 2 Err[%s]",
 				err.Error())
 		}
@@ -358,7 +358,7 @@ func (this *GBRedisManager) AddOpenidAddUUID(
 	rediskey := this.GetUUIDToOpenIdKey(uuid)
 	err := this.Set(rediskey, openid)
 	if err != nil {
-		logger.Error("[GBRedisManager.AddOpenidAddUUID] "+
+		log.Error("[GBRedisManager.AddOpenidAddUUID] "+
 			"Set 1 Err[%s]",
 			err.Error())
 	}
@@ -366,7 +366,7 @@ func (this *GBRedisManager) AddOpenidAddUUID(
 	rediskey1 := this.GetOpenIdToUUIDKey(openid)
 	err = this.Set(rediskey1, uuid)
 	if err != nil {
-		logger.Error("[GBRedisManager.AddOpenidAddUUID] "+
+		log.Error("[GBRedisManager.AddOpenidAddUUID] "+
 			"Set 2 Err[%s]",
 			err.Error())
 	}
@@ -390,7 +390,7 @@ func (this *GBRedisManager) AddOpenidAddUUIDMuch(
 	for len(arge) > 10000*2*2 {
 		err := this.MSet(arge[:10000*2*2]...)
 		if err != nil {
-			logger.Error("[GBRedisManager.AddOpenidAddUUIDMuch] "+
+			log.Error("[GBRedisManager.AddOpenidAddUUIDMuch] "+
 				"MSet 1 Err[%s]",
 				err.Error())
 		}
@@ -399,7 +399,7 @@ func (this *GBRedisManager) AddOpenidAddUUIDMuch(
 	if len(arge) > 0 {
 		err := this.MSet(arge...)
 		if err != nil {
-			logger.Error("[GBRedisManager.AddOpenidAddUUIDMuch] "+
+			log.Error("[GBRedisManager.AddOpenidAddUUIDMuch] "+
 				"MSet 2 Err[%s]",
 				err.Error())
 		}
@@ -415,7 +415,7 @@ func (this *GBRedisManager) IsExistUserOpenid(
 		rediskey := this.GetOpenIdToUUIDKey(openid)
 		is_key_exit, err := redis.Bool(conn.Do("EXISTS", rediskey))
 		if err != nil {
-			logger.Error("[redis] 判断数据是否存着异常 "+
+			log.Error("[redis] 判断数据是否存着异常 "+
 				"Key[%s] Error[%s] Conn[%p] CountConn[%d]",
 				key, err.Error(), conn, value.ActiveCount())
 			return false, err
@@ -435,7 +435,7 @@ func (this *GBRedisManager) IsExistUserUUID(uuid uint64) (bool, error) {
 		rediskey := this.GetUUIDToOpenIdKey(uuid)
 		is_key_exit, err := redis.Bool(conn.Do("EXISTS", rediskey))
 		if err != nil {
-			logger.Error("[redis] 判断数据是否存着异常"+
+			log.Error("[redis] 判断数据是否存着异常"+
 				"Key[%s] Error[%s] Conn[%p] CountConn[%d]",
 				key, err.Error(), conn, value.ActiveCount())
 			return false, err
@@ -483,11 +483,11 @@ func (this *GBRedisManager) AddUserInfo2MemDB(
 		defer conn.Close()
 		_, err := conn.Do("HMSET", args...)
 		if err != nil {
-			logger.Error("[redis] 存取用户数据异常 "+
+			log.Error("[redis] 存取用户数据异常 "+
 				"Index[%s] Key[%s] Value[%s] Error[%s]",
 				index, key, redisvalue, err.Error())
 		} else {
-			logger.Debug("[redis] 存取用户数据成功 "+
+			log.Debug("[redis] 存取用户数据成功 "+
 				"Index[%s] Key[%s] Value[%s]",
 				index, key, redisvalue)
 		}
@@ -503,14 +503,14 @@ func (this *GBRedisManager) GetUserInfoToStruct(
 		defer conn.Close()
 		valueinfos, err := redis.Values(conn.Do("HGETALL", key))
 		if err != nil {
-			logger.Error("[redis] 读取用户数据异常 "+
+			log.Error("[redis] 读取用户数据异常 "+
 				"Index[%s] Key[%s] Error[%s]",
 				index, key, err.Error())
 			return
 		}
 		err = redis.ScanStruct(valueinfos, v)
 		if err != nil {
-			logger.Error("[redis] 读取用户数据解析异常 "+
+			log.Error("[redis] 读取用户数据解析异常 "+
 				"Index[%s] Key[%s] Error[%s]",
 				index, key, err.Error())
 		} else {
@@ -528,7 +528,7 @@ func (this *GBRedisManager) GetUserInfoToString(
 		defer conn.Close()
 		infostr, err := redis.String(conn.Do("HGET", key, hashkey))
 		if err != nil {
-			logger.Error("[redis] 读取用户数据ToString异常异常 "+
+			log.Error("[redis] 读取用户数据ToString异常异常 "+
 				"Index[%s] Key[%s] Error[%s]",
 				index, key, err.Error())
 			return ""
@@ -548,7 +548,7 @@ func (this *GBRedisManager) ZAddToRedis(addkey string,
 		defer conn.Close()
 		_, err := conn.Do("ZADD", addkey, int64(addscore), addmember)
 		if err != nil {
-			logger.Error("[redis] 添加用户排行榜数据异常 "+
+			log.Error("[redis] 添加用户排行榜数据异常 "+
 				"Index[%s] Member[%s] Error[%s]",
 				index, addmember, err.Error())
 			return
@@ -565,7 +565,7 @@ func (this *GBRedisManager) ZRemToRedis(removekey string,
 		defer conn.Close()
 		_, err := conn.Do("ZREM", removekey, removemember)
 		if err != nil {
-			logger.Error("[redis] 删除用户排行榜数据异常 "+
+			log.Error("[redis] 删除用户排行榜数据异常 "+
 				"Index[%s] Member[%s] Error[%s]",
 				index, removemember, err.Error())
 			return
@@ -589,7 +589,7 @@ func (this *GBRedisManager) ZRevRangeToRedisInterval(rangekey string,
 		res, err := redis.Values(conn.Do("ZREVRANGE",
 			rangekey, minnum, maxnum))
 		if err != nil {
-			logger.Error("[redis] 加载用户排行榜数据异常 "+
+			log.Error("[redis] 加载用户排行榜数据异常 "+
 				"Index[%s] Key[%s] Error[%s]",
 				index, rangekey, err.Error())
 			return nil
@@ -626,7 +626,7 @@ func (this *GBRedisManager) ZCount(rangekey string) uint32 {
 		if err == nil {
 			resnum += uint32(res)
 		} else {
-			logger.Error("ZCARD ERR:%s", err.Error())
+			log.Error("ZCARD ERR:%s", err.Error())
 		}
 		conn.Close()
 	}
@@ -641,7 +641,7 @@ func (this *GBRedisManager) LPushToRedis(
 		defer conn.Close()
 		_, err := conn.Do("LPUSH", addkey, addvalue)
 		if err != nil {
-			logger.Error("[redis] LPUSH添加榜数据异常 "+
+			log.Error("[redis] LPUSH添加榜数据异常 "+
 				"Index[%s] Key[%s] Value[%s] Error[%s]",
 				index, addkey, addvalue, err.Error())
 			return
@@ -658,7 +658,7 @@ func (this *GBRedisManager) LTRIMToRedis(addkey string,
 		defer conn.Close()
 		_, err := conn.Do("LTRIM", addkey, start, end)
 		if err != nil {
-			logger.Error("[redis] LTRIM 更改数据异常 "+
+			log.Error("[redis] LTRIM 更改数据异常 "+
 				"Index[%s] Error[%s]",
 				index, err.Error())
 			return
@@ -676,7 +676,7 @@ func (this *GBRedisManager) LRangeToRedis(addkey string,
 		defer conn.Close()
 		res, err := redis.Values(conn.Do("LRANGE", addkey, start, end))
 		if err != nil {
-			logger.Error("[redis] 加载用户排行榜数据异常,%s,%s,%s",
+			log.Error("[redis] 加载用户排行榜数据异常,%s,%s,%s",
 				key, addkey, err.Error())
 			return nil
 		} else {
@@ -694,7 +694,7 @@ func (this *GBRedisManager) SetWxcodeInfo(wxcode string, info string) {
 		// wxcode 在redis中存活时间为一天
 		_, err := conn.Do("SETEX", rediskey, 24*60*60, info)
 		if err != nil {
-			logger.Error("[redis] SetWxcodeInfo添加数据异常,%s,%s,%s,%s",
+			log.Error("[redis] SetWxcodeInfo添加数据异常,%s,%s,%s,%s",
 				key, rediskey, info, err.Error())
 			return
 		} else {
@@ -709,7 +709,7 @@ func (this *GBRedisManager) GetWxcodeInfo(wxcode string) string {
 		rediskey := fmt.Sprintf("WXC_%s", wxcode)
 		tmpvalue, err := redis.String(conn.Do("GET", rediskey))
 		if err != nil {
-			logger.Debug("[redis] 读取数据不成功 "+
+			log.Debug("[redis] 读取数据不成功 "+
 				"%s,key:%s,%s,conn:%p,countconn:%d",
 				index, rediskey, err.Error(), conn, value.ActiveCount())
 			return ""

@@ -67,7 +67,7 @@ func (this *MessageBinary) Free() {
 	size := len(this.buffers)
 	err := pools.Put(this, size)
 	if err != nil {
-		logger.Error("[MessageBinary.Free] 放入对象池错误 Err[%s]",
+		log.Error("[MessageBinary.Free] 放入对象池错误 Err[%s]",
 			err.Error())
 	}
 }
@@ -76,13 +76,13 @@ func getMessageBinaryByProtoDataLength(protoDataSize int) *MessageBinary {
 	totalSize := protoDataSize + MSG_HEAD_SIZE // 加上协议头长度
 	msg, err := pools.Get(totalSize)
 	if err != nil {
-		logger.Error("[MakeMessageByBytes] "+
+		log.Error("[MakeMessageByBytes] "+
 			"[getMessageBinaryByProtoDataLength] CmdLen[%d] Err[%s]",
 			totalSize, err.Error())
 		return nil
 	}
 	if msg == nil {
-		logger.Error("[MakeMessageByBytes] "+
+		log.Error("[MakeMessageByBytes] "+
 			"[getMessageBinaryByProtoDataLength] nil return!!! CmdLen[%d]",
 			totalSize)
 		return nil
@@ -112,7 +112,7 @@ func (this *MessageBinary) ReadBinary(cmddata []byte) error {
 	maxlen := uint16(len(cmddata))
 	// 过小的长度
 	if maxlen < 4 {
-		logger.Error("[MakeMessageByBytes] "+
+		log.Error("[MakeMessageByBytes] "+
 			"[ReadBinary] 错误的二进制数据,过小的[]byte DataLen[%d] Data[%s]",
 			maxlen, hex.EncodeToString(cmddata))
 		return errors.New("消息头接收不完整")
@@ -124,14 +124,14 @@ func (this *MessageBinary) ReadBinary(cmddata []byte) error {
 	// 读取消息
 	err := this.ReadBinaryNoHead(cmddata[4:])
 	if err != nil {
-		logger.Error("[MakeMessageByBytes] "+
+		log.Error("[MakeMessageByBytes] "+
 			"[ReadBinary] ReadBinaryNoHead错误 Err[%s]",
 			err.Error())
 		return nil
 	}
 	// 长度检查
 	if this.CmdLen != checklen {
-		logger.Error("[MakeMessageByBytes] "+
+		log.Error("[MakeMessageByBytes] "+
 			"[ReadBinary] 错误的头部大小[%d] [%d]",
 			checklen, this.CmdLen)
 		return errors.New("消息头标注大小与实际大小不匹配")
@@ -147,7 +147,7 @@ func (this *MessageBinary) ReadBinaryNoHead(cmddata []byte) error {
 	this.Reset()
 	maxlen := uint16(len(cmddata))
 	if maxlen < 8 {
-		logger.Error("[ReadBinaryNoHead] "+
+		log.Error("[ReadBinaryNoHead] "+
 			"[ReadBinary] 错误的二进制数据,过小的[]byte NoHeadDataLen[%d]",
 			maxlen)
 		return errors.New("消息头接收不完整")
@@ -160,7 +160,7 @@ func (this *MessageBinary) ReadBinaryNoHead(cmddata []byte) error {
 	this.DataLen = binary.BigEndian.Uint16(cmddata[6:8])
 	// 消息结构错误
 	if this.DataLen+8 > maxlen {
-		logger.Error("[ReadBinaryNoHead] "+
+		log.Error("[ReadBinaryNoHead] "+
 			"[缓冲区溢出] 接收消息格式错误 CmdID[%d] CmdLen[%d] "+
 			"DataLen[%d] RecvLen[%d]",
 			this.CmdID, this.CmdLen, this.DataLen, maxlen)
@@ -174,7 +174,7 @@ func (this *MessageBinary) ReadBinaryNoHead(cmddata []byte) error {
 	if this.buffers == nil || len(this.buffers) < int(this.CmdLen) {
 		tmpmsg := getMessageBinaryByProtoDataLength(int(this.DataLen))
 		if tmpmsg == nil {
-			logger.Error("[ReadBinaryNoHead] "+
+			log.Error("[ReadBinaryNoHead] "+
 				"无法分配MsgBinary的内存！！！ Len[%d]", this.DataLen)
 			return nil
 		}
@@ -212,7 +212,7 @@ func (this *MessageBinary) WriteBinary() ([]byte, int) {
 	// 如果缓冲区大小不合适，说明数据被篡改
 	if this.buffers == nil ||
 		len(this.buffers) < int(MSG_HEAD_SIZE+this.DataLen) {
-		logger.Error("[MakeMessageByBytes] "+
+		log.Error("[MakeMessageByBytes] "+
 			"[WriteBinary] 错误的缓冲区大小，数据被篡改！ "+
 			"BufferLen[%d] CmdLen[%d]",
 			len(this.buffers), int(MSG_HEAD_SIZE+this.DataLen))
@@ -275,7 +275,7 @@ func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	totalLength := uint32(MSG_HEAD_SIZE + datalen)
 	// 判断数据合法性
 	if totalLength >= 64*1024 {
-		logger.Error("[MakeMessageByBytes] "+
+		log.Error("[MakeMessageByBytes] "+
 			"[缓冲区溢出] 发送消息数据过大 CmdID[%d] CmdLen[%d]",
 			cmdid, totalLength)
 		// 返回一个没有内容的消息
@@ -286,7 +286,7 @@ func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	// 从对象池获取消息对象
 	msgbinary := getMessageBinaryByProtoDataLength(int(datalen))
 	if msgbinary == nil {
-		logger.Error("[MakeMessageByBytes] "+
+		log.Error("[MakeMessageByBytes] "+
 			"无法分配MsgBinary的内存！！！ CmdID[%d] Len[%d]",
 			cmdid, totalLength)
 		return nil
@@ -327,7 +327,7 @@ func MakeMessageByJson(v MsgStruct) *MessageBinary {
 	totalLength := uint32(MSG_HEAD_SIZE + datalen)
 	// 判断数据合法性
 	if totalLength >= 64*1024 {
-		logger.Error("[MakeMessageByBytes] "+
+		log.Error("[MakeMessageByBytes] "+
 			"[缓冲区溢出] 发送消息数据过大 MsgID[%d] CmdLen[%d]",
 			cmdid, totalLength)
 		// 返回一个没有内容的消息
@@ -338,7 +338,7 @@ func MakeMessageByJson(v MsgStruct) *MessageBinary {
 	// 从对象池获取消息对象
 	msgbinary := getMessageBinaryByProtoDataLength(int(datalen))
 	if msgbinary == nil {
-		logger.Error("[MakeMessageByJson] "+
+		log.Error("[MakeMessageByJson] "+
 			"无法分配MsgBinary的内存！！！ CmdLen[%d] DataLen[%d]",
 			totalLength, datalen)
 		return nil
@@ -380,7 +380,7 @@ func (this *MessageBinaryReader) RangeMsgBinary(
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			logger.Error("[MessageBinaryReader.RangeMsgBinary] "+
+			log.Error("[MessageBinaryReader.RangeMsgBinary] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 			reerr = err
 		}
@@ -435,7 +435,7 @@ func (this *MessageBinaryReader) RangeMsgBinary(
 				// 解析消息（无4个字节的头）
 				err := msgbinary.ReadBinaryNoHead(cmdbuff)
 				if err != nil {
-					logger.Error("[MessageBinaryReader.RangeMsgBinary] "+
+					log.Error("[MessageBinaryReader.RangeMsgBinary] "+
 						"解析消息错误 Err[%s] RecvLen[%d] NoHeadLen[%d] "+
 						"DataLen[%d]",
 						err.Error(), len(cmdbuff), this.msglength, dataLength)
@@ -445,7 +445,7 @@ func (this *MessageBinaryReader) RangeMsgBinary(
 					callback(msgbinary)
 				}
 			} else {
-				logger.Error("[MessageBinaryReader.RangeMsgBinary] "+
+				log.Error("[MessageBinaryReader.RangeMsgBinary] "+
 					"无法分配MsgBinary的内存！！！ RecvLen[%d] NoHeadLen[%d] "+
 					"DataLen[%d]",
 					len(cmdbuff), this.msglength, dataLength)

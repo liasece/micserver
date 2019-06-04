@@ -2,9 +2,9 @@ package tcpconn
 
 import (
 	//	"os"
-	"base"
-	"base/logger"
-	"base/util"
+	"github.com/liasece/micserver"
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/util"
 	"math/rand"
 	"net"
 	// "servercomm"
@@ -181,7 +181,7 @@ func (this *ServerConnPool) Remove(tempid uint64) {
 		value.isAlive = false
 		// 关闭消息发送协程
 		value.Conn.Shutdown()
-		logger.Debug("[ServerConn] 删除连接 TmpID[%d] 当前连接数量"+
+		log.Debug("[ServerConn] 删除连接 TmpID[%d] 当前连接数量"+
 			" Len[%d] ServerID[%d] ServerName[%s]",
 			tempid, this.Len(), value.Serverinfo.Serverid,
 			value.Serverinfo.Servername)
@@ -199,7 +199,7 @@ func (this *ServerConnPool) Add(connct *ServerConn, tmpid uint64) {
 func (this *ServerConnPool) AddAuto(connct *ServerConn) {
 	tmpid, err := util.NewUniqueID(this.groupID)
 	if err != nil {
-		logger.Error("[ServerConnPool.AddAuto] 生成UUID出错 Error[%s]",
+		log.Error("[ServerConnPool.AddAuto] 生成UUID出错 Error[%s]",
 			err.Error())
 		return
 	}
@@ -214,7 +214,7 @@ func (this *ServerConnPool) ChangeTempid(tcptask *ServerConn,
 	defer this.TCPConnectPoolMutex.Unlock()
 	if ttcptask, found := this.allsockets.Load(tcptask.Tempid); found {
 		tcptask := ttcptask.(*ServerConn)
-		logger.Debug("[ServerConn]修改连接tempid Old[%d] -->> New[%d]",
+		log.Debug("[ServerConn]修改连接tempid Old[%d] -->> New[%d]",
 			tcptask.Tempid, newtempid)
 		this.remove(tcptask.Tempid)
 		tcptask.Tempid = newtempid

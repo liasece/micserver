@@ -2,7 +2,7 @@ package mail
 
 import (
 	"base"
-	"base/logger"
+	"base/log"
 	// "errors"
 	"base/util"
 	"fmt"
@@ -117,7 +117,7 @@ func (this *MailContent) SendMail() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			logger.Error("[SendMail] "+
+			log.Error("[SendMail] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -136,7 +136,7 @@ func (this *MailContent) SendMail() {
 	// url := fmt.Sprintf("%s:%d", serveraddr, serverport)
 	// err := smtp.SendMail(url, auth, sender, this.ToAddr, msg)
 	// if err != nil {
-	// 	logger.Error("send mail error: %v", err)
+	// 	log.Error("send mail error: %v", err)
 	// }
 
 	m := gomail.NewMessage()
@@ -151,6 +151,6 @@ func (this *MailContent) SendMail() {
 	// d.SSL = true
 	// Send the email to Bob, Cora and Dan.
 	if err := d.DialAndSend(m); err != nil {
-		logger.Error("send mail error: %v", err)
+		log.Error("send mail error: %v", err)
 	}
 }

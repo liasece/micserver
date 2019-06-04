@@ -121,16 +121,16 @@ func (this *GBServerConfigM) AutoConfig(servername string, servertype uint32) {
 		logfilename := filepath.Join(logpath, logsubname)
 		daemon := this.getPropUnsafe("daemon")
 		if daemon == "true" {
-			log.AddLoggerFile(logfilename, true)
+			log.AddlogFile(logfilename, true)
 			log.RemoveConsoleLog()
 			log.Debug("Program is start as a daemon")
 		} else {
-			log.AddLoggerFile(logfilename, false)
+			log.AddlogFile(logfilename, false)
 		}
 	} else {
 		logsubname := strings.ToLower(this.Myservername) + ".log"
 		logfilename := filepath.Join(logpath, logsubname)
-		log.ChangeLoggerFile(logfilename)
+		log.ChangelogFile(logfilename)
 	}
 	// 设置日志级别
 	log.SetLogLevel(this.getPropUnsafe("loglevel"))

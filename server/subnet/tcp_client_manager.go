@@ -10,12 +10,12 @@
 package subnet
 
 import (
-	"base"
-	"base/def"
-	"base/functime"
-	"base/logger"
-	"base/tcpconn"
-	"base/util"
+	"github.com/liasece/micserver"
+	"github.com/liasece/micserver/def"
+	"github.com/liasece/micserver/functime"
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/tcpconn"
+	"github.com/liasece/micserver/util"
 	// "errors"
 	// "fmt"
 	"io"
@@ -51,12 +51,12 @@ func (this *GBTCPClientManager) InitMsgQueue(runsum int) {
 	this.maxRunningMsgNum = runsum // 消息队列线程数
 	if this.maxRunningMsgNum < 1 {
 		this.maxRunningMsgNum = 1
-		logger.Error("[GBTCPClientManager.InitMsgQueue] " +
+		log.Error("[GBTCPClientManager.InitMsgQueue] " +
 			"消息处理线程数量过小，置为1...")
 	}
 	this.runningMsgChan = make([]chan *ConnectMsgQueueStruct,
 		this.maxRunningMsgNum)
-	logger.Debug("[GBTCPClientManager.InitMsgQueue] "+
+	log.Debug("[GBTCPClientManager.InitMsgQueue] "+
 		"Client 消息处理线程数量 ThreadNum[%d]", this.maxRunningMsgNum)
 	i := 0
 	for i < this.maxRunningMsgNum {
@@ -77,7 +77,7 @@ func (this *GBTCPClientManager) MultiRecvmsgQueue(
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			logger.Error("[GBTCPClientManager.MultiRecvmsgQueue] "+
+			log.Error("[GBTCPClientManager.MultiRecvmsgQueue] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 			normalreturn = false
 		}
@@ -89,7 +89,7 @@ func (this *GBTCPClientManager) MultiRecvmsgQueue(
 		curtime := uint32(time.Now().Unix())
 		if curtime > msgqueues.msg.TimeStamp+1 &&
 			curtime > this.lastwarningtime2 {
-			logger.Error("[GBTCPClientManager.MultiRecvmsgQueue] "+
+			log.Error("[GBTCPClientManager.MultiRecvmsgQueue] "+
 				"[消耗时间统计]服务器TCPClient处理消息延迟很严重"+
 				" TimeIns[%d] Thread[%d]",
 				curtime-msgqueues.msg.TimeStamp, index)
@@ -130,7 +130,7 @@ func (this *GBTCPClientManager) AddTCPClient(
 
 	tcptask.SetAlive(true)
 
-	logger.Debug("[GBTCPClientManager.AddTCPClient] "+
+	log.Debug("[GBTCPClientManager.AddTCPClient] "+
 		"AddTCPClient ServerID[%d] 当前连接数量 NowSum[%d]",
 		serverid, this.connPool.Len())
 
@@ -233,7 +233,7 @@ func (this *GBTCPClientManager) SendCmdToRandBridgeServer(
 	v base.MsgStruct) {
 	client := this.RandomGetServerClient(def.TypeBridgeServer)
 	if client == nil {
-		logger.Error("[GBTCPClientManager.SendCmdToRandBridgeServer] "+
+		log.Error("[GBTCPClientManager.SendCmdToRandBridgeServer] "+
 			"找不到服务器 MsgID[%d] MsgName[%s]", v.GetMsgId(), v.GetMsgName())
 		return
 	}
@@ -245,7 +245,7 @@ func handleClientConnection(client *tcpconn.ServerConn,
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			logger.Error("[handleClientConnection] "+
+			log.Error("[handleClientConnection] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -257,7 +257,7 @@ func handleClientConnection(client *tcpconn.ServerConn,
 		derr := client.Conn.Conn.SetReadDeadline(time.Now().
 			Add(time.Duration(time.Millisecond * 1000)))
 		if derr != nil {
-			logger.Error("[handleClientConnection] SetReadDeadline Err[%s]"+
+			log.Error("[handleClientConnection] SetReadDeadline Err[%s]"+
 				"ServerName[%s] ServerID[%d]",
 				derr.Error(), client.Serverinfo.Servername,
 				client.Serverinfo.Serverid)
@@ -267,7 +267,7 @@ func handleClientConnection(client *tcpconn.ServerConn,
 		n, err := netbuffer.ReadFromReader()
 		if err != nil {
 			if err == io.EOF {
-				logger.Debug("[GBTCPClientManager.handleClientConnection] "+
+				log.Debug("[GBTCPClientManager.handleClientConnection] "+
 					"数据读写异常，断开连接"+
 					" ReadLen[%d] ServerID[%d] Error[%s]",
 					n, client.Tempid, err.Error())
@@ -285,7 +285,7 @@ func handleClientConnection(client *tcpconn.ServerConn,
 			curtime := uint32(time.Now().Unix())
 			if curtime > msgbinary.TimeStamp+1 &&
 				curtime > GetGBTCPClientManager().lastwarningtime1 {
-				logger.Error("[GBTCPClientManager.handleClientConnection] "+
+				log.Error("[GBTCPClientManager.handleClientConnection] "+
 					"[消耗时间统计] 服务器TCPClient"+
 					"接收消息延迟很严重 TimeInc[%d]",
 					curtime-msgbinary.TimeStamp)
@@ -298,7 +298,7 @@ func handleClientConnection(client *tcpconn.ServerConn,
 		})
 		functiontime.Stop()
 		if err != nil {
-			logger.Error("[GBTCPClientManager.handleClientConnection] "+
+			log.Error("[GBTCPClientManager.handleClientConnection] "+
 				"RangeMsgBinary读消息失败，断开连接 Err[%s]", err.Error())
 			onClientDisconnected(client, clienter)
 			return
@@ -315,7 +315,7 @@ func msgParseTCPClient(client *tcpconn.ServerConn,
 		if performance_test == "true" {
 			recvmsg := &servercomm.STestCommand{}
 			recvmsg.ReadBinary([]byte(msgbin.ProtoData))
-			logger.Debug("[GBTCPClientManager.msgParseTCPClient] "+
+			log.Debug("[GBTCPClientManager.msgParseTCPClient] "+
 				"Server 收到测试消息 CmdLen[%d] No.[%d]",
 				msgbin.CmdLen, recvmsg.Testno)
 		}
@@ -330,12 +330,12 @@ func msgParseTCPClient(client *tcpconn.ServerConn,
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		if recvmsg.Loginfailed > 0 {
 			GetGBTCPClientManager().RemoveTCPClient(client.Tempid)
-			logger.Error("[GBTCPClientManager.msgParseTCPClient] " +
+			log.Error("[GBTCPClientManager.msgParseTCPClient] " +
 				"连接验证失败,断开连接")
 			return
 		}
 		client.Serverinfo = recvmsg.Taskinfo
-		logger.Debug("[GBTCPClientManager.msgParseTCPClient] "+
+		log.Debug("[GBTCPClientManager.msgParseTCPClient] "+
 			"连接服务器验证成功,id:%d,ip:%s,port:%d",
 			client.Serverinfo.Serverid, client.Serverinfo.Serverip,
 			client.Serverinfo.Serverport)
@@ -345,7 +345,7 @@ func msgParseTCPClient(client *tcpconn.ServerConn,
 			base.GetGBServerConfigM().Myserverinfo.Servertype != def.TypeSuperServer {
 			// 如果登陆 SuperServer 成功，且当前不是 SuperServer
 			base.GetGBServerConfigM().Myserverinfo = recvmsg.Clientinfo
-			logger.Debug("[GBTCPClientManager.msgParseTCPClient] "+
+			log.Debug("[GBTCPClientManager.msgParseTCPClient] "+
 				"获取本机信息成功"+
 				" ServerID[%d] IP[%s] Port[%d] HTTPPort[%d] Name[%s]",
 				recvmsg.Clientinfo.Serverid,
@@ -358,7 +358,7 @@ func msgParseTCPClient(client *tcpconn.ServerConn,
 		return
 	case servercomm.SLogoutCommandID:
 		// 服务器已主动关闭，不再尝试连接它了
-		logger.Debug("[msgParseTCPClient] 服务器已主动关闭，不再尝试连接它了 "+
+		log.Debug("[msgParseTCPClient] 服务器已主动关闭，不再尝试连接它了 "+
 			"ServerInfo[%s]", client.Serverinfo.GetJson())
 		GetGBTCPClientManager().serverexitchanmutex.Lock()
 		defer GetGBTCPClientManager().serverexitchanmutex.Unlock()
@@ -370,7 +370,7 @@ func msgParseTCPClient(client *tcpconn.ServerConn,
 		recvmsg := &servercomm.SStartMyNotifyCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		serverinfo := recvmsg.Serverinfo
-		logger.Debug("[GBTCPClientManager.msgParseTCPClient] "+
+		log.Debug("[GBTCPClientManager.msgParseTCPClient] "+
 			"收到服务器启动信息"+
 			" ServerID[%d] IP[%s] Port[%d] HTTPPort[%d] Name[%s]",
 			serverinfo.Serverid, serverinfo.Serverip,
@@ -389,7 +389,7 @@ func msgParseTCPClient(client *tcpconn.ServerConn,
 		if client.Serverinfo.Servertype == def.TypeSuperServer {
 			GetSubnetManager().ServerConfigs.CleanServerConfig()
 		}
-		logger.Debug("[GBTCPClientManager.msgParseTCPClient] " +
+		log.Debug("[GBTCPClientManager.msgParseTCPClient] " +
 			"收到所有服务器列表信息")
 		// 所有服务器信息列表
 		for i := 0; i < len(recvmsg.Serverinfos); i++ {

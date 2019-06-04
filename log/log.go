@@ -37,11 +37,11 @@ type Record struct {
 func AutoConfig(logfilename string, logname string, daemon bool) {
 	SetLogName(logname)
 	if daemon {
-		AddLoggerFile(logfilename, true)
+		AddlogFile(logfilename, true)
 		RemoveConsoleLog()
 		Debug("[log] Program is start as a daemon")
 	} else {
-		AddLoggerFile(logfilename, false)
+		AddlogFile(logfilename, false)
 	}
 }
 
@@ -63,7 +63,7 @@ type Flusher interface {
 	Flush() error
 }
 
-type Logger struct {
+type log struct {
 	writers     []Writer
 	tunnel      chan *Record
 	level       int32
@@ -74,13 +74,13 @@ type Logger struct {
 	layout      string
 }
 
-func NewLogger() *Logger {
-	if logger_default != nil && !takeup {
+func Newlog() *log {
+	if log_default != nil && !takeup {
 		takeup = true
-		return logger_default
+		return log_default
 	}
 
-	l := new(Logger)
+	l := new(log)
 	l.writers = make([]Writer, 0, 2)
 	l.tunnel = make(chan *Record, tunnel_size_default)
 	l.c = make(chan bool, 1)
@@ -92,42 +92,42 @@ func NewLogger() *Logger {
 	return l
 }
 
-func (l *Logger) Register(w Writer) {
+func (l *log) Register(w Writer) {
 	if err := w.Init(); err != nil {
 		panic(err)
 	}
 	l.writers = append(l.writers, w)
 }
 
-func (l *Logger) SetLevel(lvl int32) {
+func (l *log) SetLevel(lvl int32) {
 	l.level = lvl
 }
 
-func (l *Logger) SetLayout(layout string) {
+func (l *log) SetLayout(layout string) {
 	l.layout = layout
 }
 
-func (l *Logger) Debug(fmt string, args ...interface{}) {
+func (l *log) Debug(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(DEBUG, fmt, args...)
 }
 
-func (l *Logger) Warn(fmt string, args ...interface{}) {
+func (l *log) Warn(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(WARNING, fmt, args...)
 }
 
-func (l *Logger) Info(fmt string, args ...interface{}) {
+func (l *log) Info(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(INFO, fmt, args...)
 }
 
-func (l *Logger) Error(fmt string, args ...interface{}) {
+func (l *log) Error(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(ERROR, fmt, args...)
 }
 
-func (l *Logger) Fatal(fmt string, args ...interface{}) {
+func (l *log) Fatal(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(FATAL, fmt, args...)
 }
 
-func (l *Logger) Close() {
+func (l *log) Close() {
 	close(l.tunnel)
 	<-l.c
 
@@ -140,7 +140,7 @@ func (l *Logger) Close() {
 	}
 }
 
-func (l *Logger) deliverRecordToWriter(level int32, format string, args ...interface{}) {
+func (l *log) deliverRecordToWriter(level int32, format string, args ...interface{}) {
 	var inf, code string
 
 	if level < l.level {
@@ -178,7 +178,7 @@ func (l *Logger) deliverRecordToWriter(level int32, format string, args ...inter
 	l.tunnel <- r
 }
 
-func boostrapLogWriter(log *Logger) {
+func boostrapLogWriter(log *log) {
 	if log == nil {
 		panic("log is nil")
 	}
@@ -245,53 +245,53 @@ func boostrapLogWriter(log *Logger) {
 
 // default
 var (
-	logger_default *Logger
-	takeup         = false
+	log_default *log
+	takeup      = false
 )
 
 func SetLevel(lvl int32) {
-	logger_default.level = lvl
+	log_default.level = lvl
 }
 
 func GetLevel() int32 {
-	return logger_default.level
+	return log_default.level
 }
 
 func SetLayout(layout string) {
-	logger_default.layout = layout
+	log_default.layout = layout
 }
 
 func Debug(fmt string, args ...interface{}) {
-	logger_default.deliverRecordToWriter(DEBUG, fmt, args...)
+	log_default.deliverRecordToWriter(DEBUG, fmt, args...)
 }
 
 func Warn(fmt string, args ...interface{}) {
-	logger_default.deliverRecordToWriter(WARNING, fmt, args...)
+	log_default.deliverRecordToWriter(WARNING, fmt, args...)
 }
 
 func Info(fmt string, args ...interface{}) {
-	logger_default.deliverRecordToWriter(INFO, fmt, args...)
+	log_default.deliverRecordToWriter(INFO, fmt, args...)
 }
 
 func Error(fmt string, args ...interface{}) {
-	logger_default.deliverRecordToWriter(ERROR, fmt, args...)
+	log_default.deliverRecordToWriter(ERROR, fmt, args...)
 }
 
 func Fatal(fmt string, args ...interface{}) {
-	logger_default.deliverRecordToWriter(FATAL, fmt, args...)
+	log_default.deliverRecordToWriter(FATAL, fmt, args...)
 }
 
 func Register(w Writer) {
-	logger_default.Register(w)
+	log_default.Register(w)
 }
 
 func Close() {
-	logger_default.Close()
+	log_default.Close()
 }
 
 func init() {
 	fmt.Printf("log init \n")
-	logger_default = NewLogger()
+	log_default = Newlog()
 	recordPool = &sync.Pool{New: func() interface{} {
 		return &Record{}
 	}}
@@ -302,7 +302,7 @@ func init() {
 	Register(w)
 }
 func SetLogName(logname string) {
-	logger_default.logname = logname
+	log_default.logname = logname
 }
 
 func SetLogLevel(loglevel string) {
@@ -322,7 +322,7 @@ func SetLogLevel(loglevel string) {
 	}
 }
 
-func AddLoggerFile(filename string, redirecterr bool) {
+func AddlogFile(filename string, redirecterr bool) {
 	//	fmt.Printf("log filename,%s \n", filename)
 	filebasename := filename
 	filename += ".%Y%M%D-%H"
@@ -335,11 +335,11 @@ func AddLoggerFile(filename string, redirecterr bool) {
 	}
 	Register(w)
 }
-func ChangeLoggerFile(filename string) {
+func ChangelogFile(filename string) {
 	filebasename := filename
 	filename += ".%Y%M%D-%H"
-	for i := 0; i < len(logger_default.writers); i++ {
-		w := logger_default.writers[i]
+	for i := 0; i < len(log_default.writers); i++ {
+		w := log_default.writers[i]
 		if reflect.TypeOf(w).String() == "*log.FileWriter" {
 			if r, ok := w.(Rotater); ok {
 				err := r.SetPathPattern(filebasename, filename)
@@ -356,12 +356,12 @@ func ChangeLoggerFile(filename string) {
 func RemoveConsoleLog() {
 	Debug("start RemoveConsoleLog")
 	newlist := make([]Writer, 0, 2)
-	for i := 0; i < len(logger_default.writers); i++ {
-		w := logger_default.writers[i]
+	for i := 0; i < len(log_default.writers); i++ {
+		w := log_default.writers[i]
 		//		Debug("start RemoveConsoleLog, %s", reflect.TypeOf(w).String())
 		if reflect.TypeOf(w).String() != "*log.ConsoleWriter" {
 			newlist = append(newlist, w)
 		}
 	}
-	logger_default.writers = newlist
+	log_default.writers = newlist
 }

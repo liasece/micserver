@@ -10,11 +10,11 @@
 package subnet
 
 import (
-	"base"
-	"base/functime"
-	"base/logger"
-	"base/tcpconn"
-	"base/util"
+	"github.com/liasece/micserver"
+	"github.com/liasece/micserver/functime"
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/tcpconn"
+	"github.com/liasece/micserver/util"
 	// "bytes"
 	// "encoding/binary"
 	// "encoding/json"
@@ -51,12 +51,12 @@ func (this *GBTCPTaskManager) InitMsgQueue(sum int) {
 	this.maxRunningMsgNum = sum // 消息队列线程数
 	if this.maxRunningMsgNum < 1 {
 		this.maxRunningMsgNum = 1
-		logger.Error("[GBTCPTaskManager.InitMsgQueue] " +
+		log.Error("[GBTCPTaskManager.InitMsgQueue] " +
 			"消息处理线程数量过小，置为1...")
 	}
 	this.runningMsgChan = make([]chan *ConnectMsgQueueStruct,
 		this.maxRunningMsgNum)
-	logger.Debug("[GBTCPTaskManager.InitMsgQueue] "+
+	log.Debug("[GBTCPTaskManager.InitMsgQueue] "+
 		"Task 消息处理线程数量 ThreadNum[%d]", this.maxRunningMsgNum)
 	i := 0
 	for i < this.maxRunningMsgNum {
@@ -82,7 +82,7 @@ func (this *GBTCPTaskManager) MultiRecvmsgQueue(
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
-			logger.Error("[GBTCPTaskManager.MultiRecvmsgQueue] "+
+			log.Error("[GBTCPTaskManager.MultiRecvmsgQueue] "+
 				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
 			normalreturn = false
 		}
@@ -94,7 +94,7 @@ func (this *GBTCPTaskManager) MultiRecvmsgQueue(
 		curtime := uint32(time.Now().Unix())
 		if curtime > msgqueues.msg.TimeStamp+1 &&
 			curtime > this.lastwarningtime2 {
-			logger.Error("[GBTCPTaskManager.MultiRecvmsgQueue] "+
+			log.Error("[GBTCPTaskManager.MultiRecvmsgQueue] "+
 				"[消耗时间统计]服务器TCPTask处理消息延迟很严重"+
 				" TimeInc[%d] in Thread[%d]",
 				curtime-msgqueues.msg.TimeStamp, index)
@@ -138,7 +138,7 @@ func (this *GBTCPTaskManager) AddTCPTask(
 	curtime := uint64(time.Now().Unix())
 	tcptask.SetTerminateTime(uint64(curtime + 10))
 
-	logger.Debug("[GBTCPTaskManager.AddTCPTask] "+
+	log.Debug("[GBTCPTaskManager.AddTCPTask] "+
 		"增加新的连接数 TmpID[%d] 当前连接数量 ConnNum[%d]",
 		tcptask.Tempid, this.connPool.Len())
 
@@ -179,7 +179,7 @@ func (this *GBTCPTaskManager) NotifyAllServerInfo(
 		return true
 	})
 	if len(retmsg.Serverinfos) > 0 {
-		logger.Debug("[NotifyAllServerInfo] 发送所有服务器列表信息 Msg[%s]",
+		log.Debug("[NotifyAllServerInfo] 发送所有服务器列表信息 Msg[%s]",
 			retmsg.GetJson())
 		tcptask.SendCmd(retmsg)
 	}
@@ -190,7 +190,7 @@ func handleConnection(
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			logger.Error("[handleConnection] "+
+			log.Error("[handleConnection] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -201,7 +201,7 @@ func handleConnection(
 		curtime := uint64(time.Now().Unix())
 		if tcptask.IsTerminateTimeout(curtime) {
 			GetGBTCPTaskManager().RemoveTCPTask(tcptask.Tempid)
-			logger.Error("[GBTCPTaskManager.handleConnection] "+
+			log.Error("[GBTCPTaskManager.handleConnection] "+
 				"长时间未通过验证，断开连接 TmpID[%d]",
 				tcptask.Tempid)
 			return
@@ -209,12 +209,12 @@ func handleConnection(
 		if tcptask.IsTerminateForce() {
 			server.OnRemoveTCPConnect(tcptask)
 			GetGBTCPTaskManager().RemoveTCPTask(tcptask.Tempid)
-			logger.Error("[GBTCPTaskManager.handleConnection] "+
+			log.Error("[GBTCPTaskManager.handleConnection] "+
 				"服务器主动断开连接 TmpID[%d]", tcptask.Tempid)
 			return
 		}
 		if base.GetGBServerConfigM().TerminateServer {
-			logger.Debug("[GBTCPTaskManager.handleConnection] "+
+			log.Debug("[GBTCPTaskManager.handleConnection] "+
 				"服务器准备停机了,退出连接处理 TmpID[%d]",
 				tcptask.Tempid)
 			return
@@ -230,7 +230,7 @@ func handleConnection(
 		derr := tcptask.Conn.Conn.SetReadDeadline(time.Now().
 			Add(time.Duration(time.Millisecond * 250)))
 		if derr != nil {
-			logger.Error("[handleConnection] SetReadDeadline Err[%s]"+
+			log.Error("[handleConnection] SetReadDeadline Err[%s]"+
 				"ServerName[%s] ServerID[%d]",
 				derr.Error(), tcptask.Serverinfo.Servername,
 				tcptask.Serverinfo.Serverid)
@@ -241,7 +241,7 @@ func handleConnection(
 		_, err := netbuffer.ReadFromReader()
 		if err != nil {
 			if err == io.EOF {
-				logger.Debug("[GBTCPTaskManager.handleConnection] "+
+				log.Debug("[GBTCPTaskManager.handleConnection] "+
 					"tcptask数据读写异常 scoket返回 TmpID[%d] Error[%s]",
 					tcptask.Tempid, err.Error())
 				server.OnRemoveTCPConnect(tcptask)
@@ -264,7 +264,7 @@ func handleConnection(
 			curtime := uint32(time.Now().Unix())
 			if curtime > msgbinary.TimeStamp+1 &&
 				curtime > GetGBTCPTaskManager().lastwarningtime1 {
-				logger.Error("[GBTCPTaskManager.handleConnection] "+
+				log.Error("[GBTCPTaskManager.handleConnection] "+
 					"[消耗时间统计]服务器TCPTask接收消息延迟很严重"+
 					" TimeInc[%d]",
 					curtime-msgbinary.TimeStamp)
@@ -280,7 +280,7 @@ func handleConnection(
 		})
 		functiontime.Stop()
 		if err != nil {
-			logger.Error("[GBTCPTaskManager.handleConnection] "+
+			log.Error("[GBTCPTaskManager.handleConnection] "+
 				"RangeMsgBinary读消息失败，断开连接 Err[%s]", err.Error())
 			server.OnRemoveTCPConnect(tcptask)
 			GetGBTCPTaskManager().RemoveTCPTask(tcptask.Tempid)
@@ -295,13 +295,13 @@ func msgParse(tcptask *tcpconn.ServerConn, msgbin *base.MessageBinary,
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
-			logger.Error("[GBTCPTaskManager.msgParse] "+
+			log.Error("[GBTCPTaskManager.msgParse] "+
 				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
 
 	cmdname := servercomm.MsgIdToString(msgbin.CmdID)
-	logger.Debug("[TCPTask.msgParse] "+
+	log.Debug("[TCPTask.msgParse] "+
 		"收到 MsgName[%s] CmdLen[%d]", cmdname, msgbin.CmdLen)
 	if msgbin.CmdID == servercomm.STestCommandID {
 		// 来源服务器请求测试
@@ -310,7 +310,7 @@ func msgParse(tcptask *tcpconn.ServerConn, msgbin *base.MessageBinary,
 		if performance_test == "true" {
 			recvmsg := &servercomm.STestCommand{}
 			recvmsg.ReadBinary([]byte(msgbin.ProtoData))
-			logger.Debug("[TCPTask.msgParse] "+
+			log.Debug("[TCPTask.msgParse] "+
 				"Server 收到测试消息 CmdLen[%d] No.[%d]",
 				msgbin.CmdLen, recvmsg.Testno)
 		}
@@ -322,7 +322,7 @@ func msgParse(tcptask *tcpconn.ServerConn, msgbin *base.MessageBinary,
 		return
 	} else if msgbin.CmdID == servercomm.SLogoutCommandID {
 		// 服务器退出登陆
-		logger.Debug("[TCPTask.msgParse] "+
+		log.Debug("[TCPTask.msgParse] "+
 			"服务器 ServerName[%s] 退出登陆了", tcptask.Serverinfo.Servername)
 		tcptask.SetVertify(false)
 		GetSubnetManager().ServerConfigs.
@@ -332,7 +332,7 @@ func msgParse(tcptask *tcpconn.ServerConn, msgbin *base.MessageBinary,
 
 	// 如果来源服务器未登陆或身份校验未通过
 	if !tcptask.IsVertify() {
-		logger.Debug("[TCPTask.msgParse] "+
+		log.Debug("[TCPTask.msgParse] "+
 			"客户端连接验证异常 MsgName[%s] ServerID[%d]",
 			cmdname, tcptask.Serverinfo.Serverid)
 		return

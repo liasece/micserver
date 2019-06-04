@@ -2,11 +2,11 @@ package tcpconn
 
 import (
 	//	"os"
-	"base"
-	// "base/logger"
+	"github.com/liasece/micserver"
+	// "base/log"
 	// "math/rand"
+	"github.com/liasece/micserver/servercomm"
 	"net"
-	"servercomm"
 	// "sync"
 	// "time"
 )

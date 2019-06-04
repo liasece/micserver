@@ -1,7 +1,7 @@
 package serconfs
 
 import (
-	"base/logger"
+	"github.com/liasece/micserver/log"
 	"servercomm"
 	"sync"
 )
@@ -59,11 +59,11 @@ func (this *ServerConfigsManager) GetServerConfigByInfo(
 func (this *ServerConfigsManager) AddServerConfig(
 	newinfo servercomm.SServerInfo) {
 	if newinfo.Serverid == 0 {
-		logger.Error("[ServerConfigsManager.AddServerConfig] "+
+		log.Error("[ServerConfigsManager.AddServerConfig] "+
 			"尝试添加一个ID为0的服务器 拒绝 Info[%s]", newinfo.GetJson())
 		return
 	}
-	// logger.Debug("[ServerConfigsManager.AddServerConfig] "+
+	// log.Debug("[ServerConfigsManager.AddServerConfig] "+
 	// 	"添加服务器信息 Info[%s]", newinfo.GetJson())
 	if _, finded := this.serverconfigs.Load(newinfo.Serverid); !finded {
 		this.serverConfigSum++

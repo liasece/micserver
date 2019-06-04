@@ -11,17 +11,17 @@ package subnet
 
 import (
 	"base"
-	"base/def"
+	"github.com/liasece/micserver/def"
 	// "base/functime"
-	"base/logger"
-	"base/tcpconn"
-	"base/util"
 	"errors"
 	"fmt"
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/tcpconn"
+	"github.com/liasece/micserver/util"
 	// "io"
 	"net"
 	// "runtime"
-	"servercomm"
+	"github.com/liasece/micserver/servercomm"
 	// "sync"
 	"time"
 )
@@ -31,7 +31,7 @@ func (this *GBTCPClientManager) connectSuper(clienter IServerHandler) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			logger.Error("[connectSuper] "+
+			log.Error("[connectSuper] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -96,13 +96,13 @@ func (this *GBTCPClientManager) tryConnectServerThread(serverid uint32,
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			logger.Error("[tryConnectServerThread] "+
+			log.Error("[tryConnectServerThread] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
 	serverinfo := GetSubnetManager().ServerConfigs.GetServerConfigByID(serverid)
 	if serverinfo.Serverid != serverid {
-		logger.Error("[GBTCPClientManager.tryConnectServerThread] "+
+		log.Error("[GBTCPClientManager.tryConnectServerThread] "+
 			"tryConnectServerThread 错误的 ServerID[%d]", serverid)
 		return
 	}
@@ -117,7 +117,7 @@ func (this *GBTCPClientManager) tryConnectServerThread(serverid uint32,
 			serverinfo := GetSubnetManager().ServerConfigs.
 				GetServerConfigByID(serverid)
 			if serverinfo.Serverid != serverid {
-				logger.Debug("[GBTCPClientManager.tryConnectServerThread] "+
+				log.Debug("[GBTCPClientManager.tryConnectServerThread] "+
 					"本地已删除该服务器信息，取消连接 ServerID[%d] Info[%s]",
 					serverid, serverinfo.GetJson())
 				close(this.serverexitchan[serverid])
@@ -127,7 +127,7 @@ func (this *GBTCPClientManager) tryConnectServerThread(serverid uint32,
 			}
 			this.serverexitchanmutex.Unlock()
 			serverip := serverinfo.Serverip
-			logger.Debug("[GBTCPClientManager.tryConnectServerThread] "+
+			log.Debug("[GBTCPClientManager.tryConnectServerThread] "+
 				"正在连接 ServerID[%d] IPPort[%s:%d]",
 				serverid, serverip, serverinfo.Serverport)
 			_, err := this.ConnectServer(serverid,
@@ -155,7 +155,7 @@ func (this *GBTCPClientManager) TryConnectServer(serverid uint32,
 	} else if this.serverexitchan[serverid] == nil {
 		this.serverexitchan[serverid] = make(chan bool, 100)
 	} else {
-		logger.Debug("[GBTCPClientManager.TryConnectServer] "+
+		log.Debug("[GBTCPClientManager.TryConnectServer] "+
 			"ServerID[%d] 守护线程已启动，不再重复启动",
 			serverid)
 		return
@@ -173,24 +173,24 @@ func (this *GBTCPClientManager) ConnectServer(serverid uint32,
 	oldclient := GetGBTCPClientManager().GetTCPClient(uint64(serverid))
 	// 重复连接
 	if oldclient != nil {
-		logger.Error("[GBTCPClientManager.ConnectServer] "+
+		log.Error("[GBTCPClientManager.ConnectServer] "+
 			"ServerID[%d] 重复的连接", serverid)
 		return nil, errors.New("重复连接")
 	}
-	logger.Debug("[GBTCPClientManager.ConnectServer] "+
+	log.Debug("[GBTCPClientManager.ConnectServer] "+
 		"服务器连接创建地址开始 ServerID[%d] ServerIP[%s] Port[%d]",
 		serverid, serverip, serverport)
 	serverinfo := fmt.Sprintf("%s:%d", serverip, serverport)
 	tcpaddr, err := net.ResolveTCPAddr("tcp4", serverinfo)
 	if err != nil {
-		logger.Debug("[GBTCPClientManager.ConnectServer] "+
+		log.Debug("[GBTCPClientManager.ConnectServer] "+
 			"服务器连接创建地址失败 ServerIP[%s] Port[%d] Err[%s]",
 			serverip, serverport, err.Error())
 		return nil, err
 	}
 	Conn, err := net.DialTCP("tcp", nil, tcpaddr)
 	if err != nil {
-		logger.Debug("[GBTCPClientManager.ConnectServer] "+
+		log.Debug("[GBTCPClientManager.ConnectServer] "+
 			"服务器连接失败 ServerIP[%s] Port[%d] Err[%s]",
 			serverip, serverport, err.Error())
 		return nil, err
@@ -220,7 +220,7 @@ func (this *GBTCPClientManager) ConnectServer(serverid uint32,
 	// 发送登陆请求
 	client.SendCmd(sendmsg)
 
-	logger.Debug("[GBTCPClientManager.ConnectServer] "+
+	log.Debug("[GBTCPClientManager.ConnectServer] "+
 		"开始连接服务器 ServerID[%d] IP[%s] Port[%d]", serverid,
 		serverip, serverport)
 
@@ -237,7 +237,7 @@ func onClientDisconnected(client *tcpconn.ServerConn,
 		GetPropUint("superserverid")
 	if client.Tempid == uint64(superserverid) {
 		GetGBTCPClientManager().superexitchan <- true
-		logger.Warn("[onClientDisconnected] " +
+		log.Warn("[onClientDisconnected] " +
 			"super断开连接,准备重新连接super")
 	} else {
 		GetGBTCPClientManager().serverexitchanmutex.Lock()
@@ -246,10 +246,10 @@ func onClientDisconnected(client *tcpconn.ServerConn,
 			serverexitchan[uint32(client.Serverinfo.Serverid)] != nil {
 			GetGBTCPClientManager().
 				serverexitchan[uint32(client.Serverinfo.Serverid)] <- true
-			logger.Warn("[onClientDisconnected] " +
+			log.Warn("[onClientDisconnected] " +
 				"服务服务器断开连接,准备重新连接")
 		} else {
-			logger.Debug("[onClientDisconnected] "+
+			log.Debug("[onClientDisconnected] "+
 				"服务器重连管道已关闭,取消重连 ServerID[%d]",
 				client.Serverinfo.Serverid)
 		}
@@ -260,7 +260,7 @@ func connectRelyServers(serverinfos []servercomm.SServerInfo,
 	clienter IServerHandler) {
 	// 依赖服务器启动成功了
 	for _, serverinfo := range serverinfos {
-		logger.Debug("[GBTCPClientManager.connectRelyServers] "+
+		log.Debug("[GBTCPClientManager.connectRelyServers] "+
 			"收到依赖服务器信息成功"+
 			" ServerID[%d] IP[%s] Port[%d] HTTPPort[%d] Name[%s]",
 			serverinfo.Serverid, serverinfo.Serverip,
@@ -269,13 +269,13 @@ func connectRelyServers(serverinfos []servercomm.SServerInfo,
 		GetSubnetManager().ServerConfigs.AddServerConfig(serverinfo)
 		if GetGBTCPClientManager().
 			GetTCPClient(uint64(serverinfo.Serverid)) == nil {
-			logger.Debug("[GBTCPClientManager.connectRelyServers] "+
+			log.Debug("[GBTCPClientManager.connectRelyServers] "+
 				"尝试保持与 %d 的连接", serverinfo.Serverid)
 			// 连接依赖服务器
 			GetGBTCPClientManager().TryConnectServer(
 				serverinfo.Serverid, clienter)
 		} else {
-			logger.Debug("[GBTCPClientManager.connectRelyServers] "+
+			log.Debug("[GBTCPClientManager.connectRelyServers] "+
 				"ServerID[%d] 已连接，不再重复连接", serverinfo.Serverid)
 		}
 	}

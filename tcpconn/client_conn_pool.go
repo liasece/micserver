@@ -3,9 +3,9 @@ package tcpconn
 import (
 	//	"os"
 	// "base"
-	"base/logger"
-	"base/util"
-	"math/rand"
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/rand"
+	"github.com/liasece/micserver/util"
 	"net"
 	// "servercomm"
 	"errors"
@@ -147,7 +147,7 @@ func (this *ClientConnPool) Remove(tempid uint64) {
 func (this *ClientConnPool) AddAuto(connct *ClientConn) error {
 	tmpid, err := util.NewUniqueID(this.groupID)
 	if err != nil {
-		logger.Error("[ClientConnPool.AddAuto] 生成UUID出错 Error[%s]",
+		log.Error("[ClientConnPool.AddAuto] 生成UUID出错 Error[%s]",
 			err.Error())
 		return errors.New("unique id create error: " + err.Error())
 	}

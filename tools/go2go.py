@@ -1040,7 +1040,7 @@ return ReadMsg'+ i +'ByBytes(data, this)\n}\n\n'
         constmsgid += ''+i+'ID = '+str(times+36)+'\n'
         constmsgname += ''+i+'Name = "'+packname+'.'+i+'"\n'
         times += 1
-    ressend += 'default:\nlogger.Error("未知的消息名称："+msgname)\n}\n}\n'
+    ressend += 'default:\nlog.Error("未知的消息名称："+msgname)\n}\n}\n'
     ressend += 'default:\nreturn data,0\n}\n}\n'
     MsgIdToString += 'default:\nreturn ""\n}\n}\n'
     StringToMsgId += 'default:\nreturn 0\n}\n}\n'

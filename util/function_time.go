@@ -10,9 +10,9 @@
 package functime
 
 import (
-	"base"
-	"base/logger"
 	"fmt"
+	"github.com/liasece/micserver"
+	"github.com/liasece/micserver/log"
 	"runtime"
 	"sync"
 	"time"
@@ -32,7 +32,7 @@ func (this *FunctionTime) Stop() {
 	this.endtime = uint64(time.Now().UnixNano() / 1000000)
 	usetime := this.endtime - this.starttime
 	if usetime > 500 {
-		logger.Error("[消耗时间统计],消耗时间超时,%s,%d 毫秒", this.functionname, usetime)
+		log.Error("[消耗时间统计],消耗时间超时,%s,%d 毫秒", this.functionname, usetime)
 	}
 }
 func (this *FunctionTime) StopUseTime() uint64 {
@@ -75,9 +75,9 @@ func (this *GBOptimizeAnalysisM) StopCheck() {
 	if usetime > 100 {
 		this.mutex.Lock()
 		for _, funcinfo := range this.functionmaps {
-			logger.Debug("[分时消耗统计],消耗时间,%s,%s,%d 毫秒,调用:%d次", funcinfo.functionname, funcinfo.callname, funcinfo.usetime, funcinfo.callcount)
+			log.Debug("[分时消耗统计],消耗时间,%s,%s,%d 毫秒,调用:%d次", funcinfo.functionname, funcinfo.callname, funcinfo.usetime, funcinfo.callcount)
 		}
-		logger.Debug("[分时消耗统计],消耗时间总计:%d毫秒", usetime)
+		log.Debug("[分时消耗统计],消耗时间总计:%d毫秒", usetime)
 		this.functionmaps = make(map[string]gbFunctionInfo)
 		this.mutex.Unlock()
 	} else {
