@@ -1,4 +1,4 @@
-package servercomm
+package comm
 import (
 	"encoding/binary"
 	"math"
@@ -61,64 +61,70 @@ const (
 	SRedisConfigID = 89
 	SRequestServerInfoID = 90
 	SNotifySafelyQuitID = 91
+	SAIUserRegisterID = 92
+	STaskCmdForwardID = 93
+	SBeginMatchID = 94
 )
 const (
-	SServerInfoName = "servercomm.SServerInfo"
-	STimeTickCommandName = "servercomm.STimeTickCommand"
-	STestCommandName = "servercomm.STestCommand"
-	SLoginCommandName = "servercomm.SLoginCommand"
-	SLogoutCommandName = "servercomm.SLogoutCommand"
-	SSeverStartOKCommandName = "servercomm.SSeverStartOKCommand"
-	SLoginRetCommandName = "servercomm.SLoginRetCommand"
-	SStartRelyNotifyCommandName = "servercomm.SStartRelyNotifyCommand"
-	SStartMyNotifyCommandName = "servercomm.SStartMyNotifyCommand"
-	SNotifyAllInfoName = "servercomm.SNotifyAllInfo"
-	SUpdateGatewayUserAnalysisName = "servercomm.SUpdateGatewayUserAnalysis"
-	SAddNewUserToRedisCommandName = "servercomm.SAddNewUserToRedisCommand"
-	SGatewayForwardCommandName = "servercomm.SGatewayForwardCommand"
-	SGatewayForwardBroadcastCommandName = "servercomm.SGatewayForwardBroadcastCommand"
-	SGatewayForward2HttpCommandName = "servercomm.SGatewayForward2HttpCommand"
-	SBridgeForward2UserCommandName = "servercomm.SBridgeForward2UserCommand"
-	SBridgeBroadcast2UserCommandName = "servercomm.SBridgeBroadcast2UserCommand"
-	SBridgeForward2UserServerName = "servercomm.SBridgeForward2UserServer"
-	SBridgeBroadcast2GatewayServerName = "servercomm.SBridgeBroadcast2GatewayServer"
-	SMatchForward2UserServerName = "servercomm.SMatchForward2UserServer"
-	SRoomForward2UserServerName = "servercomm.SRoomForward2UserServer"
-	SGatewayBroadcast2UserCommandName = "servercomm.SGatewayBroadcast2UserCommand"
-	SUserServerSearchFriendName = "servercomm.SUserServerSearchFriend"
-	SUserServerGMCommandName = "servercomm.SUserServerGMCommand"
-	SRequestOtherUserName = "servercomm.SRequestOtherUser"
-	SResponseOtherUserName = "servercomm.SResponseOtherUser"
-	SBridgeDialGetUserInfoName = "servercomm.SBridgeDialGetUserInfo"
-	SGatewayWSLoginUserName = "servercomm.SGatewayWSLoginUser"
-	SGatewayWSOfflineUserName = "servercomm.SGatewayWSOfflineUser"
-	STemplateMessageKeyWordName = "servercomm.STemplateMessageKeyWord"
-	SQSTemplateMessageName = "servercomm.SQSTemplateMessage"
-	SGatewayChangeAccessTokenName = "servercomm.SGatewayChangeAccessToken"
-	SUserInfoName = "servercomm.SUserInfo"
-	SJoinMatchName = "servercomm.SJoinMatch"
-	STeamInfoName = "servercomm.STeamInfo"
-	SRoomInfoName = "servercomm.SRoomInfo"
-	SUserMatchInfoName = "servercomm.SUserMatchInfo"
-	SUserQuitMatchName = "servercomm.SUserQuitMatch"
-	SMatchDoneName = "servercomm.SMatchDone"
-	SUserQuitRoomName = "servercomm.SUserQuitRoom"
-	SUserRoomInfoName = "servercomm.SUserRoomInfo"
-	SNotifyUserOfflineName = "servercomm.SNotifyUserOffline"
-	SNotifyUserReonlineName = "servercomm.SNotifyUserReonline"
-	SRPCCheckUserTokenName = "servercomm.SRPCCheckUserToken"
-	SMatchBroadcast2UserServerCommandName = "servercomm.SMatchBroadcast2UserServerCommand"
-	NotifyGatewayInfoName = "servercomm.NotifyGatewayInfo"
-	SuperReqGatewayInfoName = "servercomm.SuperReqGatewayInfo"
-	NotifyGateUserNumsName = "servercomm.NotifyGateUserNums"
-	GateReqUserNumsName = "servercomm.GateReqUserNums"
-	NotifyMatchRoomNumsName = "servercomm.NotifyMatchRoomNums"
-	MatchReqRoomNumsName = "servercomm.MatchReqRoomNums"
-	SUserCheckEffectiveName = "servercomm.SUserCheckEffective"
-	SRedisConfigItemName = "servercomm.SRedisConfigItem"
-	SRedisConfigName = "servercomm.SRedisConfig"
-	SRequestServerInfoName = "servercomm.SRequestServerInfo"
-	SNotifySafelyQuitName = "servercomm.SNotifySafelyQuit"
+	SServerInfoName = "comm.SServerInfo"
+	STimeTickCommandName = "comm.STimeTickCommand"
+	STestCommandName = "comm.STestCommand"
+	SLoginCommandName = "comm.SLoginCommand"
+	SLogoutCommandName = "comm.SLogoutCommand"
+	SSeverStartOKCommandName = "comm.SSeverStartOKCommand"
+	SLoginRetCommandName = "comm.SLoginRetCommand"
+	SStartRelyNotifyCommandName = "comm.SStartRelyNotifyCommand"
+	SStartMyNotifyCommandName = "comm.SStartMyNotifyCommand"
+	SNotifyAllInfoName = "comm.SNotifyAllInfo"
+	SUpdateGatewayUserAnalysisName = "comm.SUpdateGatewayUserAnalysis"
+	SAddNewUserToRedisCommandName = "comm.SAddNewUserToRedisCommand"
+	SGatewayForwardCommandName = "comm.SGatewayForwardCommand"
+	SGatewayForwardBroadcastCommandName = "comm.SGatewayForwardBroadcastCommand"
+	SGatewayForward2HttpCommandName = "comm.SGatewayForward2HttpCommand"
+	SBridgeForward2UserCommandName = "comm.SBridgeForward2UserCommand"
+	SBridgeBroadcast2UserCommandName = "comm.SBridgeBroadcast2UserCommand"
+	SBridgeForward2UserServerName = "comm.SBridgeForward2UserServer"
+	SBridgeBroadcast2GatewayServerName = "comm.SBridgeBroadcast2GatewayServer"
+	SMatchForward2UserServerName = "comm.SMatchForward2UserServer"
+	SRoomForward2UserServerName = "comm.SRoomForward2UserServer"
+	SGatewayBroadcast2UserCommandName = "comm.SGatewayBroadcast2UserCommand"
+	SUserServerSearchFriendName = "comm.SUserServerSearchFriend"
+	SUserServerGMCommandName = "comm.SUserServerGMCommand"
+	SRequestOtherUserName = "comm.SRequestOtherUser"
+	SResponseOtherUserName = "comm.SResponseOtherUser"
+	SBridgeDialGetUserInfoName = "comm.SBridgeDialGetUserInfo"
+	SGatewayWSLoginUserName = "comm.SGatewayWSLoginUser"
+	SGatewayWSOfflineUserName = "comm.SGatewayWSOfflineUser"
+	STemplateMessageKeyWordName = "comm.STemplateMessageKeyWord"
+	SQSTemplateMessageName = "comm.SQSTemplateMessage"
+	SGatewayChangeAccessTokenName = "comm.SGatewayChangeAccessToken"
+	SUserInfoName = "comm.SUserInfo"
+	SJoinMatchName = "comm.SJoinMatch"
+	STeamInfoName = "comm.STeamInfo"
+	SRoomInfoName = "comm.SRoomInfo"
+	SUserMatchInfoName = "comm.SUserMatchInfo"
+	SUserQuitMatchName = "comm.SUserQuitMatch"
+	SMatchDoneName = "comm.SMatchDone"
+	SUserQuitRoomName = "comm.SUserQuitRoom"
+	SUserRoomInfoName = "comm.SUserRoomInfo"
+	SNotifyUserOfflineName = "comm.SNotifyUserOffline"
+	SNotifyUserReonlineName = "comm.SNotifyUserReonline"
+	SRPCCheckUserTokenName = "comm.SRPCCheckUserToken"
+	SMatchBroadcast2UserServerCommandName = "comm.SMatchBroadcast2UserServerCommand"
+	NotifyGatewayInfoName = "comm.NotifyGatewayInfo"
+	SuperReqGatewayInfoName = "comm.SuperReqGatewayInfo"
+	NotifyGateUserNumsName = "comm.NotifyGateUserNums"
+	GateReqUserNumsName = "comm.GateReqUserNums"
+	NotifyMatchRoomNumsName = "comm.NotifyMatchRoomNums"
+	MatchReqRoomNumsName = "comm.MatchReqRoomNums"
+	SUserCheckEffectiveName = "comm.SUserCheckEffective"
+	SRedisConfigItemName = "comm.SRedisConfigItem"
+	SRedisConfigName = "comm.SRedisConfig"
+	SRequestServerInfoName = "comm.SRequestServerInfo"
+	SNotifySafelyQuitName = "comm.SNotifySafelyQuit"
+	SAIUserRegisterName = "comm.SAIUserRegister"
+	STaskCmdForwardName = "comm.STaskCmdForward"
+	SBeginMatchName = "comm.SBeginMatch"
 )
 func (this *SServerInfo) WriteBinary(data []byte) int {
 	return WriteMsgSServerInfoByObj(data,this)
@@ -288,6 +294,15 @@ func (this *SRequestServerInfo) WriteBinary(data []byte) int {
 func (this *SNotifySafelyQuit) WriteBinary(data []byte) int {
 	return WriteMsgSNotifySafelyQuitByObj(data,this)
 }
+func (this *SAIUserRegister) WriteBinary(data []byte) int {
+	return WriteMsgSAIUserRegisterByObj(data,this)
+}
+func (this *STaskCmdForward) WriteBinary(data []byte) int {
+	return WriteMsgSTaskCmdForwardByObj(data,this)
+}
+func (this *SBeginMatch) WriteBinary(data []byte) int {
+	return WriteMsgSBeginMatchByObj(data,this)
+}
 func (this *SServerInfo) ReadBinary(data []byte) int {
 	return ReadMsgSServerInfoByBytes(data, this)
 }
@@ -456,6 +471,15 @@ func (this *SRequestServerInfo) ReadBinary(data []byte) int {
 func (this *SNotifySafelyQuit) ReadBinary(data []byte) int {
 	return ReadMsgSNotifySafelyQuitByBytes(data, this)
 }
+func (this *SAIUserRegister) ReadBinary(data []byte) int {
+	return ReadMsgSAIUserRegisterByBytes(data, this)
+}
+func (this *STaskCmdForward) ReadBinary(data []byte) int {
+	return ReadMsgSTaskCmdForwardByBytes(data, this)
+}
+func (this *SBeginMatch) ReadBinary(data []byte) int {
+	return ReadMsgSBeginMatchByBytes(data, this)
+}
 func MsgIdToString(id uint16) string {
 	switch(id ) {
 		case SServerInfoID: 
@@ -570,6 +594,12 @@ func MsgIdToString(id uint16) string {
 		return SRequestServerInfoName
 		case SNotifySafelyQuitID: 
 		return SNotifySafelyQuitName
+		case SAIUserRegisterID: 
+		return SAIUserRegisterName
+		case STaskCmdForwardID: 
+		return STaskCmdForwardName
+		case SBeginMatchID: 
+		return SBeginMatchName
 		default:
 		return ""
 	}
@@ -688,6 +718,12 @@ func StringToMsgId(msgname string) uint16 {
 		return SRequestServerInfoID
 		case SNotifySafelyQuitName: 
 		return SNotifySafelyQuitID
+		case SAIUserRegisterName: 
+		return SAIUserRegisterID
+		case STaskCmdForwardName: 
+		return STaskCmdForwardID
+		case SBeginMatchName: 
+		return SBeginMatchID
 		default:
 		return 0
 	}
@@ -805,6 +841,12 @@ func MsgIdToType(id uint16) rune {
 		case SRequestServerInfoID: 
 		return rune('S')
 		case SNotifySafelyQuitID: 
+		return rune('S')
+		case SAIUserRegisterID: 
+		return rune('S')
+		case STaskCmdForwardID: 
+		return rune('S')
+		case SBeginMatchID: 
 		return rune('S')
 		default:
 		return rune(0)
@@ -978,6 +1020,15 @@ func (this *SRequestServerInfo) GetMsgId() uint16 {
 func (this *SNotifySafelyQuit) GetMsgId() uint16 {
 	return SNotifySafelyQuitID
 }
+func (this *SAIUserRegister) GetMsgId() uint16 {
+	return SAIUserRegisterID
+}
+func (this *STaskCmdForward) GetMsgId() uint16 {
+	return STaskCmdForwardID
+}
+func (this *SBeginMatch) GetMsgId() uint16 {
+	return SBeginMatchID
+}
 func (this *SServerInfo) GetMsgName() string {
 	return SServerInfoName
 }
@@ -1146,6 +1197,15 @@ func (this *SRequestServerInfo) GetMsgName() string {
 func (this *SNotifySafelyQuit) GetMsgName() string {
 	return SNotifySafelyQuitName
 }
+func (this *SAIUserRegister) GetMsgName() string {
+	return SAIUserRegisterName
+}
+func (this *STaskCmdForward) GetMsgName() string {
+	return STaskCmdForwardName
+}
+func (this *SBeginMatch) GetMsgName() string {
+	return SBeginMatchName
+}
 func (this *SServerInfo) GetSize() int {
 	return GetSizeSServerInfo(this)
 }
@@ -1313,6 +1373,15 @@ func (this *SRequestServerInfo) GetSize() int {
 }
 func (this *SNotifySafelyQuit) GetSize() int {
 	return GetSizeSNotifySafelyQuit(this)
+}
+func (this *SAIUserRegister) GetSize() int {
+	return GetSizeSAIUserRegister(this)
+}
+func (this *STaskCmdForward) GetSize() int {
+	return GetSizeSTaskCmdForward(this)
+}
+func (this *SBeginMatch) GetSize() int {
+	return GetSizeSBeginMatch(this)
 }
 func (this *SServerInfo) GetJson() string {
 	json,_ := json.Marshal(this)
@@ -1535,6 +1604,18 @@ func (this *SRequestServerInfo) GetJson() string {
 	return string(json)
 }
 func (this *SNotifySafelyQuit) GetJson() string {
+	json,_ := json.Marshal(this)
+	return string(json)
+}
+func (this *SAIUserRegister) GetJson() string {
+	json,_ := json.Marshal(this)
+	return string(json)
+}
+func (this *STaskCmdForward) GetJson() string {
+	json,_ := json.Marshal(this)
+	return string(json)
+}
+func (this *SBeginMatch) GetJson() string {
 	json,_ := json.Marshal(this)
 	return string(json)
 }
@@ -4242,6 +4323,30 @@ func ReadMsgSUserInfoByBytes(indata []byte, obj *SUserInfo) int {
 	}
 	obj.IsScript = uint8(data[offset]) != 0
 	offset += 1
+	if offset + 8 > data__len{
+		return endpos
+	}
+	obj.GMLevel = binary.BigEndian.Uint64(data[offset:offset+8])
+	offset+=8
+	ExtraData_slent := uint16(0)
+	if offset + 2 > data__len{
+		return endpos
+	}
+	ExtraData_slen := 0
+	ExtraData_slent = binary.BigEndian.Uint16(data[offset:offset+2])
+	offset+=2
+	ExtraData_slen = int(ExtraData_slent)
+	obj.ExtraData = make([]byte,ExtraData_slen)
+	i9i := 0
+	for ExtraData_slen > i9i {
+		if offset + 1 > data__len{
+			return endpos
+		}
+		tmpExtraDatavalue := readBinaryUint8(data[offset:offset+1])
+		obj.ExtraData[i9i] = tmpExtraDatavalue
+		offset += 1
+		i9i++
+	}
 	return endpos
 }
 func WriteMsgSUserInfoByObj(data []byte, obj *SUserInfo) int {
@@ -4267,6 +4372,17 @@ func WriteMsgSUserInfoByObj(data []byte, obj *SUserInfo) int {
 	offset+=4
 	data[offset] = uint8(bool2int(obj.IsScript))
 	offset += 1
+	binary.BigEndian.PutUint64(data[offset:offset+8], obj.GMLevel)
+	offset+=8
+	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(len(obj.ExtraData)))
+	offset += 2
+	i9i := 0
+	ExtraData_slen := len(obj.ExtraData)
+	for ExtraData_slen > i9i {
+		writeBinaryUint8(data[offset:offset+1],obj.ExtraData[i9i])
+		offset += 1
+		i9i++
+	}
 	return offset
 }
 func GetSizeSUserInfo(obj *SUserInfo) int {
@@ -4274,7 +4390,7 @@ func GetSizeSUserInfo(obj *SUserInfo) int {
 		return 2
 	}
 	return 2 + 8 + 2 + len(obj.Openid) + 4 + 4 + 
-	8 + 4 + 1
+	8 + 4 + 1 + 8 + 2 + len(obj.ExtraData) * 1
 }
 func ReadMsgSJoinMatchByBytes(indata []byte, obj *SJoinMatch) int {
 	offset := 0
@@ -5549,4 +5665,173 @@ func GetSizeSNotifySafelyQuit(obj *SNotifySafelyQuit) int {
 		return 2
 	}
 	return 2 + obj.TargetServerInfo.GetSize()
+}
+func ReadMsgSAIUserRegisterByBytes(indata []byte, obj *SAIUserRegister) int {
+	offset := 0
+	if len(indata) < 2 {
+		return 0
+	}
+	objsize := int(binary.BigEndian.Uint16(indata[offset:offset+2]))
+	offset += 2
+	if objsize == 0 {
+		return 2
+	}
+	if offset + objsize > len(indata ) {
+		return 2
+	}
+	endpos := offset+objsize
+	data := indata[offset:offset+objsize]
+	offset = 0
+	data__len := len(data)
+	if offset + obj.Userinfo.GetSize() > data__len{
+		return endpos
+	}
+	offset += ReadMsgSUserInfoByBytes(data[offset:], &obj.Userinfo)
+	return endpos
+}
+func WriteMsgSAIUserRegisterByObj(data []byte, obj *SAIUserRegister) int {
+	if obj == nil {
+		binary.BigEndian.PutUint16(data[0:2],0)
+		return 2
+	}
+	objsize := obj.GetSize() - 2
+	offset := 0
+	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(objsize))
+	offset += 2
+	offset += WriteMsgSUserInfoByObj(data[offset:], &obj.Userinfo)
+	return offset
+}
+func GetSizeSAIUserRegister(obj *SAIUserRegister) int {
+	if obj == nil {
+		return 2
+	}
+	return 2 + obj.Userinfo.GetSize()
+}
+func ReadMsgSTaskCmdForwardByBytes(indata []byte, obj *STaskCmdForward) int {
+	offset := 0
+	if len(indata) < 2 {
+		return 0
+	}
+	objsize := int(binary.BigEndian.Uint16(indata[offset:offset+2]))
+	offset += 2
+	if objsize == 0 {
+		return 2
+	}
+	if offset + objsize > len(indata ) {
+		return 2
+	}
+	endpos := offset+objsize
+	data := indata[offset:offset+objsize]
+	offset = 0
+	data__len := len(data)
+	if offset + 2 > data__len{
+		return endpos
+	}
+	obj.CmdID = binary.BigEndian.Uint16(data[offset:offset+2])
+	offset+=2
+	if offset + 8 > data__len{
+		return endpos
+	}
+	obj.RoomID = binary.BigEndian.Uint64(data[offset:offset+8])
+	offset+=8
+	if offset + 8 > data__len{
+		return endpos
+	}
+	obj.ProxyUUID = binary.BigEndian.Uint64(data[offset:offset+8])
+	offset+=8
+	ProtoData_slent := uint16(0)
+	if offset + 2 > data__len{
+		return endpos
+	}
+	ProtoData_slen := 0
+	ProtoData_slent = binary.BigEndian.Uint16(data[offset:offset+2])
+	offset+=2
+	ProtoData_slen = int(ProtoData_slent)
+	obj.ProtoData = make([]byte,ProtoData_slen)
+	i4i := 0
+	for ProtoData_slen > i4i {
+		if offset + 1 > data__len{
+			return endpos
+		}
+		tmpProtoDatavalue := readBinaryUint8(data[offset:offset+1])
+		obj.ProtoData[i4i] = tmpProtoDatavalue
+		offset += 1
+		i4i++
+	}
+	return endpos
+}
+func WriteMsgSTaskCmdForwardByObj(data []byte, obj *STaskCmdForward) int {
+	if obj == nil {
+		binary.BigEndian.PutUint16(data[0:2],0)
+		return 2
+	}
+	objsize := obj.GetSize() - 2
+	offset := 0
+	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(objsize))
+	offset += 2
+	binary.BigEndian.PutUint16(data[offset:offset+2], obj.CmdID)
+	offset+=2
+	binary.BigEndian.PutUint64(data[offset:offset+8], obj.RoomID)
+	offset+=8
+	binary.BigEndian.PutUint64(data[offset:offset+8], obj.ProxyUUID)
+	offset+=8
+	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(len(obj.ProtoData)))
+	offset += 2
+	i4i := 0
+	ProtoData_slen := len(obj.ProtoData)
+	for ProtoData_slen > i4i {
+		writeBinaryUint8(data[offset:offset+1],obj.ProtoData[i4i])
+		offset += 1
+		i4i++
+	}
+	return offset
+}
+func GetSizeSTaskCmdForward(obj *STaskCmdForward) int {
+	if obj == nil {
+		return 2
+	}
+	return 2 + 2 + 8 + 8 + 2 + len(obj.ProtoData) * 1
+}
+func ReadMsgSBeginMatchByBytes(indata []byte, obj *SBeginMatch) int {
+	offset := 0
+	if len(indata) < 2 {
+		return 0
+	}
+	objsize := int(binary.BigEndian.Uint16(indata[offset:offset+2]))
+	offset += 2
+	if objsize == 0 {
+		return 2
+	}
+	if offset + objsize > len(indata ) {
+		return 2
+	}
+	endpos := offset+objsize
+	data := indata[offset:offset+objsize]
+	offset = 0
+	data__len := len(data)
+	if offset + 8 > data__len{
+		return endpos
+	}
+	obj.Matchindex = binary.BigEndian.Uint64(data[offset:offset+8])
+	offset+=8
+	return endpos
+}
+func WriteMsgSBeginMatchByObj(data []byte, obj *SBeginMatch) int {
+	if obj == nil {
+		binary.BigEndian.PutUint16(data[0:2],0)
+		return 2
+	}
+	objsize := obj.GetSize() - 2
+	offset := 0
+	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(objsize))
+	offset += 2
+	binary.BigEndian.PutUint64(data[offset:offset+8], obj.Matchindex)
+	offset+=8
+	return offset
+}
+func GetSizeSBeginMatch(obj *SBeginMatch) int {
+	if obj == nil {
+		return 2
+	}
+	return 2 + 8
 }
