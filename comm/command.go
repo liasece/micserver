@@ -30,6 +30,7 @@ type STestCommand struct {
 	Testno     uint32
 	Testttring string // IP
 }
+
 type SLoginCommand struct {
 	Serverid   uint32
 	Servertype uint32 // 类型
@@ -282,118 +283,6 @@ type SGatewayChangeAccessToken struct {
 	Update_accesstime_QQ uint32 // 需要更新QQ access_token 的时间
 }
 
-// 用于在 UserServer MatchServer RoomServer之间互通的玩家信息
-type SUserInfo struct {
-	UUID            uint64
-	Openid          string
-	UserServerid    uint32
-	GatewayServerid uint32 // 玩家GatewayServer的ID
-	ClientConnID    uint64 // 玩家连接ID
-
-	// 玩家段位
-	RankID uint32
-
-	// 是否是脚本玩家
-	IsScript bool
-
-	// 玩家的GM指令权限等级
-	GMLevel uint64
-
-	// 外部携带数据
-	ExtraData []byte
-}
-
-// UserServer -> MatchServer 玩家请求加入匹配队列
-type SJoinMatch struct {
-	// 指定房间ID，如果为0，则由系统自动匹配
-	RoomID uint64
-	// 房间类型
-	RoomType uint32
-	// 子类型
-	SubType uint32
-	// 是否仅加入房间
-	// 	true: 系统只会加入房间，而不会为其创建房间
-	// 	false: 系统检查是否存在合适的房间，如果有，则加入；否则，为其创建一个房间
-	OnlyJoin bool
-	// 是否仅创建房间
-	// 	true: 系统只会创建房间，不进行其他任何操作
-	// 	false: 系统检查是否存在合适的房间，如果有，则加入；否则，为其创建一个房间
-	OnlyCreate bool
-	// 用户基础信息
-	Userinfo SUserInfo
-}
-
-// MatchServer -> RoomServer 服务器间交互的队伍信息
-type STeamInfo struct {
-	Members []SUserInfo
-}
-
-// MatchServer -> RoomServer 服务器间交互的房间信息
-type SRoomInfo struct {
-	Teams []STeamInfo
-}
-
-// MatchServer -> UserServer 房间的信息
-type SUserMatchInfo struct {
-	Sec        bool   // 是否成功加入匹配队列
-	Done       bool   // 是否已经匹配完成
-	Total      uint32 // 当前匹配队列的总人数
-	Now        uint32 // 当前匹配队列的人数
-	Matchindex uint64 // 匹配队列索引，即RoomID
-}
-
-// UserServer -> MatchServer 用户请求退出匹配队列
-// MatchServer -> UserServer 用户退出了队列
-type SUserQuitMatch struct {
-	RoomID     uint64 // 目标房间ID
-	Sec        bool   // 操作是否成功
-	UUID       uint64
-	Type       uint32 // 退出队列的原因： 1主动退出 2用户下线 3匹配完成已销毁匹配队列
-	Matchindex uint64 // 匹配队列索引
-}
-
-// UserServer -> MatchServer 强制匹配完成
-type SMatchDone struct {
-	Matchindex uint64 // 匹配队列索引
-}
-
-// UserServer -> RoomServer 用户请求退出对局房间
-// RoomServer -> UserServer 用户退出了对局房间
-type SUserQuitRoom struct {
-	RoomID uint64 // 目标房间ID
-	Sec    bool   // 操作是否成功
-	UUID   uint64
-	Type   uint32 // 退出队列的原因： 1主动退出 2用户下线 3游戏已完成销毁房间
-	//  	4：用户检查不通过
-	Roomindex uint64 // 匹配队列索引
-}
-
-// RoomServer -> UserServer 房间的信息
-type SUserRoomInfo struct {
-	Sec       bool   // 是否成功加入匹配队列
-	Roomindex uint64 // 匹配队列索引
-}
-
-// UserServer -> MatchServer/RoomServer 通知匹配以及房间服务器，玩家下线了
-type SNotifyUserOffline struct {
-	UUID       uint64
-	Matchindex uint64
-	Roomindex  uint64
-}
-
-// UserServer -> MatchServer/RoomServer 通知匹配以及房间服务器，玩家重新上线了
-type SNotifyUserReonline struct {
-	UUID     uint64
-	UserInfo SUserInfo
-}
-
-// rpc 调用UserServer检查用户的token是否有效
-type SRPCCheckUserToken struct {
-	Openid  string `json:"openid"`
-	Token   string `json:"token"`
-	Retcode int32  `json:"retcode"` // 1 表示成功
-}
-
 //  广播消息给所有的userserver  userserver->matchserver->userserver
 type SMatchBroadcast2UserServerCommand struct {
 	Fromuuid   uint64
@@ -401,43 +290,6 @@ type SMatchBroadcast2UserServerCommand struct {
 	Cmdid      uint16
 	Cmdlen     uint16
 	Cmddatas   []byte
-}
-
-// 网关通知super自己的信息
-type NotifyGatewayInfo struct {
-	Serverid   uint32
-	Serverip   string
-	Serverport uint32
-	State      uint16
-	TaskSize   uint32
-}
-
-type SuperReqGatewayInfo struct {
-}
-
-// UserServer 通知 GatewayServer 用户数量
-type NotifyGateUserNums struct {
-	Usernum uint32
-}
-
-// GatewayServer请求UserServer用户数量
-type GateReqUserNums struct {
-}
-
-// RoomServer 通知 MatchServer 房间数量
-type NotifyMatchRoomNums struct {
-	Roomnum uint32
-}
-
-// MatchServer 请求 RoomServer 房间数量
-type MatchReqRoomNums struct {
-}
-
-// UserServer -> RoomServer 检查用户是否还存在
-// 	如果不存在了，则 RoomServer 会发送 SUserQuitRoom
-type SUserCheckEffective struct {
-	UUID     uint64
-	UserInfo SUserInfo
 }
 
 // Redis配置 单项
@@ -466,22 +318,4 @@ type SNotifySafelyQuit struct {
 // 可以将一些服务器不便于计算的服务提交到AI玩家进行计算
 type SAIUserRegister struct {
 	Userinfo SUserInfo
-}
-
-// S->C: 请求计算任务
-// C->S: 回应计算任务
-type STaskCmdForward struct {
-	// 消息ID
-	CmdID uint16
-	// 房间ID
-	RoomID uint64
-	// 代理UUID
-	ProxyUUID uint64
-	// 消息Protobuf数据
-	ProtoData []byte
-}
-
-// UserServer -> MatchServer 开始匹配其他玩家
-type SBeginMatch struct {
-	Matchindex uint64 // 匹配队列索引
 }
