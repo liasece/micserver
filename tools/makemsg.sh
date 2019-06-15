@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 自定义二进制消息结构生成
-python3 go2ts.py -i ../comm/command.go -o go 
+python3 go2go.py -i ../comm/command.go -o go 
 
 if [ "$1" != "svn" ]
 then
