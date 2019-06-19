@@ -2,7 +2,7 @@ package log
 
 import (
 	"fmt"
-	"log"
+	syslog "log"
 	"reflect"
 	//	"path"
 	//	"runtime"
@@ -134,7 +134,7 @@ func (l *log) Close() {
 	for _, w := range l.writers {
 		if f, ok := w.(Flusher); ok {
 			if err := f.Flush(); err != nil {
-				log.Println(err)
+				syslog.Println(err)
 			}
 		}
 	}
@@ -195,7 +195,7 @@ func boostrapLogWriter(log *log) {
 
 	for _, w := range log.writers {
 		if err := w.Write(r); err != nil {
-			log.Println(err)
+			syslog.Println(err)
 		}
 	}
 
@@ -213,7 +213,7 @@ func boostrapLogWriter(log *log) {
 
 			for _, w := range log.writers {
 				if err := w.Write(r); err != nil {
-					log.Println(err)
+					syslog.Println(err)
 				}
 			}
 
@@ -223,7 +223,7 @@ func boostrapLogWriter(log *log) {
 			for _, w := range log.writers {
 				if f, ok := w.(Flusher); ok {
 					if err := f.Flush(); err != nil {
-						log.Println(err)
+						syslog.Println(err)
 					}
 				}
 			}
@@ -234,7 +234,7 @@ func boostrapLogWriter(log *log) {
 			for _, w := range log.writers {
 				if r, ok := w.(Rotater); ok {
 					if err := r.Rotate(); err != nil {
-						log.Println(err)
+						syslog.Println(err)
 					}
 				}
 			}

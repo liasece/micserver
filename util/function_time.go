@@ -11,7 +11,6 @@ package functime
 
 import (
 	"fmt"
-	"github.com/liasece/micserver"
 	"github.com/liasece/micserver/log"
 	"runtime"
 	"sync"
