@@ -3,6 +3,7 @@ package micserver
 import (
 	"github.com/liasece/micserver/module"
 	"math/rand"
+	"time"
 )
 
 var Version string = "0.0.1"
