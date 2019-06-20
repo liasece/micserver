@@ -1073,11 +1073,12 @@ def getgocode(packname,gomsgs,proto):
     # 返回最终结果
     return rescontent,packname
     
-def procfile(filename,gofile,proto):
+def procfile(filename,gofile,proto,showdetail):
     global backstr
     backstr = []
     
-    print("begin... ["+filename+"]")
+    if showdetail:
+        print("gen: "+filename,end='')
     content = LoadFile(filename)
     # print(classs)
     # 保存代碼中的字符串
@@ -1123,7 +1124,8 @@ import (\n'
         totalcontent = fmtcodeout(totalcontent)
         # 保存go代码
         save_to_file(gofile,totalcontent)
-        print(gofile+" Done")
+        if showdetail:
+            print(" Done")
 
 def main():
     pwd = os.getcwd()
@@ -1131,12 +1133,13 @@ def main():
     gofile = ''
     outtype = []
     proto = ''
+    showdetail = False
 
     # 尝试解析命令行参数
     try:
-        opts, args = getopt.getopt(sys.argv[1:],"hi:o:t:p:",["help","infile=","outtype=","tsarg=","proto="])
-    except getopt.GetoptError:
-        print('go2ts.py -i <inputfile> -o <outtype> -t <tsarg> -p <proto>')
+        opts, args = getopt.getopt(sys.argv[1:],"hi:o:t:p:d",["help","infile=","outtype=","tsarg=","proto=","detail"])
+    except getopt.GetoptError as e:
+        print('\033[1;31mError:'+str(e)+'\nExample: go2ts.py -i <inputfile> -o <outtype> -t <tsarg> -p <proto> -d <detail>\033[0m')
         sys.exit(2)
     for opt, arg in opts:
         if opt in ("-h", "--help"):
@@ -1145,6 +1148,7 @@ def main():
             print('  -i, --infile     Message srtuct definition, must be golang source file.')
             print('  -o, --outtype    Output code type, e.g., go, ts.')
             print('  -p, --proto      Create Marshal/Unmarshal use other proto.')
+            print('  -d, --detail     Show detail infomation.')
             sys.exit()
         elif opt in ("-i", "--infile"):
             index = arg.rfind('.')
@@ -1153,12 +1157,14 @@ def main():
             outtype.append(arg)
         elif opt in ("-p", "--proto"):
             proto = arg
+        elif opt in ("-d", "--detail"):
+            showdetail = True
 
     if 'go' in outtype:
         gofile = os.path.join(pwd,goname + "_binary.go")
     sourcegofile = os.path.join(pwd,goname+".go")
 
-    procfile(sourcegofile,gofile,proto)
+    procfile(sourcegofile,gofile,proto,showdetail)
 
 if __name__ == '__main__':
     main()
