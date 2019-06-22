@@ -7,7 +7,7 @@
  *
  */
 
-package base
+package util
 
 import (
 	"errors"

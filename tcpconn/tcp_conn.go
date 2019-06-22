@@ -10,11 +10,11 @@
 package tcpconn
 
 import (
-	"github.com/liasece/micserver"
 	"github.com/liasece/micserver/util"
 	// "github.com/liasece/micserver/functime"
 	"bytes"
 	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/msg"
 	// "encoding/hex"
 	// "fmt"
 	"net"
@@ -29,7 +29,7 @@ const MsgMaxSize = 64 * 1024
 const MaxMsgPackSum = 5000
 
 type TCPConn struct {
-	sendmsgchan     chan *base.MessageBinary
+	sendmsgchan     chan *msg.MessageBinary
 	sendmsgchandone chan struct{}
 	stopchan        chan struct{}
 
@@ -53,7 +53,7 @@ type TCPConn struct {
 func (this *TCPConn) Init(conn net.Conn,
 	msgBufferSize uint32, sendBufferSize int,
 	maxWaitSendMsgBufferSize int) {
-	this.sendmsgchan = make(chan *base.MessageBinary, msgBufferSize)
+	this.sendmsgchan = make(chan *msg.MessageBinary, msgBufferSize)
 	this.sendmsgchandone = make(chan struct{})
 	this.stopchan = make(chan struct{})
 	this.Conn = conn
@@ -98,13 +98,13 @@ func (this *TCPConn) closeSocket() error {
 }
 
 // 异步发送一条消息，不带发送完成回调
-func (this *TCPConn) SendCmd(v base.MsgStruct,
-	encryption base.TEncryptionType) error {
+func (this *TCPConn) SendCmd(v msg.MsgStruct,
+	encryption msg.TEncryptionType) error {
 	if this.connDead {
 		log.Warn("[TCPConn.SendCmd] 连接已失效，取消发送")
 		return ErrCloseed
 	}
-	msg := base.MakeMessageByJson(v)
+	msg := msg.MakeMessageByJson(v)
 	if encryption != 0 && msg != nil {
 		msg.Encryption(encryption)
 	}
@@ -112,14 +112,14 @@ func (this *TCPConn) SendCmd(v base.MsgStruct,
 }
 
 // 异步发送一条消息，带发送完成回调
-func (this *TCPConn) SendCmdWithCallback(v base.MsgStruct,
+func (this *TCPConn) SendCmdWithCallback(v msg.MsgStruct,
 	callback func(interface{}), cbarg interface{},
-	encryption base.TEncryptionType) error {
+	encryption msg.TEncryptionType) error {
 	if this.connDead {
 		log.Warn("[TCPConn.SendCmdWithCallback] 连接已失效，取消发送")
 		return ErrCloseed
 	}
-	msg := base.MakeMessageByJson(v)
+	msg := msg.MakeMessageByJson(v)
 
 	msg.OnSendDone = callback
 	msg.OnSendDoneArg = cbarg
@@ -132,12 +132,12 @@ func (this *TCPConn) SendCmdWithCallback(v base.MsgStruct,
 
 // 发送 Bytes
 func (this *TCPConn) SendBytes(
-	cmdid uint16, protodata []byte, encryption base.TEncryptionType) error {
+	cmdid uint16, protodata []byte, encryption msg.TEncryptionType) error {
 	if this.connDead {
 		log.Warn("[TCPConn.SendBytes] 连接已失效，取消发送")
 		return ErrCloseed
 	}
-	msgbinary := base.MakeMessageByBytes(cmdid, protodata)
+	msgbinary := msg.MakeMessageByBytes(cmdid, protodata)
 	if encryption != 0 && msgbinary != nil {
 		msgbinary.Encryption(encryption)
 	}
@@ -146,7 +146,7 @@ func (this *TCPConn) SendBytes(
 
 // 发送 MsgBinary
 func (this *TCPConn) SendMessageBinary(
-	msgbinary *base.MessageBinary) error {
+	msgbinary *msg.MessageBinary) error {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
@@ -258,10 +258,10 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 
 // 发送拼接消息
 // 	tmsg 首消息，如果没有需要加入的第一个消息，直接给Nil即可
-func (this *TCPConn) SendMsgList(tmsg *base.MessageBinary) {
+func (this *TCPConn) SendMsgList(tmsg *msg.MessageBinary) {
 	// 开始拼包
 	msglist, buflist, nowpkglen, maxlow := this.joinMsgByFunc(
-		func(nowpkgsum uint32, nowpkglen int) *base.MessageBinary {
+		func(nowpkgsum uint32, nowpkglen int) *msg.MessageBinary {
 			if nowpkgsum == 0 && tmsg != nil {
 				// 如果这是第一个包，且包含首包
 				return tmsg
@@ -347,12 +347,12 @@ func (this *TCPConn) SendMsgList(tmsg *base.MessageBinary) {
 //  			二进制列表
 //  	总长度
 //  	最大延迟
-func (this *TCPConn) joinMsgByFunc(getMsg func(uint32, int) *base.MessageBinary) (
-	[]*base.MessageBinary, [][]byte, int, uint32) {
+func (this *TCPConn) joinMsgByFunc(getMsg func(uint32, int) *msg.MessageBinary) (
+	[]*msg.MessageBinary, [][]byte, int, uint32) {
 	// 初始化变量
 	var (
 		buflist   = make([][]byte, 0)
-		msglist   = make([]*base.MessageBinary, 0)
+		msglist   = make([]*msg.MessageBinary, 0)
 		nowpkgsum = uint32(0)
 		nowpkglen = int(0)
 		curtime   = uint32(time.Now().Unix())

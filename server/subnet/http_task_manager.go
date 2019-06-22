@@ -5,8 +5,8 @@ import (
 	"sync"
 	//	"compress/gzip"
 	"encoding/base64"
-	"github.com/liasece/micserver/encode"
 	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/util"
 	"io"
 	"io/ioutil"
 	"math"
@@ -44,7 +44,7 @@ func WriterReturnHttpStr(writer http.ResponseWriter, str string) {
 	log.Debug("%s", str)
 
 	if writer.Header().Get("Use-Encrypt") == "Yes" {
-		aesstr, _ := encode.AesEncrypt([]byte(str))
+		aesstr, _ := util.AesEncrypt([]byte(str))
 		encodeString := base64.StdEncoding.EncodeToString(aesstr)
 		n, err := io.WriteString(writer, encodeString)
 		if err != nil {
@@ -111,7 +111,7 @@ func HttpDecode(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 	decodeBytes, _ := base64.StdEncoding.DecodeString(buf.String())
-	decode, _ := encode.AesDecrypt([]byte(decodeBytes))
+	decode, _ := util.AesDecrypt([]byte(decodeBytes))
 	if decode == nil {
 		return
 	}
@@ -225,8 +225,7 @@ func (this *GBHttpTaskManger) GetHttpTask(tempid uint64) *GBHttpTask {
 
 func HttpRpcStart(serverinfo string, serviceMethod string,
 	args interface{}, reply interface{}) error {
-	return GetGBRPCManager().TCPRPCStart(serverinfo, serviceMethod,
-		args, reply)
+	return nil
 
 	// client, err := rpc.DialHTTP("tcp", serverinfo)
 	// if err != nil {

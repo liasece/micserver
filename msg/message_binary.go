@@ -1,21 +1,12 @@
-package base
+package msg
 
 import (
-	"github.com/liasece/micserver/log"
-	// "bytes"
 	"encoding/binary"
-	"github.com/liasece/micserver/util"
-	// "encoding/json"
-	// "fmt"
-	// "github.com/golang/protobuf/proto"
-	// "log"
-	// "protos"
-	// "reflect"
-	// "base/functime"
-	// "sync"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/util"
 	"time"
 )
 
@@ -368,10 +359,10 @@ type MessageBinaryReader struct {
 	mask TEncryptionType
 	zip  byte
 
-	netbuffer *IOBuffer
+	netbuffer *util.IOBuffer
 }
 
-func NewMessageBinaryReader(netbuffer *IOBuffer) *MessageBinaryReader {
+func NewMessageBinaryReader(netbuffer *util.IOBuffer) *MessageBinaryReader {
 	return &MessageBinaryReader{false, 0, 0x00, 0x00, netbuffer}
 }
 

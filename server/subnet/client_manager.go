@@ -10,86 +10,15 @@
 package subnet
 
 import (
-	"base"
-	"github.com/liasece/micserver/def"
-	// "base/functime"
 	"errors"
 	"fmt"
+	"github.com/liasece/micserver/comm"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
-	// "io"
 	"net"
-	// "runtime"
-	"github.com/liasece/micserver/servercomm"
-	// "sync"
 	"time"
 )
-
-// 连接到Super服务器
-func (this *GBTCPClientManager) connectSuper(clienter IServerHandler) {
-	defer func() {
-		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			log.Error("[connectSuper] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
-		}
-	}()
-
-	// 获取 SuperServer 信息
-	superserverip := base.GetGBServerConfigM().
-		GetProp("superserverip")
-	superserverid := base.GetGBServerConfigM().
-		GetPropUint("superserverid")
-	superserverport := base.GetGBServerConfigM().
-		GetPropUint("superserverport")
-
-	this.superexitchan <- true
-	for !base.GetGBServerConfigM().TerminateServer {
-		select {
-		case <-this.superexitchan:
-			client, err := this.ConnectServer(superserverid,
-				superserverip, superserverport, clienter)
-			if err != nil {
-				time.Sleep(2 * time.Second) // 2秒重连一次
-				this.superexitchan <- true
-			} else {
-				client.Serverinfo.Servertype = def.TypeSuperServer
-			}
-		}
-	}
-}
-
-// 这种连接不会跟着super一起停机
-func (this *GBTCPClientManager) TryConnectSuperServer(
-	clienter IServerHandler) error {
-	superserverip := base.GetGBServerConfigM().
-		GetProp("superserverip")
-	superserverid := base.GetGBServerConfigM().
-		GetPropUint("superserverid")
-	superserverport := base.GetGBServerConfigM().
-		GetPropUint("superserverport")
-	if len(superserverip) == 0 || superserverid == 0 ||
-		superserverport == 0 {
-		return errors.New("error server ip/id/port")
-	}
-
-	time.Sleep(1 * time.Second) // 防止拥挤
-	go this.connectSuper(clienter)
-	// 暂停等待获取本机信息
-	for {
-		if base.GetGBServerConfigM().Myserverinfo.Serverid > 0 {
-			// 登陆Super完成
-			// 服务器名字可能会发生改变
-			// 重新加载一次配置文件
-			base.GetGBServerConfigM().ReloadConfig()
-			break
-		}
-		// 休眠100毫秒
-		time.Sleep(200 * time.Millisecond)
-	}
-	return nil
-}
 
 func (this *GBTCPClientManager) tryConnectServerThread(serverid uint32,
 	clienter IServerHandler) {
@@ -100,21 +29,21 @@ func (this *GBTCPClientManager) tryConnectServerThread(serverid uint32,
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
-	serverinfo := GetSubnetManager().ServerConfigs.GetServerConfigByID(serverid)
+	serverinfo := this.subnetManager.ServerConfigs.GetServerConfigByID(serverid)
 	if serverinfo.Serverid != serverid {
 		log.Error("[GBTCPClientManager.tryConnectServerThread] "+
 			"tryConnectServerThread 错误的 ServerID[%d]", serverid)
 		return
 	}
 
-	for !base.GetGBServerConfigM().TerminateServer {
+	for true {
 		this.serverexitchanmutex.Lock()
 		c := this.serverexitchan[serverid]
 		this.serverexitchanmutex.Unlock()
 		select {
 		case <-c:
 			this.serverexitchanmutex.Lock()
-			serverinfo := GetSubnetManager().ServerConfigs.
+			serverinfo := this.subnetManager.ServerConfigs.
 				GetServerConfigByID(serverid)
 			if serverinfo.Serverid != serverid {
 				log.Debug("[GBTCPClientManager.tryConnectServerThread] "+
@@ -170,7 +99,7 @@ func (this *GBTCPClientManager) ConnectServer(serverid uint32,
 	clienter IServerHandler) (*tcpconn.ServerConn, error) {
 	this.connectMutex.Lock()
 	defer this.connectMutex.Unlock()
-	oldclient := GetGBTCPClientManager().GetTCPClient(uint64(serverid))
+	oldclient := this.GetTCPClient(uint64(serverid))
 	// 重复连接
 	if oldclient != nil {
 		log.Error("[GBTCPClientManager.ConnectServer] "+
@@ -196,25 +125,25 @@ func (this *GBTCPClientManager) ConnectServer(serverid uint32,
 		return nil, err
 	}
 	this.serverhandler = clienter
-	client := GetGBTCPClientManager().AddTCPClient(Conn,
+	client := this.AddTCPClient(Conn,
 		uint64(serverid))
 	clienter.OnCreateTCPConnect(client)
 
 	// 发起登录
 
 	// 构造登陆消息
-	sendmsg := &servercomm.SLoginCommand{}
-	sendmsg.Servertype = base.GetGBServerConfigM().
+	sendmsg := &comm.SLoginCommand{}
+	sendmsg.Servertype = this.subnetManager.moudleConf.
 		Myserverinfo.Servertype
-	sendmsg.Serverip = base.GetGBServerConfigM().Myserverinfo.Serverip
-	sendmsg.Servername = base.GetGBServerConfigM().Myservername
-	sendmsg.Serverport = base.GetGBServerConfigM().
+	sendmsg.Serverip = this.subnetManager.moudleConf.Myserverinfo.Serverip
+	sendmsg.Servername = this.subnetManager.moudleConf.Myservername
+	sendmsg.Serverport = this.subnetManager.moudleConf.
 		Myserverinfo.Serverport
-	sendmsg.ServerNumber = base.GetGBServerConfigM().
+	sendmsg.ServerNumber = this.subnetManager.moudleConf.
 		GetPropUint("servernumber")
-	sendmsg.Version = base.GetGBServerConfigM().Version
-	if base.GetGBServerConfigM().Myserverinfo.Serverid > 0 {
-		sendmsg.Serverid = base.GetGBServerConfigM().
+	sendmsg.Version = this.subnetManager.moudleConf.Version
+	if this.subnetManager.moudleConf.Myserverinfo.Serverid > 0 {
+		sendmsg.Serverid = this.subnetManager.moudleConf.
 			Myserverinfo.Serverid
 	}
 	// 发送登陆请求
@@ -225,27 +154,26 @@ func (this *GBTCPClientManager) ConnectServer(serverid uint32,
 		serverip, serverport)
 
 	// 监听处理消息
-	go handleClientConnection(client, clienter)
+	go this.handleClientConnection(client, clienter)
 	return client, nil
 }
 
-func onClientDisconnected(client *tcpconn.ServerConn,
+func (this *GBTCPClientManager) onClientDisconnected(client *tcpconn.ServerConn,
 	clienter IServerHandler) {
 	clienter.OnRemoveTCPConnect(client)
-	GetGBTCPClientManager().RemoveTCPClient(client.Tempid)
-	superserverid := base.GetGBServerConfigM().
+	this.RemoveTCPClient(client.Tempid)
+	superserverid := this.subnetManager.moudleConf.
 		GetPropUint("superserverid")
 	if client.Tempid == uint64(superserverid) {
-		GetGBTCPClientManager().superexitchan <- true
+		this.superexitchan <- true
 		log.Warn("[onClientDisconnected] " +
 			"super断开连接,准备重新连接super")
 	} else {
-		GetGBTCPClientManager().serverexitchanmutex.Lock()
-		defer GetGBTCPClientManager().serverexitchanmutex.Unlock()
-		if GetGBTCPClientManager().
+		this.serverexitchanmutex.Lock()
+		defer this.serverexitchanmutex.Unlock()
+		if this.
 			serverexitchan[uint32(client.Serverinfo.Serverid)] != nil {
-			GetGBTCPClientManager().
-				serverexitchan[uint32(client.Serverinfo.Serverid)] <- true
+			this.serverexitchan[uint32(client.Serverinfo.Serverid)] <- true
 			log.Warn("[onClientDisconnected] " +
 				"服务服务器断开连接,准备重新连接")
 		} else {
@@ -256,7 +184,7 @@ func onClientDisconnected(client *tcpconn.ServerConn,
 	}
 }
 
-func connectRelyServers(serverinfos []servercomm.SServerInfo,
+func (this *GBTCPClientManager) connectRelyServers(serverinfos []comm.SServerInfo,
 	clienter IServerHandler) {
 	// 依赖服务器启动成功了
 	for _, serverinfo := range serverinfos {
@@ -266,13 +194,12 @@ func connectRelyServers(serverinfos []servercomm.SServerInfo,
 			serverinfo.Serverid, serverinfo.Serverip,
 			serverinfo.Serverport, serverinfo.Httpport,
 			serverinfo.Servername)
-		GetSubnetManager().ServerConfigs.AddServerConfig(serverinfo)
-		if GetGBTCPClientManager().
-			GetTCPClient(uint64(serverinfo.Serverid)) == nil {
+		this.subnetManager.ServerConfigs.AddServerConfig(serverinfo)
+		if this.GetTCPClient(uint64(serverinfo.Serverid)) == nil {
 			log.Debug("[GBTCPClientManager.connectRelyServers] "+
 				"尝试保持与 %d 的连接", serverinfo.Serverid)
 			// 连接依赖服务器
-			GetGBTCPClientManager().TryConnectServer(
+			this.TryConnectServer(
 				serverinfo.Serverid, clienter)
 		} else {
 			log.Debug("[GBTCPClientManager.connectRelyServers] "+

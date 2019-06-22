@@ -2,8 +2,8 @@ package tcpconn
 
 import (
 	//	"os"
-	"github.com/liasece/micserver"
 	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/util"
 	"math/rand"
 	"net"
@@ -48,7 +48,7 @@ func (this *ServerConnPool) Range(
 }
 
 // 广播消息
-func (this *ServerConnPool) BroadcastCmd(v base.MsgStruct) {
+func (this *ServerConnPool) BroadcastCmd(v msg.MsgStruct) {
 	this.allsockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		tvalue.(*ServerConn).SendCmd(v)
@@ -58,7 +58,7 @@ func (this *ServerConnPool) BroadcastCmd(v base.MsgStruct) {
 
 // 将一条消息广播至指定类型的所有连接
 func (this *ServerConnPool) BroadcastByType(servertype uint32,
-	v base.MsgStruct) {
+	v msg.MsgStruct) {
 	this.allsockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*ServerConn)

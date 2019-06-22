@@ -2,10 +2,10 @@ package tcpconn
 
 import (
 	//	"os"
-	"github.com/liasece/micserver"
-	// "base/log"
+	// "msg/log"
 	// "math/rand"
-	"github.com/liasece/micserver/servercomm"
+	"github.com/liasece/micserver/comm"
+	"github.com/liasece/micserver/msg"
 	"net"
 	// "sync"
 	// "time"
@@ -39,7 +39,7 @@ type ServerConn struct {
 	// matchserver表示正在匹配的队列数，
 	// battleserver表示在战斗的房间数
 
-	Serverinfo servercomm.SServerInfo // 该连接对方服务器信息
+	Serverinfo comm.SServerInfo // 该连接对方服务器信息
 
 	serverSCType TServerSCType // 用于区分该连接是服务器 client task 连接
 }
@@ -113,12 +113,12 @@ func (this *ServerConn) Terminate() {
 }
 
 // 异步发送一条消息，不带发送完成回调
-func (this *ServerConn) SendCmd(v base.MsgStruct) error {
+func (this *ServerConn) SendCmd(v msg.MsgStruct) error {
 	return this.Conn.SendCmd(v, 0)
 }
 
 // 异步发送一条消息，带发送完成回调
-func (this *ServerConn) SendCmdWithCallback(v base.MsgStruct,
+func (this *ServerConn) SendCmdWithCallback(v msg.MsgStruct,
 	callback func(interface{}), cbarg interface{}) error {
 	return this.Conn.SendCmdWithCallback(v, callback, cbarg, 0)
 }

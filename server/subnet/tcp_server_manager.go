@@ -1,7 +1,6 @@
 package subnet
 
 import (
-	"github.com/liasece/micserver"
 	"github.com/liasece/micserver/log"
 	// "bytes"
 	"errors"
@@ -11,17 +10,17 @@ import (
 )
 
 // 该函数会阻塞
-func BindMyTCPServer(server IServerHandler) error {
-	serverid := base.GetGBServerConfigM().Myserverinfo.Serverid
+func (this *SubnetManger) BindMyTCPServer(server IServerHandler) error {
+	serverid := this.moudleConf.Myserverinfo.Serverid
 	if serverid == 0 {
 		log.Error("[BindMyTCPServer] 本服务器ID为0 无法绑定本机ServerPort")
 		return errors.New("server id is 0")
 	}
-	serverip := base.GetGBServerConfigM().Myserverinfo.Serverip
-	serverport := base.GetGBServerConfigM().Myserverinfo.Serverport
+	serverip := this.moudleConf.Myserverinfo.Serverip
+	serverport := this.moudleConf.Myserverinfo.Serverport
 	if serverport > 0 {
 		portstr := fmt.Sprintf("%d", serverport)
-		return BindTCPServer(serverip, portstr, server)
+		return this.BindTCPServer(serverip, portstr, server)
 	} else {
 		log.Error("[BindMyTCPServer] 本服务器serverport为0 " +
 			"无法绑定本机ServerPort")
@@ -32,28 +31,28 @@ func BindMyTCPServer(server IServerHandler) error {
 
 // 接口对象必须用new的
 // 绑定服务器
-func BindTCPServer(serverip string, serverport string,
+func (this *SubnetManger) BindTCPServer(serverip string, serverport string,
 	server IServerHandler) error {
 	serverinfo := serverip + ":" + serverport
 	netlisten, err := net.Listen("tcp", serverinfo)
 	if err != nil {
 		log.Error("[SubNetManager.BindTCPServer] "+
 			"服务器绑定失败 ServerID[%d] IP[%s] Port[%s] Err[%s]",
-			base.GetGBServerConfigM().Myserverinfo.Serverid, serverip,
+			this.moudleConf.Myserverinfo.Serverid, serverip,
 			serverport, err.Error())
 		return err
 	}
-	myservertype := base.GetGBServerConfigM().Myserverinfo.Servertype
+	myservertype := this.moudleConf.Myserverinfo.Servertype
 	log.Debug("[SubNetManager.BindTCPServer] "+
 		"服务器绑定成功 IP[%s] Port[%s] Type[%d]", serverip, serverport,
 		myservertype)
 
-	GetGBTCPTaskManager().serverhandler = server
-	go TCPServerListenerProcess(netlisten, server)
+	this.taskManager.serverhandler = server
+	go this.TCPServerListenerProcess(netlisten, server)
 	return nil
 }
 
-func TCPServerListenerProcess(listener net.Listener,
+func (this *SubnetManger) TCPServerListenerProcess(listener net.Listener,
 	server IServerHandler) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
@@ -63,12 +62,12 @@ func TCPServerListenerProcess(listener net.Listener,
 		}
 	}()
 	defer listener.Close()
-	for !base.GetGBServerConfigM().TerminateServer {
-		mTCPServerListener(listener, server)
+	for !this.moudleConf.TerminateServer {
+		this.mTCPServerListener(listener, server)
 	}
 }
 
-func mTCPServerListener(listener net.Listener,
+func (this *SubnetManger) mTCPServerListener(listener net.Listener,
 	server IServerHandler) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
@@ -79,7 +78,7 @@ func mTCPServerListener(listener net.Listener,
 		}
 	}()
 
-	for !base.GetGBServerConfigM().TerminateServer {
+	for !this.moudleConf.TerminateServer {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Error("[SubNetManager.TCPServerListenerProcess] "+
@@ -90,10 +89,10 @@ func mTCPServerListener(listener net.Listener,
 		log.Debug("[SubNetManager.BindTCPServer] "+
 			"收到新的TCP连接 Addr[%s]",
 			conn.RemoteAddr().String())
-		tcptask := GetGBTCPTaskManager().AddTCPTask(conn)
+		tcptask := this.taskManager.AddTCPTask(conn)
 		if tcptask != nil {
 			server.OnCreateTCPConnect(tcptask)
-			go handleConnection(tcptask, server)
+			go this.taskManager.handleConnection(tcptask, server)
 		}
 	}
 }

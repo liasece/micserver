@@ -313,9 +313,3 @@ type SNotifySafelyQuit struct {
 	// 目标服务器的信息应该是最新的信息，目标服务器会将该信息改成最新的
 	TargetServerInfo SServerInfo
 }
-
-// AI 玩家是一种用于计算的特殊玩家，需要在内网端口保证安全行，是可信的
-// 可以将一些服务器不便于计算的服务提交到AI玩家进行计算
-type SAIUserRegister struct {
-	Userinfo SUserInfo
-}

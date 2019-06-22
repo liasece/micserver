@@ -10,11 +10,11 @@
 package subnet
 
 import (
-	"base"
-	"base/log"
+	"github.com/liasece/micserver/log"
 	// "encoding/xml"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"github.com/liasece/micserver/conf"
 	// "io/ioutil"
 	// "math/rand"
 	"reflect"
@@ -25,6 +25,8 @@ import (
 type GBRedisManager struct {
 	redispools map[string]*redis.Pool // redis连接池
 	allredis   map[string]redis.Conn  // 所有redis连接
+
+	modleConfig *conf.ServerConfig
 }
 
 var redismanager_s *GBRedisManager
@@ -65,7 +67,7 @@ func (this *GBRedisManager) connectRedisServer(address string) bool {
 
 // 初始化连接到redis
 func (this *GBRedisManager) InitRedisManager() {
-	for _, v := range base.GetGBServerConfigM().RedisConfig.RedisList {
+	for _, v := range this.modleConfig.RedisConfig.RedisList {
 		address := fmt.Sprintf("%s:%d", v.IP, v.Port)
 		log.Debug("[GBRedisManager.InitRedisManager] "+
 			"初始化Redis连接 IPPort[%s]", address)

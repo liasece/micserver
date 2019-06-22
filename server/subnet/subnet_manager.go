@@ -1,25 +1,19 @@
 package subnet
 
 import (
-	"github.com/liasece/micserver"
-	"github.com/liasece/micserver/log"
-	// "bytes"
-	// "encoding/binary"
-	// "encoding/json"
 	"fmt"
+	"github.com/liasece/micserver/comm"
+	"github.com/liasece/micserver/conf"
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/server/subnet/serconfs"
 	"github.com/liasece/micserver/tcpconn"
+	"github.com/liasece/micserver/util"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
 	"runtime/pprof"
-	"servercomm"
-	// "strconv"
-	// "strings"
-	// "encoding/hex"
-	"github.com/liasece/micserver/def"
-	"github.com/liasece/micserver/subnet/serconfs"
-	"github.com/liasece/micserver/util"
 	"strings"
 	"sync"
 	"syscall"
@@ -28,7 +22,7 @@ import (
 
 type ConnectMsgQueueStruct struct {
 	task *tcpconn.ServerConn
-	msg  *base.MessageBinary
+	msg  *msg.MessageBinary
 }
 
 func CheckServerType(servertype uint32) bool {
@@ -47,39 +41,28 @@ type SubnetManger struct {
 	taskManager   *GBTCPTaskManager
 
 	ServerConfigs serconfs.ServerConfigsManager // 所有服务器信息
+
+	moudleConf *conf.ServerConfig
 }
 
-var subnetmanager_s *SubnetManger
+func (this *SubnetManger) InitManager() {
 
-func init() {
-	subnetmanager_s = &SubnetManger{}
-
-	subnetmanager_s.clientManager = &GBTCPClientManager{}
-	subnetmanager_s.clientManager.connPool.
+	this.clientManager = &GBTCPClientManager{}
+	this.clientManager.subnetManager = this
+	this.clientManager.connPool.
 		Init(tcpconn.ServerSCTypeClient, 1)
-	subnetmanager_s.clientManager.superexitchan = make(chan bool, 1)
+	this.clientManager.superexitchan = make(chan bool, 1)
 
-	subnetmanager_s.taskManager = &GBTCPTaskManager{}
-	subnetmanager_s.taskManager.connPool.
+	this.taskManager = &GBTCPTaskManager{}
+	this.taskManager.subnetManager = this
+	this.taskManager.connPool.
 		Init(tcpconn.ServerSCTypeTask, 2)
 }
 
-func GetSubnetManager() *SubnetManger {
-	return subnetmanager_s
-}
-
-func GetGBTCPClientManager() *GBTCPClientManager {
-	return GetSubnetManager().clientManager
-}
-
-func GetGBTCPTaskManager() *GBTCPTaskManager {
-	return GetSubnetManager().taskManager
-}
-
-func GetLatestVersionServerConfigByType(servertype uint32) uint64 {
+func (this *SubnetManger) GetLatestVersionServerConfigByType(servertype uint32) uint64 {
 	latestVersion := uint64(0)
-	GetSubnetManager().ServerConfigs.RangeServerConfig(
-		func(value servercomm.SServerInfo) bool {
+	this.ServerConfigs.RangeServerConfig(
+		func(value comm.SServerInfo) bool {
 			if value.Servertype == servertype &&
 				value.Version > latestVersion {
 				latestVersion = value.Version
@@ -104,9 +87,9 @@ type IServerHandler interface {
 	OnRemoveTCPConnect(serverconn *tcpconn.ServerConn)
 
 	TCPMsgParse(serverconn *tcpconn.ServerConn,
-		msgbin *base.MessageBinary)
+		msgbin *msg.MessageBinary)
 	GetTCPMsgParseChan(serverconn *tcpconn.ServerConn,
-		maxchan int, msg *base.MessageBinary) int
+		maxchan int, msg *msg.MessageBinary) int
 }
 
 type ServerManager interface {
@@ -114,40 +97,30 @@ type ServerManager interface {
 	NotifyOtherMyInfo()
 }
 
-func StartMain(server IServerHandler, manager ServerManager) {
+func (this *SubnetManger) StartMain(server IServerHandler, manager ServerManager) {
 	log.Debug("[SubNetManager.StartMain] " +
 		"Main is start------")
 	// 初始化参数
-	GetSubnetManager().servermanger = manager
-	GetSubnetManager().serverhandler = server
+	this.servermanger = manager
+	this.serverhandler = server
 
 	// 绑定本地服务端口
 	// 必须等待本地服务器端口绑定完成之后，再进行其他操作
 	// 这是服务器加入内部网络的基础
-	err := BindMyTCPServer(server)
+	err := this.BindMyTCPServer(server)
 	if err != nil {
 		log.Error("[StartMain] BindMyTCPServer Err[%s]", err)
 		return
 	}
 
 	// 监听系统Signal
-	go SignalListen(manager)
+	go this.SignalListen(manager)
 
 	// 初始化服务器
 	server.OnInit()
 
-	// 通知主服务器
-	if base.GetGBServerConfigM().Myserverinfo.Servertype != def.TypeSuperServer {
-		// 如果当前不是SuperServer
-		// 等待之后再通知SuperServer我启动完成了
-		time.Sleep(1 * time.Second)
-		startokmsg := &servercomm.SSeverStartOKCommand{}
-		startokmsg.Serverid = base.GetGBServerConfigM().Myserverinfo.Serverid
-		GetGBTCPClientManager().BroadcastByType(def.TypeSuperServer, startokmsg)
-	}
-
 	// 保持程序运行
-	for !base.GetGBServerConfigM().TerminateServer {
+	for !this.moudleConf.TerminateServer {
 		time.Sleep(1 * time.Second)
 	}
 
@@ -162,19 +135,19 @@ func StartMain(server IServerHandler, manager ServerManager) {
 
 var serverLoginMutex sync.Mutex
 
-func OnServerLogin(tcptask *tcpconn.ServerConn,
-	tarinfo *servercomm.SLoginCommand) {
+func (this *SubnetManger) OnServerLogin(tcptask *tcpconn.ServerConn,
+	tarinfo *comm.SLoginCommand) {
 	serverLoginMutex.Lock()
 	defer serverLoginMutex.Unlock()
 
 	// 来源服务器请求登陆本服务器
-	oldtcptask := GetGBTCPTaskManager().GetTCPTask(uint64(tarinfo.Serverid))
+	oldtcptask := this.taskManager.GetTCPTask(uint64(tarinfo.Serverid))
 	if oldtcptask != nil {
 		// 已经连接成功过了，非法连接
 		log.Error("[SubNetManager.OnServerLogin] "+
 			"收到了重复的Server连接请求 Msg[%s]",
 			tarinfo.GetJson())
-		retmsg := &servercomm.SLoginRetCommand{}
+		retmsg := &comm.SLoginRetCommand{}
 		retmsg.Loginfailed = 1
 		tcptask.SendCmd(retmsg)
 		tcptask.Terminate()
@@ -185,13 +158,13 @@ func OnServerLogin(tcptask *tcpconn.ServerConn,
 		log.Error("[SubNetManager.OnServerLogin] "+
 			"收到未知的服务器类型 Msg[%s]",
 			tarinfo.GetJson())
-		retmsg := &servercomm.SLoginRetCommand{}
+		retmsg := &comm.SLoginRetCommand{}
 		retmsg.Loginfailed = 1
 		tcptask.SendCmd(retmsg)
 		tcptask.Terminate()
 		return
 	}
-	var serverconfig servercomm.SServerInfo
+	var serverconfig comm.SServerInfo
 
 	// 来源服务器地址
 	remoteaddr := tcptask.GetConn().RemoteAddr().String()
@@ -203,18 +176,18 @@ func OnServerLogin(tcptask *tcpconn.ServerConn,
 		sameip = true
 	}
 	// 获取来源服务器ID在本地的配置
-	serverconfig = GetSubnetManager().ServerConfigs.
+	serverconfig = this.ServerConfigs.
 		GetServerConfigByInfo(tarinfo)
 	// 如果成功获取到了一个serverid
 	if serverconfig.Serverid != 0 {
 		// 检查该配置是否已被占用
-		oldtcptask = GetGBTCPTaskManager().GetTCPTask(uint64(tarinfo.Serverid))
+		oldtcptask = this.taskManager.GetTCPTask(uint64(tarinfo.Serverid))
 		if oldtcptask != nil {
 			// 已经连接成功过了，非法连接
 			log.Error("[SubNetManager.OnServerLogin] "+
 				"收到了重复的Server连接请求 2 Msg[%s]",
 				tarinfo.GetJson())
-			retmsg := &servercomm.SLoginRetCommand{}
+			retmsg := &comm.SLoginRetCommand{}
 			retmsg.Loginfailed = 1
 			tcptask.SendCmd(retmsg)
 			tcptask.Terminate()
@@ -229,17 +202,17 @@ func OnServerLogin(tcptask *tcpconn.ServerConn,
 			"连接分配异常 未知服务器连接 "+
 			"Addr[%s] Msg[%s]",
 			remoteaddr, tarinfo.GetJson())
-		retmsg := &servercomm.SLoginRetCommand{}
+		retmsg := &comm.SLoginRetCommand{}
 		retmsg.Loginfailed = 1
 		tcptask.SendCmd(retmsg)
 		tcptask.Terminate()
 
-		if base.GetGBServerConfigM().Myserverinfo.Servertype !=
-			def.TypeSuperServer {
-			requestServerInfo := &servercomm.SRequestServerInfo{}
-			GetGBTCPClientManager().BroadcastByType(def.TypeSuperServer,
-				requestServerInfo)
-		}
+		// if this.moudleConf.Myserverinfo.Servertype !=
+		// 	def.TypeSuperServer {
+		// 	requestServerInfo := &comm.SRequestServerInfo{}
+		// 	this.clientManager.BroadcastByType(def.TypeSuperServer,
+		// 		requestServerInfo)
+		// }
 		return
 	}
 
@@ -250,7 +223,7 @@ func OnServerLogin(tcptask *tcpconn.ServerConn,
 	tcptask.SetVertify(true)
 	tcptask.SetTerminateTime(0) // 清除终止时间状态
 	tcptask.Serverinfo = serverconfig
-	GetGBTCPTaskManager().ChangeTCPTaskTempid(tcptask,
+	this.taskManager.ChangeTCPTaskTempid(tcptask,
 		uint64(tcptask.Serverinfo.Serverid))
 	log.Debug("[SubNetManager.OnServerLogin] "+
 		"客户端连接验证成功 "+
@@ -259,36 +232,36 @@ func OnServerLogin(tcptask *tcpconn.ServerConn,
 		serverconfig.Servertype, serverconfig.Serverport,
 		serverconfig.Servername)
 	// 向来源服务器回复登陆成功消息
-	retmsg := &servercomm.SLoginRetCommand{}
+	retmsg := &comm.SLoginRetCommand{}
 	retmsg.Loginfailed = 0
 	retmsg.Clientinfo = serverconfig
-	retmsg.Taskinfo = base.GetGBServerConfigM().Myserverinfo
-	retmsg.Redisinfo = base.GetGBServerConfigM().RedisConfig
+	retmsg.Taskinfo = this.moudleConf.Myserverinfo
+	retmsg.Redisinfo = this.moudleConf.RedisConfig
 	tcptask.SendCmd(retmsg)
 
 	// 通知其他服务器，次服务器登陆完成
 	// 如果我是SuperServer
 	// 向来源服务器发送本地已有的所有服务器信息
-	GetGBTCPTaskManager().NotifyAllServerInfo(tcptask)
+	this.taskManager.NotifyAllServerInfo(tcptask)
 	// 把来源服务器信息广播给其它所有服务器
-	notifymsg := &servercomm.SStartMyNotifyCommand{}
+	notifymsg := &comm.SStartMyNotifyCommand{}
 	notifymsg.Serverinfo = serverconfig
-	GetGBTCPTaskManager().BroadcastAll(notifymsg)
+	this.taskManager.BroadcastAll(notifymsg)
 }
 
 // 绑定我的HTTP服务 会阻塞
-func BindMyHttpServer() {
-	usehttps := base.GetGBServerConfigM().GetProp("usehttps")
-	if base.GetGBServerConfigM().Myserverinfo.Httpport > 0 {
+func (this *SubnetManger) BindMyHttpServer() {
+	usehttps := this.moudleConf.GetProp("usehttps")
+	if this.moudleConf.Myserverinfo.Httpport > 0 {
 		httpportstr := fmt.Sprintf(":%d",
-			base.GetGBServerConfigM().Myserverinfo.Httpport)
+			this.moudleConf.Myserverinfo.Httpport)
 		if usehttps == "true" {
 			log.Debug("[SubNetManager.BindMyHttpServer] "+
 				"服务器https绑定成功 HTTPPort[%s] use https",
 				httpportstr)
-			httpscertfile := base.GetGBServerConfigM().
+			httpscertfile := this.moudleConf.
 				GetProp("httpscertfile")
-			httpskeyfile := base.GetGBServerConfigM().
+			httpskeyfile := this.moudleConf.
 				GetProp("httpskeyfile")
 			err := http.ListenAndServeTLS(httpportstr, httpscertfile,
 				httpskeyfile, nil)
@@ -309,16 +282,16 @@ func BindMyHttpServer() {
 }
 
 // 绑定我的HTTPS服务 会阻塞
-func BindMyHttpsServer() error {
-	if base.GetGBServerConfigM().Myserverinfo.Httpsport > 0 {
+func (this *SubnetManger) BindMyHttpsServer() error {
+	if this.moudleConf.Myserverinfo.Httpsport > 0 {
 		httpportstr := fmt.Sprintf(":%d",
-			base.GetGBServerConfigM().Myserverinfo.Httpsport)
+			this.moudleConf.Myserverinfo.Httpsport)
 		log.Debug("[SubNetManager.BindMyHttpsServer] "+
 			"服务器https绑定成功 HTTPPort[%s] use https",
 			httpportstr)
-		httpscertfile := base.GetGBServerConfigM().
+		httpscertfile := this.moudleConf.
 			GetProp("httpscertfile")
-		httpskeyfile := base.GetGBServerConfigM().
+		httpskeyfile := this.moudleConf.
 			GetProp("httpskeyfile")
 		err := http.ListenAndServeTLS(httpportstr, httpscertfile,
 			httpskeyfile, nil)
@@ -331,7 +304,7 @@ func BindMyHttpsServer() error {
 }
 
 // cpu性能测试
-func startTestCpuProfile() {
+func (this *SubnetManger) startTestCpuProfile() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
@@ -341,8 +314,8 @@ func startTestCpuProfile() {
 	}()
 	log.Debug("[SubNetManager.startTestCpuProfile] " +
 		"[性能分析] StartTestCpuProfile start")
-	filename := base.GetGBServerConfigM().GetProp("profile_filename")
-	testtime := base.GetGBServerConfigM().GetPropInt("profile_time")
+	filename := this.moudleConf.GetProp("profile_filename")
+	testtime := this.moudleConf.GetPropInt("profile_time")
 	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return
@@ -363,7 +336,7 @@ func startTestCpuProfile() {
 }
 
 // 监听系统消息
-func SignalListen(manager ServerManager) {
+func (this *SubnetManger) SignalListen(manager ServerManager) {
 	c := make(chan os.Signal, 10)
 	signal.Notify(c, syscall.SIGINT,
 		syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGUSR1,
@@ -375,21 +348,21 @@ func SignalListen(manager ServerManager) {
 		manager.OnSignal(s)
 		switch s {
 		case syscall.SIGUSR1:
-			go startTestCpuProfile()
+			go this.startTestCpuProfile()
 		case syscall.SIGUSR2:
 		case syscall.SIGTERM:
 		case syscall.SIGINT:
-			//收到信号后的处理
-			if base.GetGBServerConfigM().Myserverinfo.Servertype !=
-				def.TypeSuperServer {
-				// 通知我的主服务器，退出连接了
-				sendmsg := &servercomm.SLogoutCommand{}
-				GetGBTCPClientManager().BroadcastByType(def.TypeSuperServer,
-					sendmsg)
-				// 发送给所有连接到我的服务器，我要关闭了，别再尝试连接我了
-				GetGBTCPTaskManager().BroadcastAll(sendmsg)
-			}
-			base.GetGBServerConfigM().TerminateServer = true
+			// //收到信号后的处理
+			// if this.moudleConf.Myserverinfo.Servertype !=
+			// 	def.TypeSuperServer {
+			// 	// 通知我的主服务器，退出连接了
+			// 	sendmsg := &comm.SLogoutCommand{}
+			// 	this.clientManager.BroadcastByType(def.TypeSuperServer,
+			// 		sendmsg)
+			// 	// 发送给所有连接到我的服务器，我要关闭了，别再尝试连接我了
+			// 	this.taskManager.BroadcastAll(sendmsg)
+			// }
+			this.moudleConf.TerminateServer = true
 		case syscall.SIGQUIT:
 			// 捕捉到就退不出了
 			buf := make([]byte, 1<<20)

@@ -1,8 +1,8 @@
 package serconfs
 
 import (
+	"github.com/liasece/micserver/comm"
 	"github.com/liasece/micserver/log"
-	"servercomm"
 	"sync"
 )
 
@@ -11,8 +11,8 @@ import (
 type IServerConfigBuilder interface {
 	NewServerConfig(serverip string, servertype uint32,
 		serverNumber uint32, serverID uint32,
-		serverPort uint32) *servercomm.SServerInfo
-	DeleteServerConfig(*servercomm.SServerInfo)
+		serverPort uint32) *comm.SServerInfo
+	DeleteServerConfig(*comm.SServerInfo)
 }
 
 type ServerConfigsManager struct {
@@ -27,17 +27,17 @@ func (this *ServerConfigsManager) SetServerConfigBuilder(
 }
 
 func (this *ServerConfigsManager) GetServerConfigByID(
-	serverid uint32) servercomm.SServerInfo {
+	serverid uint32) comm.SServerInfo {
 	if value, found := this.serverconfigs.Load(serverid); found {
-		return value.(servercomm.SServerInfo)
+		return value.(comm.SServerInfo)
 	}
-	var temp servercomm.SServerInfo
+	var temp comm.SServerInfo
 	return temp
 }
 
 func (this *ServerConfigsManager) GetServerConfigByInfo(
-	tarinfo *servercomm.SLoginCommand) servercomm.SServerInfo {
-	var res servercomm.SServerInfo
+	tarinfo *comm.SLoginCommand) comm.SServerInfo {
+	var res comm.SServerInfo
 	if tarinfo.Serverid != 0 {
 		// 如果已经指定了ID，直接返回
 		info := this.GetServerConfigByID(tarinfo.Serverid)
@@ -57,7 +57,7 @@ func (this *ServerConfigsManager) GetServerConfigByInfo(
 }
 
 func (this *ServerConfigsManager) AddServerConfig(
-	newinfo servercomm.SServerInfo) {
+	newinfo comm.SServerInfo) {
 	if newinfo.Serverid == 0 {
 		log.Error("[ServerConfigsManager.AddServerConfig] "+
 			"尝试添加一个ID为0的服务器 拒绝 Info[%s]", newinfo.GetJson())
@@ -80,18 +80,18 @@ func (this *ServerConfigsManager) RemoveServerConfig(serverid uint32) {
 }
 
 func (this *ServerConfigsManager) RangeServerConfig(
-	callback func(servercomm.SServerInfo) bool) {
+	callback func(comm.SServerInfo) bool) {
 	this.serverconfigs.Range(func(tkey interface{},
 		tvalue interface{}) bool {
-		value := tvalue.(servercomm.SServerInfo)
+		value := tvalue.(comm.SServerInfo)
 		return callback(value)
 	})
 }
 
 func (this *ServerConfigsManager) ExistServerConfig(
-	info servercomm.SServerInfo) bool {
+	info comm.SServerInfo) bool {
 	tconfig, finded := this.serverconfigs.Load(info.Serverid)
-	config := tconfig.(servercomm.SServerInfo)
+	config := tconfig.(comm.SServerInfo)
 	if !finded {
 		return false
 	}

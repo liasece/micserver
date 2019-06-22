@@ -10,9 +10,6 @@
 package subnet
 
 import (
-	"github.com/liasece/micserver"
-	"github.com/liasece/micserver/def"
-	"github.com/liasece/micserver/functime"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
@@ -21,7 +18,8 @@ import (
 	"io"
 	"net"
 	// "runtime"
-	"servercomm"
+	"github.com/liasece/micserver/comm"
+	"github.com/liasece/micserver/msg"
 	"sync"
 	"time"
 )
@@ -43,6 +41,8 @@ type GBTCPClientManager struct {
 	lastwarningtime2 uint32
 
 	connectMutex sync.Mutex
+
+	subnetManager *SubnetManger
 }
 
 // 初始化消息处理线程
@@ -156,61 +156,13 @@ func (this *GBTCPClientManager) ChangeTCPClientTempid(
 }
 
 // 广播消息
-func (this *GBTCPClientManager) BroadcastCmd(v base.MsgStruct) {
+func (this *GBTCPClientManager) BroadcastCmd(v msg.MsgStruct) {
 	this.connPool.BroadcastCmd(v)
 }
 
 func (this *GBTCPClientManager) BroadcastByType(servertype uint32,
-	v base.MsgStruct) {
+	v msg.MsgStruct) {
 	this.connPool.BroadcastByType(servertype, v)
-}
-
-func (this *GBTCPClientManager) GetMinUserServerClient() *tcpconn.
-	ServerConn {
-	return this.getMinServerClient(def.TypeUserServer)
-}
-
-func (this *GBTCPClientManager) GetMinMatchServerClient() *tcpconn.
-	ServerConn {
-	return this.getMinServerClient(def.TypeMatchServer)
-}
-
-func (this *GBTCPClientManager) GetMinRoomServerClient() *tcpconn.
-	ServerConn {
-	return this.getMinServerClient(def.TypeRoomServer)
-}
-
-func (this *GBTCPClientManager) GetMinRoomServerClientLatestVersion() *tcpconn.
-	ServerConn {
-	return this.getMinServerClientLatestVersion(def.TypeRoomServer)
-}
-
-func (this *GBTCPClientManager) getMinServerClient(
-	servertype uint32) *tcpconn.ServerConn {
-	return this.connPool.GetMinClient(servertype)
-}
-
-func (this *GBTCPClientManager) getMinServerClientLatestVersion(
-	servertype uint32) *tcpconn.ServerConn {
-	return this.connPool.GetMinClientLatestVersion(servertype)
-}
-
-//随机获取 userserver 的连接client gateway那边使用
-func (this *GBTCPClientManager) RandomGetUserServerClient() *tcpconn.
-	ServerConn {
-	return this.RandomGetServerClient(def.TypeUserServer)
-}
-
-//随机获取 matchserver 的连接
-func (this *GBTCPClientManager) RandomGetMatchServerClient() *tcpconn.
-	ServerConn {
-	return this.RandomGetServerClient(def.TypeMatchServer)
-}
-
-//随机获取 roomserver 的连接
-func (this *GBTCPClientManager) RandomGetRoomServerClient() *tcpconn.
-	ServerConn {
-	return this.RandomGetServerClient(def.TypeRoomServer)
 }
 
 func (this *GBTCPClientManager) RandomGetServerClient(
@@ -218,29 +170,7 @@ func (this *GBTCPClientManager) RandomGetServerClient(
 	return this.connPool.GetRandom(servertype)
 }
 
-// 发送数据到super
-func (this *GBTCPClientManager) SendCmdToSuper(v base.MsgStruct) {
-	this.connPool.BroadcastByType(def.TypeSuperServer, v)
-}
-
-// 发送数据到data
-func (this *GBTCPClientManager) SendCmdToDataServer(v base.MsgStruct) {
-	this.connPool.BroadcastByType(def.TypeDataServer, v)
-}
-
-// 发送数据到bridge
-func (this *GBTCPClientManager) SendCmdToRandBridgeServer(
-	v base.MsgStruct) {
-	client := this.RandomGetServerClient(def.TypeBridgeServer)
-	if client == nil {
-		log.Error("[GBTCPClientManager.SendCmdToRandBridgeServer] "+
-			"找不到服务器 MsgID[%d] MsgName[%s]", v.GetMsgId(), v.GetMsgName())
-		return
-	}
-	client.SendCmd(v)
-}
-
-func handleClientConnection(client *tcpconn.ServerConn,
+func (this *GBTCPClientManager) handleClientConnection(client *tcpconn.ServerConn,
 	clienter IServerHandler) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
@@ -250,10 +180,10 @@ func handleClientConnection(client *tcpconn.ServerConn,
 		}
 	}()
 	// 消息缓冲
-	netbuffer := base.NewIOBuffer(client.Conn.Conn, 6400*1024)
-	msgReader := base.NewMessageBinaryReader(netbuffer)
+	netbuffer := util.NewIOBuffer(client.Conn.Conn, 6400*1024)
+	msgReader := msg.NewMessageBinaryReader(netbuffer)
 
-	for !base.GetGBServerConfigM().TerminateServer {
+	for !this.subnetManager.moudleConf.TerminateServer {
 		derr := client.Conn.Conn.SetReadDeadline(time.Now().
 			Add(time.Duration(time.Millisecond * 1000)))
 		if derr != nil {
@@ -261,7 +191,7 @@ func handleClientConnection(client *tcpconn.ServerConn,
 				"ServerName[%s] ServerID[%d]",
 				derr.Error(), client.Serverinfo.Servername,
 				client.Serverinfo.Serverid)
-			onClientDisconnected(client, clienter)
+			this.onClientDisconnected(client, clienter)
 			return
 		}
 		n, err := netbuffer.ReadFromReader()
@@ -271,65 +201,65 @@ func handleClientConnection(client *tcpconn.ServerConn,
 					"数据读写异常，断开连接"+
 					" ReadLen[%d] ServerID[%d] Error[%s]",
 					n, client.Tempid, err.Error())
-				onClientDisconnected(client, clienter)
+				this.onClientDisconnected(client, clienter)
 				return
 			} else {
 				continue
 			}
 		}
-		functiontime := functime.FunctionTime{}
+		functiontime := util.FunctionTime{}
 		functiontime.Start("handleClientConnection")
 
-		err = msgReader.RangeMsgBinary(func(msgbinary *base.MessageBinary) {
+		err = msgReader.RangeMsgBinary(func(msgbinary *msg.MessageBinary) {
 			// 判断消息是否阻塞严重
 			curtime := uint32(time.Now().Unix())
 			if curtime > msgbinary.TimeStamp+1 &&
-				curtime > GetGBTCPClientManager().lastwarningtime1 {
+				curtime > this.lastwarningtime1 {
 				log.Error("[GBTCPClientManager.handleClientConnection] "+
 					"[消耗时间统计] 服务器TCPClient"+
 					"接收消息延迟很严重 TimeInc[%d]",
 					curtime-msgbinary.TimeStamp)
-				GetGBTCPClientManager().lastwarningtime1 = curtime
+				this.lastwarningtime1 = curtime
 			}
 			// 重置消息标签为接收时间，用于处理阻塞判断
 			msgbinary.TimeStamp = curtime
 			// 解析消息
-			msgParseTCPClient(client, msgbinary, clienter)
+			this.msgParseTCPClient(client, msgbinary, clienter)
 		})
 		functiontime.Stop()
 		if err != nil {
 			log.Error("[GBTCPClientManager.handleClientConnection] "+
 				"RangeMsgBinary读消息失败，断开连接 Err[%s]", err.Error())
-			onClientDisconnected(client, clienter)
+			this.onClientDisconnected(client, clienter)
 			return
 		}
 	}
 }
 
-func msgParseTCPClient(client *tcpconn.ServerConn,
-	msgbin *base.MessageBinary, clienter IServerHandler) {
+func (this *GBTCPClientManager) msgParseTCPClient(client *tcpconn.ServerConn,
+	msgbin *msg.MessageBinary, clienter IServerHandler) {
 	switch msgbin.CmdID {
-	case servercomm.STestCommandID:
-		performance_test := base.GetGBServerConfigM().
+	case comm.STestCommandID:
+		performance_test := this.subnetManager.moudleConf.
 			GetProp("performance_test")
 		if performance_test == "true" {
-			recvmsg := &servercomm.STestCommand{}
+			recvmsg := &comm.STestCommand{}
 			recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 			log.Debug("[GBTCPClientManager.msgParseTCPClient] "+
 				"Server 收到测试消息 CmdLen[%d] No.[%d]",
 				msgbin.CmdLen, recvmsg.Testno)
 		}
 		return
-	case servercomm.STimeTickCommandID:
-		recvmsg := &servercomm.STimeTickCommand{}
+	case comm.STimeTickCommandID:
+		recvmsg := &comm.STimeTickCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		return
-	case servercomm.SLoginRetCommandID:
+	case comm.SLoginRetCommandID:
 		// 收到登陆服务器返回的消息
-		recvmsg := &servercomm.SLoginRetCommand{}
+		recvmsg := &comm.SLoginRetCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		if recvmsg.Loginfailed > 0 {
-			GetGBTCPClientManager().RemoveTCPClient(client.Tempid)
+			this.RemoveTCPClient(client.Tempid)
 			log.Error("[GBTCPClientManager.msgParseTCPClient] " +
 				"连接验证失败,断开连接")
 			return
@@ -340,34 +270,34 @@ func msgParseTCPClient(client *tcpconn.ServerConn,
 			client.Serverinfo.Serverid, client.Serverinfo.Serverip,
 			client.Serverinfo.Serverport)
 
-		if client.Serverinfo.Servertype == def.TypeSuperServer &&
-			recvmsg.Taskinfo.Servertype == def.TypeSuperServer &&
-			base.GetGBServerConfigM().Myserverinfo.Servertype != def.TypeSuperServer {
-			// 如果登陆 SuperServer 成功，且当前不是 SuperServer
-			base.GetGBServerConfigM().Myserverinfo = recvmsg.Clientinfo
-			log.Debug("[GBTCPClientManager.msgParseTCPClient] "+
-				"获取本机信息成功"+
-				" ServerID[%d] IP[%s] Port[%d] HTTPPort[%d] Name[%s]",
-				recvmsg.Clientinfo.Serverid,
-				recvmsg.Clientinfo.Serverip,
-				recvmsg.Clientinfo.Serverport,
-				recvmsg.Clientinfo.Httpport,
-				recvmsg.Clientinfo.Servername)
-			base.GetGBServerConfigM().RedisConfig = recvmsg.Redisinfo
-		}
+		// if client.Serverinfo.Servertype == def.TypeSuperServer &&
+		// 	recvmsg.Taskinfo.Servertype == def.TypeSuperServer &&
+		// 	msg.GetGBServerConfigM().Myserverinfo.Servertype != def.TypeSuperServer {
+		// 	// 如果登陆 SuperServer 成功，且当前不是 SuperServer
+		// 	msg.GetGBServerConfigM().Myserverinfo = recvmsg.Clientinfo
+		// 	log.Debug("[GBTCPClientManager.msgParseTCPClient] "+
+		// 		"获取本机信息成功"+
+		// 		" ServerID[%d] IP[%s] Port[%d] HTTPPort[%d] Name[%s]",
+		// 		recvmsg.Clientinfo.Serverid,
+		// 		recvmsg.Clientinfo.Serverip,
+		// 		recvmsg.Clientinfo.Serverport,
+		// 		recvmsg.Clientinfo.Httpport,
+		// 		recvmsg.Clientinfo.Servername)
+		// 	msg.GetGBServerConfigM().RedisConfig = recvmsg.Redisinfo
+		// }
 		return
-	case servercomm.SLogoutCommandID:
+	case comm.SLogoutCommandID:
 		// 服务器已主动关闭，不再尝试连接它了
 		log.Debug("[msgParseTCPClient] 服务器已主动关闭，不再尝试连接它了 "+
 			"ServerInfo[%s]", client.Serverinfo.GetJson())
-		GetGBTCPClientManager().serverexitchanmutex.Lock()
-		defer GetGBTCPClientManager().serverexitchanmutex.Unlock()
-		GetSubnetManager().ServerConfigs.
+		this.serverexitchanmutex.Lock()
+		defer this.serverexitchanmutex.Unlock()
+		this.subnetManager.ServerConfigs.
 			RemoveServerConfig(client.Serverinfo.Serverid)
 		return
-	case servercomm.SStartMyNotifyCommandID:
+	case comm.SStartMyNotifyCommandID:
 		// 收到依赖我的服务器的信息
-		recvmsg := &servercomm.SStartMyNotifyCommand{}
+		recvmsg := &comm.SStartMyNotifyCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		serverinfo := recvmsg.Serverinfo
 		log.Debug("[GBTCPClientManager.msgParseTCPClient] "+
@@ -376,38 +306,30 @@ func msgParseTCPClient(client *tcpconn.ServerConn,
 			serverinfo.Serverid, serverinfo.Serverip,
 			serverinfo.Serverport, serverinfo.Httpport,
 			serverinfo.Servername)
-		GetGBTCPClientManager().serverexitchanmutex.Lock()
-		defer GetGBTCPClientManager().serverexitchanmutex.Unlock()
-		GetSubnetManager().ServerConfigs.AddServerConfig(serverinfo)
+		this.serverexitchanmutex.Lock()
+		defer this.serverexitchanmutex.Unlock()
+		this.subnetManager.ServerConfigs.AddServerConfig(serverinfo)
 		return
-	case servercomm.SNotifyAllInfoID:
+	case comm.SNotifyAllInfoID:
 		// 收到所有服务器的配置信息
-		recvmsg := &servercomm.SNotifyAllInfo{}
+		recvmsg := &comm.SNotifyAllInfo{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
-		GetGBTCPClientManager().serverexitchanmutex.Lock()
-		defer GetGBTCPClientManager().serverexitchanmutex.Unlock()
-		if client.Serverinfo.Servertype == def.TypeSuperServer {
-			GetSubnetManager().ServerConfigs.CleanServerConfig()
-		}
+		this.serverexitchanmutex.Lock()
+		defer this.serverexitchanmutex.Unlock()
+		// if client.Serverinfo.Servertype == def.TypeSuperServer {
+		// 	this.subnetManager.ServerConfigs.CleanServerConfig()
+		// }
 		log.Debug("[GBTCPClientManager.msgParseTCPClient] " +
 			"收到所有服务器列表信息")
 		// 所有服务器信息列表
 		for i := 0; i < len(recvmsg.Serverinfos); i++ {
 			serverinfo := recvmsg.Serverinfos[i]
-			GetSubnetManager().ServerConfigs.AddServerConfig(serverinfo)
-		}
-		return
-	case servercomm.SStartRelyNotifyCommandID:
-		if client.Serverinfo.Servertype == def.TypeSuperServer {
-			// 收到了我依赖的服务器的信息
-			recvmsg := &servercomm.SStartRelyNotifyCommand{}
-			recvmsg.ReadBinary([]byte(msgbin.ProtoData))
-			connectRelyServers(recvmsg.Serverinfos, clienter)
+			this.subnetManager.ServerConfigs.AddServerConfig(serverinfo)
 		}
 		return
 	}
 	msgqueues := &ConnectMsgQueueStruct{}
 	msgqueues.task = client
 	msgqueues.msg = msgbin
-	GetGBTCPClientManager().MultiQueueControl(msgqueues)
+	this.MultiQueueControl(msgqueues)
 }

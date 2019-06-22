@@ -42,7 +42,6 @@ const (
 	SRedisConfigID = 70
 	SRequestServerInfoID = 71
 	SNotifySafelyQuitID = 72
-	SAIUserRegisterID = 73
 )
 const (
 	SServerInfoName = "comm.SServerInfo"
@@ -82,7 +81,6 @@ const (
 	SRedisConfigName = "comm.SRedisConfig"
 	SRequestServerInfoName = "comm.SRequestServerInfo"
 	SNotifySafelyQuitName = "comm.SNotifySafelyQuit"
-	SAIUserRegisterName = "comm.SAIUserRegister"
 )
 func (this *SServerInfo) WriteBinary(data []byte) int {
 	return WriteMsgSServerInfoByObj(data,this)
@@ -195,9 +193,6 @@ func (this *SRequestServerInfo) WriteBinary(data []byte) int {
 func (this *SNotifySafelyQuit) WriteBinary(data []byte) int {
 	return WriteMsgSNotifySafelyQuitByObj(data,this)
 }
-func (this *SAIUserRegister) WriteBinary(data []byte) int {
-	return WriteMsgSAIUserRegisterByObj(data,this)
-}
 func (this *SServerInfo) ReadBinary(data []byte) int {
 	return ReadMsgSServerInfoByBytes(data, this)
 }
@@ -309,9 +304,6 @@ func (this *SRequestServerInfo) ReadBinary(data []byte) int {
 func (this *SNotifySafelyQuit) ReadBinary(data []byte) int {
 	return ReadMsgSNotifySafelyQuitByBytes(data, this)
 }
-func (this *SAIUserRegister) ReadBinary(data []byte) int {
-	return ReadMsgSAIUserRegisterByBytes(data, this)
-}
 func MsgIdToString(id uint16) string {
 	switch(id ) {
 		case SServerInfoID: 
@@ -388,8 +380,6 @@ func MsgIdToString(id uint16) string {
 		return SRequestServerInfoName
 		case SNotifySafelyQuitID: 
 		return SNotifySafelyQuitName
-		case SAIUserRegisterID: 
-		return SAIUserRegisterName
 		default:
 		return ""
 	}
@@ -470,8 +460,6 @@ func StringToMsgId(msgname string) uint16 {
 		return SRequestServerInfoID
 		case SNotifySafelyQuitName: 
 		return SNotifySafelyQuitID
-		case SAIUserRegisterName: 
-		return SAIUserRegisterID
 		default:
 		return 0
 	}
@@ -551,8 +539,6 @@ func MsgIdToType(id uint16) rune {
 		case SRequestServerInfoID: 
 		return rune('S')
 		case SNotifySafelyQuitID: 
-		return rune('S')
-		case SAIUserRegisterID: 
 		return rune('S')
 		default:
 		return rune(0)
@@ -669,9 +655,6 @@ func (this *SRequestServerInfo) GetMsgId() uint16 {
 func (this *SNotifySafelyQuit) GetMsgId() uint16 {
 	return SNotifySafelyQuitID
 }
-func (this *SAIUserRegister) GetMsgId() uint16 {
-	return SAIUserRegisterID
-}
 func (this *SServerInfo) GetMsgName() string {
 	return SServerInfoName
 }
@@ -783,9 +766,6 @@ func (this *SRequestServerInfo) GetMsgName() string {
 func (this *SNotifySafelyQuit) GetMsgName() string {
 	return SNotifySafelyQuitName
 }
-func (this *SAIUserRegister) GetMsgName() string {
-	return SAIUserRegisterName
-}
 func (this *SServerInfo) GetSize() int {
 	return GetSizeSServerInfo(this)
 }
@@ -896,9 +876,6 @@ func (this *SRequestServerInfo) GetSize() int {
 }
 func (this *SNotifySafelyQuit) GetSize() int {
 	return GetSizeSNotifySafelyQuit(this)
-}
-func (this *SAIUserRegister) GetSize() int {
-	return GetSizeSAIUserRegister(this)
 }
 func (this *SServerInfo) GetJson() string {
 	json,_ := json.Marshal(this)
@@ -1045,10 +1022,6 @@ func (this *SRequestServerInfo) GetJson() string {
 	return string(json)
 }
 func (this *SNotifySafelyQuit) GetJson() string {
-	json,_ := json.Marshal(this)
-	return string(json)
-}
-func (this *SAIUserRegister) GetJson() string {
 	json,_ := json.Marshal(this)
 	return string(json)
 }
@@ -3988,45 +3961,4 @@ func GetSizeSNotifySafelyQuit(obj *SNotifySafelyQuit) int {
 		return 2
 	}
 	return 2 + obj.TargetServerInfo.GetSize()
-}
-func ReadMsgSAIUserRegisterByBytes(indata []byte, obj *SAIUserRegister) int {
-	offset := 0
-	if len(indata) < 2 {
-		return 0
-	}
-	objsize := int(binary.BigEndian.Uint16(indata[offset:offset+2]))
-	offset += 2
-	if objsize == 0 {
-		return 2
-	}
-	if offset + objsize > len(indata ) {
-		return 2
-	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
-	offset = 0
-	data__len := len(data)
-	if offset + obj.Userinfo.GetSize() > data__len{
-		return endpos
-	}
-	offset += ReadMsgSUserInfoByBytes(data[offset:], &obj.Userinfo)
-	return endpos
-}
-func WriteMsgSAIUserRegisterByObj(data []byte, obj *SAIUserRegister) int {
-	if obj == nil {
-		binary.BigEndian.PutUint16(data[0:2],0)
-		return 2
-	}
-	objsize := obj.GetSize() - 2
-	offset := 0
-	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(objsize))
-	offset += 2
-	offset += WriteMsgSUserInfoByObj(data[offset:], &obj.Userinfo)
-	return offset
-}
-func GetSizeSAIUserRegister(obj *SAIUserRegister) int {
-	if obj == nil {
-		return 2
-	}
-	return 2 + obj.Userinfo.GetSize()
 }

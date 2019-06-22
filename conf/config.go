@@ -1,4 +1,4 @@
-package config
+package conf
 
 import (
 	"bytes"
@@ -42,7 +42,7 @@ type DBConfig struct {
 	Tables map[uint32]*DBTableConfig `json:"tables"`
 }
 
-type GBServerConfigM struct {
+type ServerConfig struct {
 	Allprops        map[string]string
 	Myserverinfo    comm.SServerInfo // 当前服务器信息
 	Myservername    string           // 当前服务器名称
@@ -61,22 +61,11 @@ type GBServerConfigM struct {
 	mutex          sync.Mutex
 }
 
-var serverconfigmanager_s *GBServerConfigM
-
-func GetGBServerConfigM() *GBServerConfigM {
-	return serverconfigmanager_s
-}
-
-func init() {
-	serverconfigmanager_s = &GBServerConfigM{}
-	serverconfigmanager_s.Allprops = make(map[string]string)
-}
-
-func (this *GBServerConfigM) AutoConfig(servername string, servertype uint32) {
+func (this *ServerConfig) AutoConfig(servername string, servertype uint32) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			log.Error("[GBServerConfigM.AutoConfig] "+
+			log.Error("[ServerConfig.AutoConfig] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -97,7 +86,7 @@ func (this *GBServerConfigM) AutoConfig(servername string, servertype uint32) {
 	this.loadConfigFile("config.xml")
 	err := util.LoadJsonFromFile("dbconfig.json", &this.dbs)
 	if err != nil {
-		log.Error("[GBServerConfigM.AutoConfig] 加载数据库配置出错 Err[%s]",
+		log.Error("[ServerConfig.AutoConfig] 加载数据库配置出错 Err[%s]",
 			err.Error())
 	}
 	this.Myserverinfo.Servertype = servertype
@@ -140,22 +129,22 @@ func (this *GBServerConfigM) AutoConfig(servername string, servertype uint32) {
 		// 外部性能监视
 		if this.getPropUnsafe("performance_test") == "true" {
 			// 获取 pprof Port
-			pprofport := this.getPropUintUnsafe("pprofport")
+			// pprofport := this.getPropUintUnsafe("pprofport")
 			// 获取 pprof IP
-			ifname := this.getPropUnsafe("ifname")
-			localip := util.GetIPv4ByInterface(ifname)
-			if pprofport > 0 && pprofport < 65536 && localip != "" {
-				err := BindPprof(localip, pprofport)
-				if err == nil {
-					this.hasConfigPprof = true
-				}
-			} else {
-				log.Debug("[GBServerConfigM.AutoConfig] 未设置 pprof "+
-					"IP/Port[%s:%d]",
-					localip, pprofport)
-			}
+			// ifname := this.getPropUnsafe("ifname")
+			// localip := util.GetIPv4ByInterface(ifname)
+			// if pprofport > 0 && pprofport < 65536 && localip != "" {
+			// 	err := BindPprof(localip, pprofport)
+			// 	if err == nil {
+			// 		this.hasConfigPprof = true
+			// 	}
+			// } else {
+			// 	log.Debug("[ServerConfig.AutoConfig] 未设置 pprof "+
+			// 		"IP/Port[%s:%d]",
+			// 		localip, pprofport)
+			// }
 		} else {
-			log.Debug("[GBServerConfigM.AutoConfig] pprof 不启动 "+
+			log.Debug("[ServerConfig.AutoConfig] pprof 不启动 "+
 				"performance_test[%s]",
 				this.getPropUnsafe("performance_test"))
 		}
@@ -168,17 +157,17 @@ func (this *GBServerConfigM) AutoConfig(servername string, servertype uint32) {
 		this.loadConfigTime, content)
 }
 
-func (this *GBServerConfigM) ReloadConfig() {
+func (this *ServerConfig) ReloadConfig() {
 	this.AutoConfig(this.Myservername, this.Myserverinfo.Servertype)
 }
 
-func (this *GBServerConfigM) GetTablesSum() uint32 {
+func (this *ServerConfig) GetTablesSum() uint32 {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	return uint32(len(this.dbs.Tables))
 }
 
-func (this *GBServerConfigM) GetTableInfo(
+func (this *ServerConfig) GetTableInfo(
 	tableindex uint32) (*DBTableConfig, error) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -189,37 +178,37 @@ func (this *GBServerConfigM) GetTableInfo(
 	return this.dbs.Tables[tableindex], nil
 }
 
-func (this *GBServerConfigM) GetDBsDBConfigs() map[uint32]string {
+func (this *ServerConfig) GetDBsDBConfigs() map[uint32]string {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	return this.dbs.Dbs
 }
 
-func (this *GBServerConfigM) GetProp(propname string) string {
+func (this *ServerConfig) GetProp(propname string) string {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	return this.getPropUnsafe(propname)
 }
 
-func (this *GBServerConfigM) GetPropInt(propname string) int32 {
+func (this *ServerConfig) GetPropInt(propname string) int32 {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	return this.getPropIntUnsafe(propname)
 }
 
-func (this *GBServerConfigM) GetPropUint(propname string) uint32 {
+func (this *ServerConfig) GetPropUint(propname string) uint32 {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	return this.getPropUintUnsafe(propname)
 }
 
-func (this *GBServerConfigM) GetPropBool(propname string) bool {
+func (this *ServerConfig) GetPropBool(propname string) bool {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	return this.getPropBoolUnsafe(propname)
 }
 
-func (this *GBServerConfigM) getPropUnsafe(propname string) string {
+func (this *ServerConfig) getPropUnsafe(propname string) string {
 	if propvalue, found := this.Allprops[propname+"_s"]; found {
 		return propvalue
 	}
@@ -229,17 +218,17 @@ func (this *GBServerConfigM) getPropUnsafe(propname string) string {
 	return ""
 }
 
-func (this *GBServerConfigM) getPropIntUnsafe(propname string) int32 {
+func (this *ServerConfig) getPropIntUnsafe(propname string) int32 {
 	retvalue, _ := strconv.Atoi(this.getPropUnsafe(propname))
 	return int32(retvalue)
 }
 
-func (this *GBServerConfigM) getPropUintUnsafe(propname string) uint32 {
+func (this *ServerConfig) getPropUintUnsafe(propname string) uint32 {
 	retvalue, _ := strconv.Atoi(this.getPropUnsafe(propname))
 	return uint32(retvalue)
 }
 
-func (this *GBServerConfigM) getPropBoolUnsafe(propname string) bool {
+func (this *ServerConfig) getPropBoolUnsafe(propname string) bool {
 	retvalue := this.getPropUnsafe(propname)
 	if retvalue == "true" || retvalue == "True" || retvalue == "TRUE" {
 		return true
@@ -247,17 +236,17 @@ func (this *GBServerConfigM) getPropBoolUnsafe(propname string) bool {
 	return false
 }
 
-func (this *GBServerConfigM) SetProp(propname string, value string) {
+func (this *ServerConfig) SetProp(propname string, value string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	this.setProp(propname, value)
 }
 
-func (this *GBServerConfigM) setProp(propname string, value string) {
+func (this *ServerConfig) setProp(propname string, value string) {
 	this.Allprops[propname] = value
 }
 
-func (this *GBServerConfigM) loadConfigFile(filename string) bool {
+func (this *ServerConfig) loadConfigFile(filename string) bool {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Println(err)
@@ -284,14 +273,14 @@ func (this *GBServerConfigM) loadConfigFile(filename string) bool {
 	log.Debug("加载配置文件,servername:%s", this.Myservername)
 	this.parse_token(decoder, t)
 
-	ifname := this.getPropUnsafe("ifname")
-	localip := util.GetIPv4ByInterface(ifname)
-	this.Myserverinfo.Serverip = localip
+	// ifname := this.getPropUnsafe("ifname")
+	// localip := util.GetIPv4ByInterface(ifname)
+	// this.Myserverinfo.Serverip = localip
 	log.Debug("加载配置文件完成,servername:%s", this.Myservername)
 	return true
 }
 
-func (this *GBServerConfigM) parse_token(decoder *xml.Decoder,
+func (this *ServerConfig) parse_token(decoder *xml.Decoder,
 	xmltoken xml.Token) {
 	var t xml.Token
 	var err error
@@ -359,7 +348,7 @@ func (this *GBServerConfigM) parse_token(decoder *xml.Decoder,
 }
 
 // 参数解析相关
-func (this *GBServerConfigM) initParse() {
+func (this *ServerConfig) initParse() {
 	if this.hasAutoConfig {
 		return
 	}

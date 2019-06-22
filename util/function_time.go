@@ -7,7 +7,7 @@
  *
  */
 
-package functime
+package util
 
 import (
 	"fmt"
@@ -95,10 +95,6 @@ type FunctionTimeAnalysic struct {
 }
 
 func (this *FunctionTimeAnalysic) Start() {
-	optimize_analysis := base.GetGBServerConfigM().GetProp("optimize_analysis")
-	if optimize_analysis != "true" {
-		return
-	}
 	this.starttime = uint64(time.Now().UnixNano() / 1000000)
 	pc, file, line, _ := runtime.Caller(1)
 	this.functionname = fmt.Sprintf("%s:%d", file, line)
@@ -106,10 +102,6 @@ func (this *FunctionTimeAnalysic) Start() {
 	this.callname = f.Name()
 }
 func (this *FunctionTimeAnalysic) Stop() {
-	optimize_analysis := base.GetGBServerConfigM().GetProp("optimize_analysis")
-	if optimize_analysis != "true" {
-		return
-	}
 	this.endtime = uint64(time.Now().UnixNano() / 1000000)
 	usetime := this.endtime - this.starttime
 	optimize_analysic_s.mutex.Lock()

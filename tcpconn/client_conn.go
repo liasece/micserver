@@ -1,9 +1,8 @@
 package tcpconn
 
 import (
-	//	"os"
-	"github.com/liasece/micserver"
 	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/msg"
 	// "math/rand"
 	"net"
 	// "servercomm"
@@ -33,7 +32,7 @@ type ClientConn struct {
 
 	CreateTime uint64 // 连接创建的时间
 
-	Encryption base.TEncryptionType
+	Encryption msg.TEncryptionType
 
 	ping Ping
 
@@ -145,14 +144,14 @@ func (this *ClientConn) Terminate() {
 }
 
 // 异步发送一条消息，不带发送完成回调
-func (this *ClientConn) SendCmd(v base.MsgStruct) {
+func (this *ClientConn) SendCmd(v msg.MsgStruct) {
 	this.Debug("[SendCmd] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())
 	this.Conn.SendCmd(v, this.Encryption)
 }
 
 // 异步发送一条消息，带发送完成回调
-func (this *ClientConn) SendCmdWithCallback(v base.MsgStruct,
+func (this *ClientConn) SendCmdWithCallback(v msg.MsgStruct,
 	callback func(interface{}), cbarg interface{}) {
 	this.Debug("[SendCmdWithCallback] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())

@@ -17,7 +17,7 @@ func BindPprof(ip string, port uint32) error {
 func startPprofThread(ip string, port uint32) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+		if err, stackInfo := GetPanicInfo(recover()); err != nil {
 			log.Error("[startPprofThread] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
@@ -32,6 +32,5 @@ func startPprofThread(ip string, port uint32) {
 	} else {
 		log.Error("[startPprofThread] pprof启动失败 Addr[%s] Err[%s]",
 			pprofportstr, err.Error())
-		GetGBServerConfigM().hasConfigPprof = false
 	}
 }
