@@ -8,16 +8,10 @@ import (
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/server/subnet/serconfs"
 	"github.com/liasece/micserver/tcpconn"
-	"github.com/liasece/micserver/util"
 	"net/http"
 	"os"
-	"os/signal"
-	"runtime"
-	"runtime/pprof"
 	"strings"
 	"sync"
-	"syscall"
-	"time"
 )
 
 type ConnectMsgQueueStruct struct {
@@ -33,7 +27,7 @@ func CheckServerType(servertype uint32) bool {
 }
 
 // websocket连接管理器
-type SubnetManger struct {
+type SubnetManager struct {
 	serverhandler IServerHandler
 	servermanger  ServerManager
 
@@ -45,7 +39,7 @@ type SubnetManger struct {
 	moudleConf *conf.ServerConfig
 }
 
-func (this *SubnetManger) InitManager() {
+func (this *SubnetManager) InitManager() {
 
 	this.clientManager = &GBTCPClientManager{}
 	this.clientManager.subnetManager = this
@@ -59,7 +53,15 @@ func (this *SubnetManger) InitManager() {
 		Init(tcpconn.ServerSCTypeTask, 2)
 }
 
-func (this *SubnetManger) GetLatestVersionServerConfigByType(servertype uint32) uint64 {
+func (this *SubnetManager) GetClientManager() *GBTCPClientManager {
+	return this.clientManager
+}
+
+func (this *SubnetManager) GetTaskManager() *GBTCPTaskManager {
+	return this.taskManager
+}
+
+func (this *SubnetManager) GetLatestVersionServerConfigByType(servertype uint32) uint64 {
 	latestVersion := uint64(0)
 	this.ServerConfigs.RangeServerConfig(
 		func(value comm.SServerInfo) bool {
@@ -72,11 +74,11 @@ func (this *SubnetManger) GetLatestVersionServerConfigByType(servertype uint32) 
 	return latestVersion
 }
 
-func (this *SubnetManger) GetServerManger() ServerManager {
+func (this *SubnetManager) GetServerManger() ServerManager {
 	return this.servermanger
 }
 
-func (this *SubnetManger) GetServerHandler() IServerHandler {
+func (this *SubnetManager) GetServerHandler() IServerHandler {
 	return this.serverhandler
 }
 
@@ -97,45 +99,9 @@ type ServerManager interface {
 	NotifyOtherMyInfo()
 }
 
-func (this *SubnetManger) StartMain(server IServerHandler, manager ServerManager) {
-	log.Debug("[SubNetManager.StartMain] " +
-		"Main is start------")
-	// 初始化参数
-	this.servermanger = manager
-	this.serverhandler = server
-
-	// 绑定本地服务端口
-	// 必须等待本地服务器端口绑定完成之后，再进行其他操作
-	// 这是服务器加入内部网络的基础
-	err := this.BindMyTCPServer(server)
-	if err != nil {
-		log.Error("[StartMain] BindMyTCPServer Err[%s]", err)
-		return
-	}
-
-	// 监听系统Signal
-	go this.SignalListen(manager)
-
-	// 初始化服务器
-	server.OnInit()
-
-	// 保持程序运行
-	for !this.moudleConf.TerminateServer {
-		time.Sleep(1 * time.Second)
-	}
-
-	// 当程序即将结束时
-	server.OnFinal()
-	log.Debug("[SubNetManager.StartMain] " +
-		"All server is over add save datas")
-
-	// 等日志打完
-	time.Sleep(1 * time.Second)
-}
-
 var serverLoginMutex sync.Mutex
 
-func (this *SubnetManger) OnServerLogin(tcptask *tcpconn.ServerConn,
+func (this *SubnetManager) OnServerLogin(tcptask *tcpconn.ServerConn,
 	tarinfo *comm.SLoginCommand) {
 	serverLoginMutex.Lock()
 	defer serverLoginMutex.Unlock()
@@ -250,7 +216,7 @@ func (this *SubnetManger) OnServerLogin(tcptask *tcpconn.ServerConn,
 }
 
 // 绑定我的HTTP服务 会阻塞
-func (this *SubnetManger) BindMyHttpServer() {
+func (this *SubnetManager) BindMyHttpServer() {
 	usehttps := this.moudleConf.GetProp("usehttps")
 	if this.moudleConf.Myserverinfo.Httpport > 0 {
 		httpportstr := fmt.Sprintf(":%d",
@@ -282,7 +248,7 @@ func (this *SubnetManger) BindMyHttpServer() {
 }
 
 // 绑定我的HTTPS服务 会阻塞
-func (this *SubnetManger) BindMyHttpsServer() error {
+func (this *SubnetManager) BindMyHttpsServer() error {
 	if this.moudleConf.Myserverinfo.Httpsport > 0 {
 		httpportstr := fmt.Sprintf(":%d",
 			this.moudleConf.Myserverinfo.Httpsport)
@@ -301,74 +267,4 @@ func (this *SubnetManger) BindMyHttpsServer() error {
 		}
 	}
 	return nil
-}
-
-// cpu性能测试
-func (this *SubnetManger) startTestCpuProfile() {
-	defer func() {
-		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			log.Error("[startTestCpuProfile] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
-		}
-	}()
-	log.Debug("[SubNetManager.startTestCpuProfile] " +
-		"[性能分析] StartTestCpuProfile start")
-	filename := this.moudleConf.GetProp("profile_filename")
-	testtime := this.moudleConf.GetPropInt("profile_time")
-	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		return
-	}
-	err = pprof.StartCPUProfile(f)
-	if err != nil {
-		log.Error("[startTestCpuProfile] pprof.StartCPUProfile Err[%s]",
-			err.Error())
-		return
-	}
-	for i := 0; i < int(testtime); i++ {
-		time.Sleep(1 * time.Second)
-	}
-	pprof.StopCPUProfile()
-	f.Close()
-	log.Debug("[SubNetManager.startTestCpuProfile] " +
-		"[性能分析] StartTestCpuProfile end")
-}
-
-// 监听系统消息
-func (this *SubnetManger) SignalListen(manager ServerManager) {
-	c := make(chan os.Signal, 10)
-	signal.Notify(c, syscall.SIGINT,
-		syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGUSR1,
-		syscall.SIGUSR2)
-	for {
-		s := <-c
-		log.Debug("[SubNetManager.SignalListen] "+
-			"Get signal Signal[%d]", s)
-		manager.OnSignal(s)
-		switch s {
-		case syscall.SIGUSR1:
-			go this.startTestCpuProfile()
-		case syscall.SIGUSR2:
-		case syscall.SIGTERM:
-		case syscall.SIGINT:
-			// //收到信号后的处理
-			// if this.moudleConf.Myserverinfo.Servertype !=
-			// 	def.TypeSuperServer {
-			// 	// 通知我的主服务器，退出连接了
-			// 	sendmsg := &comm.SLogoutCommand{}
-			// 	this.clientManager.BroadcastByType(def.TypeSuperServer,
-			// 		sendmsg)
-			// 	// 发送给所有连接到我的服务器，我要关闭了，别再尝试连接我了
-			// 	this.taskManager.BroadcastAll(sendmsg)
-			// }
-			this.moudleConf.TerminateServer = true
-		case syscall.SIGQUIT:
-			// 捕捉到就退不出了
-			buf := make([]byte, 1<<20)
-			stacklen := runtime.Stack(buf, true)
-			log.Debug("[SubNetManager.SignalListen] "+
-				"Received SIGQUIT, \n: Stack[%s]", buf[:stacklen])
-		}
-	}
 }

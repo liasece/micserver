@@ -42,7 +42,7 @@ type GBTCPClientManager struct {
 
 	connectMutex sync.Mutex
 
-	subnetManager *SubnetManger
+	subnetManager *SubnetManager
 }
 
 // 初始化消息处理线程

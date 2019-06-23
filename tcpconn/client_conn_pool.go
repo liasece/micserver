@@ -19,8 +19,8 @@ type uint64ToClientConn struct {
 	m *util.MapPool
 }
 
-func (this *uint64ToClientConn) Init(gsum uint32) {
-	this.m = util.NewMapPool(gsum)
+func (this *uint64ToClientConn) Init(gsum int) {
+	this.m = util.NewMapPool(uint32(gsum))
 }
 
 func (this *uint64ToClientConn) Store(k uint64, v *ClientConn) {
@@ -89,8 +89,8 @@ type ClientConnPool struct {
 	groupID        uint16
 }
 
-func (this *ClientConnPool) Init(groupID uint16) {
-	this.groupID = groupID
+func (this *ClientConnPool) Init(groupID int) {
+	this.groupID = uint16(groupID)
 	this.allsockets.Init(mClientConnPoolGroupSum)
 	this.allopenidtasks.Init(mClientConnPoolGroupSum)
 	this.alluuidtasks.Init(mClientConnPoolGroupSum)

@@ -44,7 +44,7 @@ type GBTCPTaskManager struct {
 	lastwarningtime1 uint32
 	lastwarningtime2 uint32
 
-	subnetManager *SubnetManger
+	subnetManager *SubnetManager
 }
 
 func (this *GBTCPTaskManager) InitMsgQueue(sum int) {

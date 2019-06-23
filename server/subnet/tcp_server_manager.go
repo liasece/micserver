@@ -10,7 +10,7 @@ import (
 )
 
 // 该函数会阻塞
-func (this *SubnetManger) BindMyTCPServer(server IServerHandler) error {
+func (this *SubnetManager) BindMyTCPServer(server IServerHandler) error {
 	serverid := this.moudleConf.Myserverinfo.Serverid
 	if serverid == 0 {
 		log.Error("[BindMyTCPServer] 本服务器ID为0 无法绑定本机ServerPort")
@@ -31,7 +31,7 @@ func (this *SubnetManger) BindMyTCPServer(server IServerHandler) error {
 
 // 接口对象必须用new的
 // 绑定服务器
-func (this *SubnetManger) BindTCPServer(serverip string, serverport string,
+func (this *SubnetManager) BindTCPServer(serverip string, serverport string,
 	server IServerHandler) error {
 	serverinfo := serverip + ":" + serverport
 	netlisten, err := net.Listen("tcp", serverinfo)
@@ -52,7 +52,7 @@ func (this *SubnetManger) BindTCPServer(serverip string, serverport string,
 	return nil
 }
 
-func (this *SubnetManger) TCPServerListenerProcess(listener net.Listener,
+func (this *SubnetManager) TCPServerListenerProcess(listener net.Listener,
 	server IServerHandler) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
@@ -67,7 +67,7 @@ func (this *SubnetManger) TCPServerListenerProcess(listener net.Listener,
 	}
 }
 
-func (this *SubnetManger) mTCPServerListener(listener net.Listener,
+func (this *SubnetManager) mTCPServerListener(listener net.Listener,
 	server IServerHandler) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
