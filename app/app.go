@@ -136,8 +136,7 @@ func (this *App) SignalListen(manager ServerManager) {
 }
 
 func (this *App) Run() {
-	log.Debug("[SubNetManager.StartMain] " +
-		"Main is start------")
+	log.Debug("[App.Run] ----- Main is start ----- ")
 	// 初始化参数
 	// this.servermanger = manager
 	// this.serverhandler = server
@@ -150,6 +149,9 @@ func (this *App) Run() {
 	// 	log.Error("[StartMain] BindMyTCPServer Err[%s]", err)
 	// 	return
 	// }
+	if this.gatebase != nil {
+		this.gatebase.BindOuterTCP()
+	}
 
 	// 监听系统Signal
 	go this.SignalListen(this.servermanger)
@@ -164,9 +166,9 @@ func (this *App) Run() {
 
 	// 当程序即将结束时
 	// server.OnFinal()
-	log.Debug("[SubNetManager.StartMain] " +
-		"All server is over add save datas")
+	log.Debug("[App.Run] All server is over add save datas")
 
 	// 等日志打完
 	time.Sleep(1 * time.Second)
+	log.Debug("[App.Run] ----- Main is quit ----- ")
 }

@@ -83,7 +83,7 @@ func (this *ServerConfig) AutoConfig(servername string, servertype uint32) {
 			fmt.Sprintf("%03d", this.getPropUintUnsafe("servernumber"))
 	}
 
-	this.loadConfigFile("config.xml")
+	this.loadXMLConfigFile("config.xml")
 	err := util.LoadJsonFromFile("dbconfig.json", &this.dbs)
 	if err != nil {
 		log.Error("[ServerConfig.AutoConfig] 加载数据库配置出错 Err[%s]",
@@ -246,7 +246,7 @@ func (this *ServerConfig) setProp(propname string, value string) {
 	this.Allprops[propname] = value
 }
 
-func (this *ServerConfig) loadConfigFile(filename string) bool {
+func (this *ServerConfig) loadXMLConfigFile(filename string) bool {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Println(err)
