@@ -11,13 +11,13 @@ import (
 
 // 该函数会阻塞
 func (this *SubnetManager) BindMyTCPServer(server IServerHandler) error {
-	serverid := this.moudleConf.Myserverinfo.Serverid
-	if serverid == 0 {
-		log.Error("[BindMyTCPServer] 本服务器ID为0 无法绑定本机ServerPort")
-		return errors.New("server id is 0")
-	}
-	serverip := this.moudleConf.Myserverinfo.Serverip
-	serverport := this.moudleConf.Myserverinfo.Serverport
+	// serverid := this.moudleConf.Myserverinfo.Serverid
+	// if serverid == 0 {
+	// 	log.Error("[BindMyTCPServer] 本服务器ID为0 无法绑定本机ServerPort")
+	// 	return errors.New("server id is 0")
+	// }
+	serverip := ""
+	serverport := 0
 	if serverport > 0 {
 		portstr := fmt.Sprintf("%d", serverport)
 		return this.BindTCPServer(serverip, portstr, server)
@@ -37,15 +37,14 @@ func (this *SubnetManager) BindTCPServer(serverip string, serverport string,
 	netlisten, err := net.Listen("tcp", serverinfo)
 	if err != nil {
 		log.Error("[SubNetManager.BindTCPServer] "+
-			"服务器绑定失败 ServerID[%d] IP[%s] Port[%s] Err[%s]",
-			this.moudleConf.Myserverinfo.Serverid, serverip,
+			"服务器绑定失败 IP[%s] Port[%s] Err[%s]",
+			serverip,
 			serverport, err.Error())
 		return err
 	}
-	myservertype := this.moudleConf.Myserverinfo.Servertype
+	// myservertype := this.moudleConf.Myserverinfo.Servertype
 	log.Debug("[SubNetManager.BindTCPServer] "+
-		"服务器绑定成功 IP[%s] Port[%s] Type[%d]", serverip, serverport,
-		myservertype)
+		"服务器绑定成功 IP[%s] Port[%s]", serverip, serverport)
 
 	this.taskManager.serverhandler = server
 	go this.TCPServerListenerProcess(netlisten, server)
@@ -62,7 +61,7 @@ func (this *SubnetManager) TCPServerListenerProcess(listener net.Listener,
 		}
 	}()
 	defer listener.Close()
-	for !this.moudleConf.TerminateServer {
+	for true {
 		this.mTCPServerListener(listener, server)
 	}
 }
@@ -78,7 +77,7 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener,
 		}
 	}()
 
-	for !this.moudleConf.TerminateServer {
+	for true {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Error("[SubNetManager.TCPServerListenerProcess] "+

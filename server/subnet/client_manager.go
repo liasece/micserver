@@ -133,19 +133,19 @@ func (this *GBTCPClientManager) ConnectServer(serverid uint32,
 
 	// 构造登陆消息
 	sendmsg := &comm.SLoginCommand{}
-	sendmsg.Servertype = this.subnetManager.moudleConf.
-		Myserverinfo.Servertype
-	sendmsg.Serverip = this.subnetManager.moudleConf.Myserverinfo.Serverip
-	sendmsg.Servername = this.subnetManager.moudleConf.Myservername
-	sendmsg.Serverport = this.subnetManager.moudleConf.
-		Myserverinfo.Serverport
-	sendmsg.ServerNumber = this.subnetManager.moudleConf.
-		GetPropUint("servernumber")
-	sendmsg.Version = this.subnetManager.moudleConf.Version
-	if this.subnetManager.moudleConf.Myserverinfo.Serverid > 0 {
-		sendmsg.Serverid = this.subnetManager.moudleConf.
-			Myserverinfo.Serverid
-	}
+	// sendmsg.Servertype = this.subnetManager.moudleConf.
+	// 	Myserverinfo.Servertype
+	// sendmsg.Serverip = this.subnetManager.moudleConf.Myserverinfo.Serverip
+	// sendmsg.Servername = this.subnetManager.moudleConf.Myservername
+	// sendmsg.Serverport = this.subnetManager.moudleConf.
+	// 	Myserverinfo.Serverport
+	// sendmsg.ServerNumber = this.subnetManager.moudleConf.
+	// 	GetPropUint("servernumber")
+	// sendmsg.Version = this.subnetManager.moudleConf.Version
+	// if this.subnetManager.moudleConf.Myserverinfo.Serverid > 0 {
+	// 	sendmsg.Serverid = this.subnetManager.moudleConf.
+	// 		Myserverinfo.Serverid
+	// }
 	// 发送登陆请求
 	client.SendCmd(sendmsg)
 

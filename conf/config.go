@@ -4,64 +4,38 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/util"
-	// "errors"
 	"flag"
 	"fmt"
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/util"
 	"io/ioutil"
 	"math/rand"
-	// "net/http"
 	_ "net/http/pprof"
-	// "os"
-	// "os/signal"
-	"github.com/liasece/micserver/comm"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	// "syscall"
 	"sync"
 	"time"
 )
 
-type DBTableConfig struct {
-	// 数据库实例索引
-	DBIndex uint32 `json:"dbindex"`
-	// 该表对应的表名字
-	TableName string `json:"name"`
-}
-
-type DBConfig struct {
-	// 数据库实例
-	// 	key 		---  value
-	// 	数据库实例索引    连接字符串
-	Dbs map[uint32]string `json:"dbs"`
-	// 数据库 表 实例
-	// 	key 					---  value
-	//  表索引，用于哈希Openid        表配置对象
-	Tables map[uint32]*DBTableConfig `json:"tables"`
-}
-
 type ServerConfig struct {
-	Allprops        map[string]string
-	Myserverinfo    comm.SServerInfo // 当前服务器信息
-	Myservername    string           // 当前服务器名称
-	TerminateServer bool             //  服务器是否需要结束了
+	AppConfig AppConfig `json:"app"` // 进程配置信息
+
+	// 全局配置字符串，一般是从进程启动时携带的参数提供的
+	globalProp map[string]string `json:"-"`
 
 	// 服务器数字版本
-	// 命名规则为： YYYYMMDDhhmm (年月日时分)
-	Version uint64
+	// 建议命名规则为： YYYYMMDDhhmmss (年月日时分秒)
+	Version uint64 `json:"-"`
 
-	dbs         DBConfig          // 数据库配置
-	RedisConfig comm.SRedisConfig // Redis配置
-
-	hasAutoConfig  bool
-	hasConfigPprof bool
-	loadConfigTime uint32
-	mutex          sync.Mutex
+	hasAutoConfig  bool       `json:"-"`
+	hasConfigPprof bool       `json:"-"`
+	loadConfigTime uint32     `json:"-"`
+	mutex          sync.Mutex `json:"-"`
 }
 
-func (this *ServerConfig) AutoConfig(servername string, servertype uint32) {
+func (this *ServerConfig) AutoConfig() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
@@ -77,36 +51,33 @@ func (this *ServerConfig) AutoConfig(servername string, servertype uint32) {
 	rand.Seed(time.Now().UnixNano())
 
 	this.initParse()
-	this.Myservername = servername
-	if servername == "SuperServer" || servername == "LoginServer" {
-		this.Myservername = servername +
-			fmt.Sprintf("%03d", this.getPropUintUnsafe("servernumber"))
+	processid := this.GetProp("processid")
+
+	{
+		pwd, err := os.Getwd()
+		if err == nil {
+			jsonconfigpath := filepath.Join(pwd, "config", "config.json")
+			err := this.loadJsonConfigFile(jsonconfigpath)
+			if err != nil {
+				log.Error("this.loadJsonConfigFile(jsonconfigpath) err:%v", err)
+			}
+		} else {
+			log.Error("os.Getwd() err:%v", err)
+		}
 	}
 
-	this.loadXMLConfigFile("config.xml")
-	err := util.LoadJsonFromFile("dbconfig.json", &this.dbs)
-	if err != nil {
-		log.Error("[ServerConfig.AutoConfig] 加载数据库配置出错 Err[%s]",
-			err.Error())
-	}
-	this.Myserverinfo.Servertype = servertype
+	// err := util.LoadJsonFromFile("dbconfig.json", &this.dbs)
+	// if err != nil {
+	// 	log.Error("[ServerConfig.AutoConfig] 加载数据库配置出错 Err[%s]",
+	// 		err.Error())
+	// }
+	// this.Myserverinfo.Servertype = servertype
 
 	// 初始化日志文件
 	// 重新设置日志文件目录
 	logpath := this.getPropUnsafe("logdir")
 	if !this.hasAutoConfig {
-		logsubname := ""
-		if this.getPropUnsafe("servernumber") != "" {
-			logsubname = "default_" + strings.ToLower(this.Myservername) +
-				fmt.Sprintf("%03d",
-					this.getPropUintUnsafe("servernumber")) + ".log"
-		} else {
-			logsubname = "default_" + strings.ToLower(this.Myservername) +
-				".log"
-		}
-		if servername == "SuperServer" || servername == "LoginServer" {
-			logsubname = strings.ToLower(this.Myservername) + ".log"
-		}
+		logsubname := processid + ".log"
 		logfilename := filepath.Join(logpath, logsubname)
 		daemon := this.getPropUnsafe("daemon")
 		if daemon == "true" {
@@ -117,12 +88,12 @@ func (this *ServerConfig) AutoConfig(servername string, servertype uint32) {
 			log.AddlogFile(logfilename, false)
 		}
 	} else {
-		logsubname := strings.ToLower(this.Myservername) + ".log"
+		logsubname := processid + ".log"
 		logfilename := filepath.Join(logpath, logsubname)
 		log.ChangelogFile(logfilename)
 	}
 	// 设置日志级别
-	log.SetLogLevel(this.getPropUnsafe("loglevel"))
+	log.SetLogLevel("debug")
 
 	// 配置 pprof
 	if !this.hasConfigPprof {
@@ -158,31 +129,31 @@ func (this *ServerConfig) AutoConfig(servername string, servertype uint32) {
 }
 
 func (this *ServerConfig) ReloadConfig() {
-	this.AutoConfig(this.Myservername, this.Myserverinfo.Servertype)
+	this.AutoConfig()
 }
 
-func (this *ServerConfig) GetTablesSum() uint32 {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-	return uint32(len(this.dbs.Tables))
-}
+// func (this *ServerConfig) GetTablesSum() uint32 {
+// 	this.mutex.Lock()
+// 	defer this.mutex.Unlock()
+// 	return uint32(len(this.dbs.Tables))
+// }
 
-func (this *ServerConfig) GetTableInfo(
-	tableindex uint32) (*DBTableConfig, error) {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-	if _, finded := this.dbs.Tables[tableindex]; !finded {
-		return nil,
-			fmt.Errorf("tableindex %d dose't exit", tableindex)
-	}
-	return this.dbs.Tables[tableindex], nil
-}
+// func (this *ServerConfig) GetTableInfo(
+// 	tableindex uint32) (*DBTableConfig, error) {
+// 	this.mutex.Lock()
+// 	defer this.mutex.Unlock()
+// 	if _, finded := this.dbs.Tables[tableindex]; !finded {
+// 		return nil,
+// 			fmt.Errorf("tableindex %d dose't exit", tableindex)
+// 	}
+// 	return this.dbs.Tables[tableindex], nil
+// }
 
-func (this *ServerConfig) GetDBsDBConfigs() map[uint32]string {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-	return this.dbs.Dbs
-}
+// func (this *ServerConfig) GetDBsDBConfigs() map[uint32]string {
+// 	this.mutex.Lock()
+// 	defer this.mutex.Unlock()
+// 	return this.dbs.Dbs
+// }
 
 func (this *ServerConfig) GetProp(propname string) string {
 	this.mutex.Lock()
@@ -209,10 +180,10 @@ func (this *ServerConfig) GetPropBool(propname string) bool {
 }
 
 func (this *ServerConfig) getPropUnsafe(propname string) string {
-	if propvalue, found := this.Allprops[propname+"_s"]; found {
+	if propvalue, found := this.globalProp[propname+"_s"]; found {
 		return propvalue
 	}
-	if propvalue, found := this.Allprops[propname]; found {
+	if propvalue, found := this.globalProp[propname]; found {
 		return propvalue
 	}
 	return ""
@@ -243,7 +214,19 @@ func (this *ServerConfig) SetProp(propname string, value string) {
 }
 
 func (this *ServerConfig) setProp(propname string, value string) {
-	this.Allprops[propname] = value
+	this.globalProp[propname] = value
+}
+
+func (this *ServerConfig) loadJsonConfigFile(path string) error {
+	content, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(content, &this.AppConfig)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (this *ServerConfig) loadXMLConfigFile(filename string) bool {
@@ -264,19 +247,19 @@ func (this *ServerConfig) loadXMLConfigFile(filename string) bool {
 	}
 
 	// 优先使用命令行的
-	if len(this.getPropUnsafe("servername")) > 0 {
-		this.Myservername = this.getPropUnsafe("servername")
-	}
-	if len(this.Myserverinfo.Servername) > 0 {
-		this.Myservername = this.Myserverinfo.Servername
-	}
-	log.Debug("加载配置文件,servername:%s", this.Myservername)
+	// if len(this.getPropUnsafe("modulename")) > 0 {
+	// 	this.Myservername = this.getPropUnsafe("modulename")
+	// }
+	// if len(this.Myserverinfo.Servername) > 0 {
+	// 	this.Myservername = this.Myserverinfo.Servername
+	// }
+	// log.Debug("加载配置文件,modulename:%s", this.Myservername)
 	this.parse_token(decoder, t)
 
 	// ifname := this.getPropUnsafe("ifname")
 	// localip := util.GetIPv4ByInterface(ifname)
 	// this.Myserverinfo.Serverip = localip
-	log.Debug("加载配置文件完成,servername:%s", this.Myservername)
+	log.Debug("加载配置文件完成")
 	return true
 }
 
@@ -292,11 +275,11 @@ func (this *ServerConfig) parse_token(decoder *xml.Decoder,
 		// 处理元素开始（标签）
 		case xml.StartElement:
 			token := t.(xml.StartElement)
-			nodename := token.Name.Local
-			if (len(this.Myservername) > 0 && nodename == this.Myservername) ||
-				nodename == "global" {
-				checkservername = true
-			}
+			// nodename := token.Name.Local
+			// if (len(this.Myservername) > 0 && nodename == this.Myservername) ||
+			// 	nodename == "global" {
+			// 	checkservername = true
+			// }
 			if !checkservername {
 				continue
 			}
@@ -310,19 +293,19 @@ func (this *ServerConfig) parse_token(decoder *xml.Decoder,
 			}
 			if propname == "superserver" {
 				superserverport := attrs["port"]
-				this.Allprops["superserverport"] = superserverport
+				this.globalProp["superserverport"] = superserverport
 				superserverid := attrs["serverid"]
-				this.Allprops["superserverid"] = superserverid
+				this.globalProp["superserverid"] = superserverid
 			}
 			continue
 			// 处理元素结束（标签）
 		case xml.EndElement:
-			token := t.(xml.EndElement)
-			nodename := token.Name.Local
-			if (len(this.Myservername) > 0 && nodename == this.Myservername) ||
-				nodename == "global" {
-				checkservername = false
-			}
+			// token := t.(xml.EndElement)
+			// nodename := token.Name.Local
+			// if (len(this.Myservername) > 0 && nodename == this.Myservername) ||
+			// 	nodename == "global" {
+			// 	checkservername = false
+			// }
 			continue
 		case xml.Comment:
 			continue
@@ -333,9 +316,9 @@ func (this *ServerConfig) parse_token(decoder *xml.Decoder,
 			token := t.(xml.CharData)
 			content := string([]byte(token))
 			if propname != "" && len(content) > 0 {
-				this.Allprops[propname] = content
+				this.globalProp[propname] = content
 				if propname == "superserver" {
-					this.Allprops["superserverip"] = content
+					this.globalProp["superserverip"] = content
 				}
 			}
 			propname = ""
@@ -355,35 +338,31 @@ func (this *ServerConfig) initParse() {
 	var daemonflag string
 	flag.StringVar(&daemonflag, "d", "", "as a daemon true or false")
 
-	var serverflag string
-	flag.StringVar(&serverflag, "s", "", "server name info as UserServer01")
+	var processflag string
+	flag.StringVar(&processflag, "p", "", "process id as gate001")
 
 	var lognameflag string
 	flag.StringVar(&lognameflag, "l", "", "log name  as /log/gatewayserver.log")
 
-	var servernumber string
-	flag.StringVar(&servernumber, "n", "", "server number  as 0 1 2...")
-
 	var serverversion string
-	flag.StringVar(&serverversion, "v", "", "server version  as [0-9]{12}")
+	flag.StringVar(&serverversion, "v", "", "server version  as [0-9]{14}")
 
 	flag.Parse()
 
 	if len(daemonflag) > 0 {
 		if daemonflag == "true" {
-			this.Allprops["daemon_s"] = "true"
+			this.globalProp["daemon_s"] = "true"
 		} else {
-			this.Allprops["daemon_s"] = "false"
+			this.globalProp["daemon_s"] = "false"
 		}
 	}
-	if len(serverflag) > 0 {
-		this.Allprops["servername_s"] = serverflag
+	if len(processflag) > 0 {
+		this.globalProp["processid_s"] = processflag
+	} else {
+		this.globalProp["processid_s"] = "development"
 	}
 	if len(lognameflag) > 0 {
-		this.Allprops["logfilename_s"] = lognameflag
-	}
-	if len(servernumber) > 0 {
-		this.Allprops["servernumber_s"] = servernumber
+		this.globalProp["logfilename_s"] = lognameflag
 	}
 	if len(serverversion) > 0 {
 		tint, err := strconv.ParseUint(serverversion, 10, 64)

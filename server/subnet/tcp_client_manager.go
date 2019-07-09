@@ -183,7 +183,7 @@ func (this *GBTCPClientManager) handleClientConnection(client *tcpconn.ServerCon
 	netbuffer := util.NewIOBuffer(client.Conn.Conn, 6400*1024)
 	msgReader := msg.NewMessageBinaryReader(netbuffer)
 
-	for !this.subnetManager.moudleConf.TerminateServer {
+	for true {
 		derr := client.Conn.Conn.SetReadDeadline(time.Now().
 			Add(time.Duration(time.Millisecond * 1000)))
 		if derr != nil {

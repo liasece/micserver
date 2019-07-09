@@ -39,8 +39,7 @@ func (this *GateBase) BindGMHttp() {
 	}
 }
 
-func (this *GateBase) BindOuterTCP() {
-	tcpport := this.modleConf.GetPropUint("tcpouterport")
+func (this *GateBase) BindOuterTCP(tcpport uint32) {
 	// 绑定 TCPSocket 服务
 	this.clientTcpHandler.StartAddClientTcpSocketHandle("", tcpport)
 }

@@ -21,6 +21,8 @@ type App struct {
 	Configer *conf.ServerConfig
 	modules  []*module.Module
 	gatebase *gate.GateBase
+
+	isStoped bool
 }
 
 func (this *App) New(version string) *App {
@@ -124,7 +126,8 @@ func (this *App) SignalListen(manager ServerManager) {
 			// 	// 发送给所有连接到我的服务器，我要关闭了，别再尝试连接我了
 			// 	this.taskManager.BroadcastAll(sendmsg)
 			// }
-			this.Configer.TerminateServer = true
+			// this.Configer.TerminateServer = true
+			this.isStoped = true
 		case syscall.SIGQUIT:
 			// 捕捉到就退不出了
 			buf := make([]byte, 1<<20)
@@ -150,7 +153,9 @@ func (this *App) Run() {
 	// 	return
 	// }
 	if this.gatebase != nil {
-		this.gatebase.BindOuterTCP()
+		tcpport := this.Configer.GetPropUint("tcpouterport")
+		tcpport = 8888
+		this.gatebase.BindOuterTCP(tcpport)
 	}
 
 	// 监听系统Signal
@@ -160,7 +165,7 @@ func (this *App) Run() {
 	// server.OnInit()
 
 	// 保持程序运行
-	for !this.Configer.TerminateServer {
+	for !this.isStoped {
 		time.Sleep(1 * time.Second)
 	}
 

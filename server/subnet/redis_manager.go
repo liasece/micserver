@@ -67,12 +67,12 @@ func (this *GBRedisManager) connectRedisServer(address string) bool {
 
 // 初始化连接到redis
 func (this *GBRedisManager) InitRedisManager() {
-	for _, v := range this.modleConfig.RedisConfig.RedisList {
-		address := fmt.Sprintf("%s:%d", v.IP, v.Port)
-		log.Debug("[GBRedisManager.InitRedisManager] "+
-			"初始化Redis连接 IPPort[%s]", address)
-		this.connectRedisServer(address)
-	}
+	// for _, v := range this.modleConfig.RedisConfig.RedisList {
+	// 	address := fmt.Sprintf("%s:%d", v.IP, v.Port)
+	// 	log.Debug("[GBRedisManager.InitRedisManager] "+
+	// 		"初始化Redis连接 IPPort[%s]", address)
+	// 	this.connectRedisServer(address)
+	// }
 	log.Debug("[GBRedisManager.InitRedisManager] "+
 		"启动初始化成功,连接数量:%d", len(this.redispools))
 }

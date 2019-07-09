@@ -201,8 +201,8 @@ func (this *SubnetManager) OnServerLogin(tcptask *tcpconn.ServerConn,
 	retmsg := &comm.SLoginRetCommand{}
 	retmsg.Loginfailed = 0
 	retmsg.Clientinfo = serverconfig
-	retmsg.Taskinfo = this.moudleConf.Myserverinfo
-	retmsg.Redisinfo = this.moudleConf.RedisConfig
+	// retmsg.Taskinfo = this.moudleConf.Myserverinfo
+	// retmsg.Redisinfo = this.moudleConf.RedisConfig
 	tcptask.SendCmd(retmsg)
 
 	// 通知其他服务器，次服务器登陆完成
@@ -218,41 +218,9 @@ func (this *SubnetManager) OnServerLogin(tcptask *tcpconn.ServerConn,
 // 绑定我的HTTP服务 会阻塞
 func (this *SubnetManager) BindMyHttpServer() {
 	usehttps := this.moudleConf.GetProp("usehttps")
-	if this.moudleConf.Myserverinfo.Httpport > 0 {
-		httpportstr := fmt.Sprintf(":%d",
-			this.moudleConf.Myserverinfo.Httpport)
-		if usehttps == "true" {
-			log.Debug("[SubNetManager.BindMyHttpServer] "+
-				"服务器https绑定成功 HTTPPort[%s] use https",
-				httpportstr)
-			httpscertfile := this.moudleConf.
-				GetProp("httpscertfile")
-			httpskeyfile := this.moudleConf.
-				GetProp("httpskeyfile")
-			err := http.ListenAndServeTLS(httpportstr, httpscertfile,
-				httpskeyfile, nil)
-			if err != nil {
-				panic("ListenAndServe: " + err.Error())
-				// return err
-			}
-		} else {
-			log.Debug("[SubNetManager.BindMyHttpServer] "+
-				"服务器http绑定成功,%s", httpportstr)
-			err := http.ListenAndServe(httpportstr, nil)
-			if err != nil {
-				panic("ListenAndServe: " + err.Error())
-				// return err
-			}
-		}
-	}
-}
-
-// 绑定我的HTTPS服务 会阻塞
-func (this *SubnetManager) BindMyHttpsServer() error {
-	if this.moudleConf.Myserverinfo.Httpsport > 0 {
-		httpportstr := fmt.Sprintf(":%d",
-			this.moudleConf.Myserverinfo.Httpsport)
-		log.Debug("[SubNetManager.BindMyHttpsServer] "+
+	httpportstr := fmt.Sprintf(":%d", 8080)
+	if usehttps == "true" {
+		log.Debug("[SubNetManager.BindMyHttpServer] "+
 			"服务器https绑定成功 HTTPPort[%s] use https",
 			httpportstr)
 		httpscertfile := this.moudleConf.
@@ -263,8 +231,36 @@ func (this *SubnetManager) BindMyHttpsServer() error {
 			httpskeyfile, nil)
 		if err != nil {
 			panic("ListenAndServe: " + err.Error())
-			return err
+			// return err
+		}
+	} else {
+		log.Debug("[SubNetManager.BindMyHttpServer] "+
+			"服务器http绑定成功,%s", httpportstr)
+		err := http.ListenAndServe(httpportstr, nil)
+		if err != nil {
+			panic("ListenAndServe: " + err.Error())
+			// return err
 		}
 	}
-	return nil
 }
+
+// // 绑定我的HTTPS服务 会阻塞
+// func (this *SubnetManager) BindMyHttpsServer() error {
+// 	if this.moudleConf.Myserverinfo.Httpsport > 0 {
+// 		httpportstr := fmt.Sprintf(":%d", 8080)
+// 		log.Debug("[SubNetManager.BindMyHttpsServer] "+
+// 			"服务器https绑定成功 HTTPPort[%s] use https",
+// 			httpportstr)
+// 		httpscertfile := this.moudleConf.
+// 			GetProp("httpscertfile")
+// 		httpskeyfile := this.moudleConf.
+// 			GetProp("httpskeyfile")
+// 		err := http.ListenAndServeTLS(httpportstr, httpscertfile,
+// 			httpskeyfile, nil)
+// 		if err != nil {
+// 			panic("ListenAndServe: " + err.Error())
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }

@@ -214,7 +214,7 @@ func (this *GBTCPTaskManager) handleConnection(
 				"服务器主动断开连接 TmpID[%d]", tcptask.Tempid)
 			return
 		}
-		if this.subnetManager.moudleConf.TerminateServer {
+		if false {
 			log.Debug("[GBTCPTaskManager.handleConnection] "+
 				"服务器准备停机了,退出连接处理 TmpID[%d]",
 				tcptask.Tempid)

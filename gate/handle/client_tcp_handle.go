@@ -198,8 +198,8 @@ func (this *ClientTcpHandler) StartAddClientTcpSocketHandle(ip string, port uint
 		log.Error("[ClientSocket] %s", err.Error())
 		return
 	}
-	this.moduleConfig.Myserverinfo.Extip = ip
-	this.moduleConfig.Myserverinfo.ClientTcpport = port
+	// this.moduleConfig.Myserverinfo.Extip = ip
+	// this.moduleConfig.Myserverinfo.ClientTcpport = port
 	log.Debug("Gateway Client TCP服务启动成功 IPPort[%s:%d]", ip, port)
 	go func() {
 		for {
