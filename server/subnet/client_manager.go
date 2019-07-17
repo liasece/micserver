@@ -29,7 +29,7 @@ func (this *GBTCPClientManager) tryConnectServerThread(serverid uint32,
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
-	serverinfo := this.subnetManager.ServerConfigs.GetServerConfigByID(serverid)
+	serverinfo := this.subnetManager.TopConfigs.GetTopConfigByID(serverid)
 	if serverinfo.Serverid != serverid {
 		log.Error("[GBTCPClientManager.tryConnectServerThread] "+
 			"tryConnectServerThread 错误的 ServerID[%d]", serverid)
@@ -43,8 +43,8 @@ func (this *GBTCPClientManager) tryConnectServerThread(serverid uint32,
 		select {
 		case <-c:
 			this.serverexitchanmutex.Lock()
-			serverinfo := this.subnetManager.ServerConfigs.
-				GetServerConfigByID(serverid)
+			serverinfo := this.subnetManager.TopConfigs.
+				GetTopConfigByID(serverid)
 			if serverinfo.Serverid != serverid {
 				log.Debug("[GBTCPClientManager.tryConnectServerThread] "+
 					"本地已删除该服务器信息，取消连接 ServerID[%d] Info[%s]",
@@ -194,7 +194,7 @@ func (this *GBTCPClientManager) connectRelyServers(serverinfos []comm.SServerInf
 			serverinfo.Serverid, serverinfo.Serverip,
 			serverinfo.Serverport, serverinfo.Httpport,
 			serverinfo.Servername)
-		this.subnetManager.ServerConfigs.AddServerConfig(serverinfo)
+		this.subnetManager.TopConfigs.AddTopConfig(serverinfo)
 		if this.GetTCPClient(uint64(serverinfo.Serverid)) == nil {
 			log.Debug("[GBTCPClientManager.connectRelyServers] "+
 				"尝试保持与 %d 的连接", serverinfo.Serverid)

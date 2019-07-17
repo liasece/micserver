@@ -272,9 +272,9 @@ func (this *GBTCPClientManager) msgParseTCPClient(client *tcpconn.ServerConn,
 
 		// if client.Serverinfo.Servertype == def.TypeSuperServer &&
 		// 	recvmsg.Taskinfo.Servertype == def.TypeSuperServer &&
-		// 	msg.GetGBServerConfigM().Myserverinfo.Servertype != def.TypeSuperServer {
+		// 	msg.GetGBTopConfigM().Myserverinfo.Servertype != def.TypeSuperServer {
 		// 	// 如果登陆 SuperServer 成功，且当前不是 SuperServer
-		// 	msg.GetGBServerConfigM().Myserverinfo = recvmsg.Clientinfo
+		// 	msg.GetGBTopConfigM().Myserverinfo = recvmsg.Clientinfo
 		// 	log.Debug("[GBTCPClientManager.msgParseTCPClient] "+
 		// 		"获取本机信息成功"+
 		// 		" ServerID[%d] IP[%s] Port[%d] HTTPPort[%d] Name[%s]",
@@ -283,7 +283,7 @@ func (this *GBTCPClientManager) msgParseTCPClient(client *tcpconn.ServerConn,
 		// 		recvmsg.Clientinfo.Serverport,
 		// 		recvmsg.Clientinfo.Httpport,
 		// 		recvmsg.Clientinfo.Servername)
-		// 	msg.GetGBServerConfigM().RedisConfig = recvmsg.Redisinfo
+		// 	msg.GetGBTopConfigM().RedisConfig = recvmsg.Redisinfo
 		// }
 		return
 	case comm.SLogoutCommandID:
@@ -292,8 +292,8 @@ func (this *GBTCPClientManager) msgParseTCPClient(client *tcpconn.ServerConn,
 			"ServerInfo[%s]", client.Serverinfo.GetJson())
 		this.serverexitchanmutex.Lock()
 		defer this.serverexitchanmutex.Unlock()
-		this.subnetManager.ServerConfigs.
-			RemoveServerConfig(client.Serverinfo.Serverid)
+		this.subnetManager.TopConfigs.
+			RemoveTopConfig(client.Serverinfo.Serverid)
 		return
 	case comm.SStartMyNotifyCommandID:
 		// 收到依赖我的服务器的信息
@@ -308,7 +308,7 @@ func (this *GBTCPClientManager) msgParseTCPClient(client *tcpconn.ServerConn,
 			serverinfo.Servername)
 		this.serverexitchanmutex.Lock()
 		defer this.serverexitchanmutex.Unlock()
-		this.subnetManager.ServerConfigs.AddServerConfig(serverinfo)
+		this.subnetManager.TopConfigs.AddTopConfig(serverinfo)
 		return
 	case comm.SNotifyAllInfoID:
 		// 收到所有服务器的配置信息
@@ -317,14 +317,14 @@ func (this *GBTCPClientManager) msgParseTCPClient(client *tcpconn.ServerConn,
 		this.serverexitchanmutex.Lock()
 		defer this.serverexitchanmutex.Unlock()
 		// if client.Serverinfo.Servertype == def.TypeSuperServer {
-		// 	this.subnetManager.ServerConfigs.CleanServerConfig()
+		// 	this.subnetManager.TopConfigs.CleanTopConfig()
 		// }
 		log.Debug("[GBTCPClientManager.msgParseTCPClient] " +
 			"收到所有服务器列表信息")
 		// 所有服务器信息列表
 		for i := 0; i < len(recvmsg.Serverinfos); i++ {
 			serverinfo := recvmsg.Serverinfos[i]
-			this.subnetManager.ServerConfigs.AddServerConfig(serverinfo)
+			this.subnetManager.TopConfigs.AddTopConfig(serverinfo)
 		}
 		return
 	}

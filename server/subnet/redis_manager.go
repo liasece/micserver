@@ -26,7 +26,7 @@ type GBRedisManager struct {
 	redispools map[string]*redis.Pool // redis连接池
 	allredis   map[string]redis.Conn  // 所有redis连接
 
-	modleConfig *conf.ServerConfig
+	modleConfig *conf.TopConfig
 }
 
 var redismanager_s *GBRedisManager

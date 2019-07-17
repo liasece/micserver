@@ -76,16 +76,16 @@ func GetMailManager() *MailManager {
 }
 
 func (this *MailManager) InitMailManagerByConfig() {
-	this.SenderAddr = base.GetGBServerConfigM().GetProp("mailsenderaddr")
-	this.SenderKeyCode = base.GetGBServerConfigM().GetProp("mainsenderkeycode")
-	this.SenderNickName = base.GetGBServerConfigM().GetProp("mailsendernickname")
-	this.ServerAddr = base.GetGBServerConfigM().GetProp("mailserveraddr")
-	this.ServerPort = int(base.GetGBServerConfigM().GetPropInt("mailserverport"))
+	this.SenderAddr = base.GetGBTopConfigM().GetProp("mailsenderaddr")
+	this.SenderKeyCode = base.GetGBTopConfigM().GetProp("mainsenderkeycode")
+	this.SenderNickName = base.GetGBTopConfigM().GetProp("mailsendernickname")
+	this.ServerAddr = base.GetGBTopConfigM().GetProp("mailserveraddr")
+	this.ServerPort = int(base.GetGBTopConfigM().GetPropInt("mailserverport"))
 	times := 1
 	for {
 		tmpstr := fmt.Sprintf("mailglobaltoaddr%d", times)
 		times++
-		toaddr := base.GetGBServerConfigM().GetProp(tmpstr)
+		toaddr := base.GetGBTopConfigM().GetProp(tmpstr)
 		if toaddr == "" {
 			break
 		}

@@ -18,28 +18,32 @@ type App struct {
 	serverhandler IServerHandler
 	servermanger  ServerManager
 
-	Configer *conf.ServerConfig
-	modules  []*module.Module
+	Configer *conf.TopConfig
+	modules  []module.IModule
 	gatebase *gate.GateBase
 
 	isStoped bool
+	Logger   *log.Logger
 }
 
-func (this *App) New(version string) *App {
-	log.AutoConfig("/home/jansen/logs/main.log", "Main", true)
-	return &App{
-		Configer: &conf.ServerConfig{},
-		modules:  make([]*module.Module, 0),
-	}
-}
-
-func (this *App) Init(includegate bool) {
-	if includegate {
-		this.gatebase = &gate.GateBase{}
-		this.gatebase.Init(this.Configer)
+func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
+	this.Configer = configer
+	if this.Configer.AppConfig.HasSetting("logpath") {
+		this.Logger = log.NewLogger(this.Configer.AppConfig.AppSettings)
+		log.SetDefaultLogger(this.Logger)
+	} else {
+		this.Logger = log.GetDefaultLogger()
 	}
 
-	log.Debug("hello world!")
+	this.modules = modules
+	// create all module
+	for _, m := range modules {
+		log.Debug("init module: %s", m.GetModuleID())
+		m.InitModule(*this.Configer.AppConfig.GetModuleConfig(m.GetModuleID()))
+		go m.TopRunner()
+	}
+
+	this.Logger.Debug("hello world!")
 }
 
 func (this *App) GetServerManger() ServerManager {
@@ -167,6 +171,10 @@ func (this *App) Run() {
 	// 保持程序运行
 	for !this.isStoped {
 		time.Sleep(1 * time.Second)
+	}
+
+	for _, v := range this.modules {
+		v.KillModule()
 	}
 
 	// 当程序即将结束时

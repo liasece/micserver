@@ -9,14 +9,14 @@ import (
 
 type GateBase struct {
 	subnetManager *subnet.SubnetManager
-	modleConf     *conf.ServerConfig
+	modleConf     *conf.TopConfig
 
 	clientTcpHandler    *handle.ClientTcpHandler
 	clientHttpHandler   *handle.ClientHttpHandler
 	clientSocketManager *manager.ClientSocketManager
 }
 
-func (this *GateBase) Init(config *conf.ServerConfig) {
+func (this *GateBase) Init(config *conf.TopConfig) {
 	this.modleConf = config
 	this.subnetManager = &subnet.SubnetManager{}
 	// 初始化服务器网络管理器

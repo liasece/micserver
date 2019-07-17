@@ -174,7 +174,7 @@ func (this *GBTCPTaskManager) NotifyAllServerInfo(
 	tcptask *tcpconn.ServerConn) {
 	retmsg := &comm.SNotifyAllInfo{}
 	retmsg.Serverinfos = make([]comm.SServerInfo, 0)
-	this.subnetManager.ServerConfigs.RangeServerConfig(func(
+	this.subnetManager.TopConfigs.RangeTopConfig(func(
 		value comm.SServerInfo) bool {
 		retmsg.Serverinfos = append(retmsg.Serverinfos, value)
 		return true
@@ -326,8 +326,8 @@ func (this *GBTCPTaskManager) msgParse(tcptask *tcpconn.ServerConn, msgbin *msg.
 		log.Debug("[TCPTask.msgParse] "+
 			"服务器 ServerName[%s] 退出登陆了", tcptask.Serverinfo.Servername)
 		tcptask.SetVertify(false)
-		this.subnetManager.ServerConfigs.
-			RemoveServerConfig(tcptask.Serverinfo.Serverid)
+		this.subnetManager.TopConfigs.
+			RemoveTopConfig(tcptask.Serverinfo.Serverid)
 		return
 	}
 

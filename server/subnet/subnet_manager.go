@@ -34,9 +34,9 @@ type SubnetManager struct {
 	clientManager *GBTCPClientManager
 	taskManager   *GBTCPTaskManager
 
-	ServerConfigs serconfs.ServerConfigsManager // 所有服务器信息
+	TopConfigs serconfs.TopConfigsManager // 所有服务器信息
 
-	moudleConf *conf.ServerConfig
+	moudleConf *conf.TopConfig
 }
 
 func (this *SubnetManager) InitManager() {
@@ -61,9 +61,9 @@ func (this *SubnetManager) GetTaskManager() *GBTCPTaskManager {
 	return this.taskManager
 }
 
-func (this *SubnetManager) GetLatestVersionServerConfigByType(servertype uint32) uint64 {
+func (this *SubnetManager) GetLatestVersionTopConfigByType(servertype uint32) uint64 {
 	latestVersion := uint64(0)
-	this.ServerConfigs.RangeServerConfig(
+	this.TopConfigs.RangeTopConfig(
 		func(value comm.SServerInfo) bool {
 			if value.Servertype == servertype &&
 				value.Version > latestVersion {
@@ -130,7 +130,7 @@ func (this *SubnetManager) OnServerLogin(tcptask *tcpconn.ServerConn,
 		tcptask.Terminate()
 		return
 	}
-	var serverconfig comm.SServerInfo
+	var TopConfig comm.SServerInfo
 
 	// 来源服务器地址
 	remoteaddr := tcptask.GetConn().RemoteAddr().String()
@@ -142,10 +142,10 @@ func (this *SubnetManager) OnServerLogin(tcptask *tcpconn.ServerConn,
 		sameip = true
 	}
 	// 获取来源服务器ID在本地的配置
-	serverconfig = this.ServerConfigs.
-		GetServerConfigByInfo(tarinfo)
+	TopConfig = this.TopConfigs.
+		GetTopConfigByInfo(tarinfo)
 	// 如果成功获取到了一个serverid
-	if serverconfig.Serverid != 0 {
+	if TopConfig.Serverid != 0 {
 		// 检查该配置是否已被占用
 		oldtcptask = this.taskManager.GetTCPTask(uint64(tarinfo.Serverid))
 		if oldtcptask != nil {
@@ -161,8 +161,8 @@ func (this *SubnetManager) OnServerLogin(tcptask *tcpconn.ServerConn,
 		}
 	}
 	// 检查是否获取信息成功
-	if serverconfig.Serverid == 0 || !sameip ||
-		serverconfig.Servertype != tarinfo.Servertype {
+	if TopConfig.Serverid == 0 || !sameip ||
+		TopConfig.Servertype != tarinfo.Servertype {
 		// 如果获取信息不成功
 		log.Error("[SubNetManager.OnServerLogin] "+
 			"连接分配异常 未知服务器连接 "+
@@ -182,25 +182,25 @@ func (this *SubnetManager) OnServerLogin(tcptask *tcpconn.ServerConn,
 		return
 	}
 
-	serverconfig.Version = tarinfo.Version
+	TopConfig.Version = tarinfo.Version
 
 	// 来源服务器检查完毕
 	// 完善来源服务器在本服务器的信息
 	tcptask.SetVertify(true)
 	tcptask.SetTerminateTime(0) // 清除终止时间状态
-	tcptask.Serverinfo = serverconfig
+	tcptask.Serverinfo = TopConfig
 	this.taskManager.ChangeTCPTaskTempid(tcptask,
 		uint64(tcptask.Serverinfo.Serverid))
 	log.Debug("[SubNetManager.OnServerLogin] "+
 		"客户端连接验证成功 "+
 		" SerID[%d] IP[%s] Type[%d] Port[%d] Name[%s]",
-		serverconfig.Serverid, serverconfig.Serverip,
-		serverconfig.Servertype, serverconfig.Serverport,
-		serverconfig.Servername)
+		TopConfig.Serverid, TopConfig.Serverip,
+		TopConfig.Servertype, TopConfig.Serverport,
+		TopConfig.Servername)
 	// 向来源服务器回复登陆成功消息
 	retmsg := &comm.SLoginRetCommand{}
 	retmsg.Loginfailed = 0
-	retmsg.Clientinfo = serverconfig
+	retmsg.Clientinfo = TopConfig
 	// retmsg.Taskinfo = this.moudleConf.Myserverinfo
 	// retmsg.Redisinfo = this.moudleConf.RedisConfig
 	tcptask.SendCmd(retmsg)
@@ -211,7 +211,7 @@ func (this *SubnetManager) OnServerLogin(tcptask *tcpconn.ServerConn,
 	this.taskManager.NotifyAllServerInfo(tcptask)
 	// 把来源服务器信息广播给其它所有服务器
 	notifymsg := &comm.SStartMyNotifyCommand{}
-	notifymsg.Serverinfo = serverconfig
+	notifymsg.Serverinfo = TopConfig
 	this.taskManager.BroadcastAll(notifymsg)
 }
 

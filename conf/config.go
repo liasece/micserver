@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-type ServerConfig struct {
+type TopConfig struct {
 	AppConfig AppConfig `json:"app"` // 进程配置信息
 
 	// 全局配置字符串，一般是从进程启动时携带的参数提供的
@@ -35,11 +35,21 @@ type ServerConfig struct {
 	mutex          sync.Mutex `json:"-"`
 }
 
-func (this *ServerConfig) AutoConfig() {
+func LoadConfig(filepath string) (*TopConfig, error) {
+	res := &TopConfig{}
+	err := res.loadJsonConfigFile(filepath)
+	if err != nil {
+		log.Error("loadJsonConfigFile(filepath) err:%v", err)
+		return nil, err
+	}
+	return res, nil
+}
+
+func (this *TopConfig) AutoConfig() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			log.Error("[ServerConfig.AutoConfig] "+
+			log.Error("[TopConfig.AutoConfig] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -68,7 +78,7 @@ func (this *ServerConfig) AutoConfig() {
 
 	// err := util.LoadJsonFromFile("dbconfig.json", &this.dbs)
 	// if err != nil {
-	// 	log.Error("[ServerConfig.AutoConfig] 加载数据库配置出错 Err[%s]",
+	// 	log.Error("[TopConfig.AutoConfig] 加载数据库配置出错 Err[%s]",
 	// 		err.Error())
 	// }
 	// this.Myserverinfo.Servertype = servertype
@@ -110,12 +120,12 @@ func (this *ServerConfig) AutoConfig() {
 			// 		this.hasConfigPprof = true
 			// 	}
 			// } else {
-			// 	log.Debug("[ServerConfig.AutoConfig] 未设置 pprof "+
+			// 	log.Debug("[TopConfig.AutoConfig] 未设置 pprof "+
 			// 		"IP/Port[%s:%d]",
 			// 		localip, pprofport)
 			// }
 		} else {
-			log.Debug("[ServerConfig.AutoConfig] pprof 不启动 "+
+			log.Debug("[TopConfig.AutoConfig] pprof 不启动 "+
 				"performance_test[%s]",
 				this.getPropUnsafe("performance_test"))
 		}
@@ -128,17 +138,17 @@ func (this *ServerConfig) AutoConfig() {
 		this.loadConfigTime, content)
 }
 
-func (this *ServerConfig) ReloadConfig() {
+func (this *TopConfig) ReloadConfig() {
 	this.AutoConfig()
 }
 
-// func (this *ServerConfig) GetTablesSum() uint32 {
+// func (this *TopConfig) GetTablesSum() uint32 {
 // 	this.mutex.Lock()
 // 	defer this.mutex.Unlock()
 // 	return uint32(len(this.dbs.Tables))
 // }
 
-// func (this *ServerConfig) GetTableInfo(
+// func (this *TopConfig) GetTableInfo(
 // 	tableindex uint32) (*DBTableConfig, error) {
 // 	this.mutex.Lock()
 // 	defer this.mutex.Unlock()
@@ -149,37 +159,37 @@ func (this *ServerConfig) ReloadConfig() {
 // 	return this.dbs.Tables[tableindex], nil
 // }
 
-// func (this *ServerConfig) GetDBsDBConfigs() map[uint32]string {
+// func (this *TopConfig) GetDBsDBConfigs() map[uint32]string {
 // 	this.mutex.Lock()
 // 	defer this.mutex.Unlock()
 // 	return this.dbs.Dbs
 // }
 
-func (this *ServerConfig) GetProp(propname string) string {
+func (this *TopConfig) GetProp(propname string) string {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	return this.getPropUnsafe(propname)
 }
 
-func (this *ServerConfig) GetPropInt(propname string) int32 {
+func (this *TopConfig) GetPropInt(propname string) int32 {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	return this.getPropIntUnsafe(propname)
 }
 
-func (this *ServerConfig) GetPropUint(propname string) uint32 {
+func (this *TopConfig) GetPropUint(propname string) uint32 {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	return this.getPropUintUnsafe(propname)
 }
 
-func (this *ServerConfig) GetPropBool(propname string) bool {
+func (this *TopConfig) GetPropBool(propname string) bool {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	return this.getPropBoolUnsafe(propname)
 }
 
-func (this *ServerConfig) getPropUnsafe(propname string) string {
+func (this *TopConfig) getPropUnsafe(propname string) string {
 	if propvalue, found := this.globalProp[propname+"_s"]; found {
 		return propvalue
 	}
@@ -189,17 +199,17 @@ func (this *ServerConfig) getPropUnsafe(propname string) string {
 	return ""
 }
 
-func (this *ServerConfig) getPropIntUnsafe(propname string) int32 {
+func (this *TopConfig) getPropIntUnsafe(propname string) int32 {
 	retvalue, _ := strconv.Atoi(this.getPropUnsafe(propname))
 	return int32(retvalue)
 }
 
-func (this *ServerConfig) getPropUintUnsafe(propname string) uint32 {
+func (this *TopConfig) getPropUintUnsafe(propname string) uint32 {
 	retvalue, _ := strconv.Atoi(this.getPropUnsafe(propname))
 	return uint32(retvalue)
 }
 
-func (this *ServerConfig) getPropBoolUnsafe(propname string) bool {
+func (this *TopConfig) getPropBoolUnsafe(propname string) bool {
 	retvalue := this.getPropUnsafe(propname)
 	if retvalue == "true" || retvalue == "True" || retvalue == "TRUE" {
 		return true
@@ -207,29 +217,29 @@ func (this *ServerConfig) getPropBoolUnsafe(propname string) bool {
 	return false
 }
 
-func (this *ServerConfig) SetProp(propname string, value string) {
+func (this *TopConfig) SetProp(propname string, value string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	this.setProp(propname, value)
 }
 
-func (this *ServerConfig) setProp(propname string, value string) {
+func (this *TopConfig) setProp(propname string, value string) {
 	this.globalProp[propname] = value
 }
 
-func (this *ServerConfig) loadJsonConfigFile(path string) error {
+func (this *TopConfig) loadJsonConfigFile(path string) error {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(content, &this.AppConfig)
+	err = json.Unmarshal(content, &this)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (this *ServerConfig) loadXMLConfigFile(filename string) bool {
+func (this *TopConfig) loadXMLConfigFile(filename string) bool {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Println(err)
@@ -263,7 +273,7 @@ func (this *ServerConfig) loadXMLConfigFile(filename string) bool {
 	return true
 }
 
-func (this *ServerConfig) parse_token(decoder *xml.Decoder,
+func (this *TopConfig) parse_token(decoder *xml.Decoder,
 	xmltoken xml.Token) {
 	var t xml.Token
 	var err error
@@ -331,7 +341,7 @@ func (this *ServerConfig) parse_token(decoder *xml.Decoder,
 }
 
 // 参数解析相关
-func (this *ServerConfig) initParse() {
+func (this *TopConfig) initParse() {
 	if this.hasAutoConfig {
 		return
 	}

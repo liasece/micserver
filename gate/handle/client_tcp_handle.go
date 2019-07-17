@@ -16,11 +16,11 @@ import (
 
 type ClientTcpHandler struct {
 	clientSocketManager *manager.ClientSocketManager
-	moduleConfig        *conf.ServerConfig
+	moduleConfig        *conf.TopConfig
 }
 
 func (this *ClientTcpHandler) Init(clientSocketManager *manager.ClientSocketManager,
-	config *conf.ServerConfig) {
+	config *conf.TopConfig) {
 	this.clientSocketManager = clientSocketManager
 	this.moduleConfig = config
 }
