@@ -28,17 +28,6 @@ type Record struct {
 	level int32
 }
 
-func AutoConfig(logfilename string, logname string, daemon bool) {
-	SetLogName(logname)
-	if daemon {
-		AddlogFile(logfilename, true)
-		RemoveConsoleLog()
-		Debug("[log] Program is start as a daemon")
-	} else {
-		AddlogFile(logfilename, false)
-	}
-}
-
 func (r *Record) String() string {
 	return fmt.Sprintf("%s [%s] %s: %s\n", r.time, r.name, LEVEL_FLAGS[r.level], r.info)
 }

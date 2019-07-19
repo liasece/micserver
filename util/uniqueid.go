@@ -2,6 +2,7 @@ package util
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -17,12 +18,12 @@ type uniqueIDBuilder struct {
 
 var s_unique uniqueIDBuilder
 
-func (this *uniqueIDBuilder) NewUniqueID(heightlevelID uint16) (uint64, error) {
+func (this *uniqueIDBuilder) NewUniqueID(heightlevelID uint16) (string, error) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	nowtime := time.Now().Unix()
 	if nowtime < 1514736000 {
-		return 0,
+		return "",
 			errors.New("Server time error!!! Must late than 2018/1/1 00:00:00")
 	}
 	now := uint32(nowtime & 0x0ffffffff)
@@ -33,7 +34,7 @@ func (this *uniqueIDBuilder) NewUniqueID(heightlevelID uint16) (uint64, error) {
 	} else {
 		if this.lastLowlevelID == 0x0ffff {
 			// 生成频率超限
-			return 0, errors.New("本秒内已随机出超出限制的唯一ID数量")
+			return "", errors.New("本秒内已随机出超出限制的唯一ID数量")
 		} else {
 			this.lastLowlevelID++
 		}
@@ -43,16 +44,16 @@ func (this *uniqueIDBuilder) NewUniqueID(heightlevelID uint16) (uint64, error) {
 	subvalue |= uint64(this.lastMidlevelID) << (16)
 	subvalue |= uint64(this.lastLowlevelID) << (0)
 	if subvalue <= this.lastMidLowLevelID {
-		return 0, errors.New("生成的ID可能重复了")
+		return "", errors.New("生成的ID可能重复了")
 	}
 	this.lastMidLowLevelID = subvalue
 
 	res := uint64(0)
 	res |= uint64(heightlevelID) << (16 + 32)
 	res |= uint64(subvalue) << (0)
-	return res, nil
+	return fmt.Sprint(res), nil
 }
 
-func NewUniqueID(heightlevelID uint16) (uint64, error) {
+func NewUniqueID(heightlevelID uint16) (string, error) {
 	return s_unique.NewUniqueID(heightlevelID)
 }

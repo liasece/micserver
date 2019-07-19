@@ -20,6 +20,7 @@ type Logger struct {
 
 func NewLogger(settings map[string]string) *Logger {
 	l := new(Logger)
+	l.SetLogName("log")
 	l.writers = make([]Writer, 0, 2)
 	l.tunnel = make(chan *Record, tunnel_size_default)
 	l.c = make(chan bool, 1)
@@ -177,14 +178,6 @@ func (l *Logger) deliverRecordToWriter(level int32, format string, args ...inter
 	} else {
 		inf = fmt.Sprint(args...)
 	}
-
-	/*
-		// source code, file and line num
-		_, file, line, ok := runtime.Caller(2)
-		if ok {
-			code = path.Base(file) + ":" + strconv.Itoa(line)
-		}
-	*/
 
 	// format time
 	now := time.Now()

@@ -1165,56 +1165,16 @@ func ReadMsgSServerInfoByBytes(indata []byte, obj *SServerInfo) int {
 	data := indata[offset:offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 > data__len{
+	if offset + 2 + len(obj.ServerID) > data__len{
 		return endpos
 	}
-	obj.Serverid = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 4 > data__len{
+	obj.ServerID = readBinaryString(data[offset:])
+	offset += 2 + len(obj.ServerID)
+	if offset + 2 + len(obj.ServerAddr) > data__len{
 		return endpos
 	}
-	obj.Servertype = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 2 + len(obj.Servername) > data__len{
-		return endpos
-	}
-	obj.Servername = readBinaryString(data[offset:])
-	offset += 2 + len(obj.Servername)
-	if offset + 2 + len(obj.Serverip) > data__len{
-		return endpos
-	}
-	obj.Serverip = readBinaryString(data[offset:])
-	offset += 2 + len(obj.Serverip)
-	if offset + 4 > data__len{
-		return endpos
-	}
-	obj.Serverport = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 2 + len(obj.Extip) > data__len{
-		return endpos
-	}
-	obj.Extip = readBinaryString(data[offset:])
-	offset += 2 + len(obj.Extip)
-	if offset + 4 > data__len{
-		return endpos
-	}
-	obj.Httpport = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 4 > data__len{
-		return endpos
-	}
-	obj.Httpsport = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 4 > data__len{
-		return endpos
-	}
-	obj.Rpcport = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 4 > data__len{
-		return endpos
-	}
-	obj.Tcpport = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
+	obj.ServerAddr = readBinaryString(data[offset:])
+	offset += 2 + len(obj.ServerAddr)
 	if offset + 4 > data__len{
 		return endpos
 	}
@@ -1241,26 +1201,10 @@ func WriteMsgSServerInfoByObj(data []byte, obj *SServerInfo) int {
 	offset := 0
 	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(objsize))
 	offset += 2
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Serverid)
-	offset+=4
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Servertype)
-	offset+=4
-	writeBinaryString(data[offset:],obj.Servername)
-	offset += 2 + len(obj.Servername)
-	writeBinaryString(data[offset:],obj.Serverip)
-	offset += 2 + len(obj.Serverip)
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Serverport)
-	offset+=4
-	writeBinaryString(data[offset:],obj.Extip)
-	offset += 2 + len(obj.Extip)
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Httpport)
-	offset+=4
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Httpsport)
-	offset+=4
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Rpcport)
-	offset+=4
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Tcpport)
-	offset+=4
+	writeBinaryString(data[offset:],obj.ServerID)
+	offset += 2 + len(obj.ServerID)
+	writeBinaryString(data[offset:],obj.ServerAddr)
+	offset += 2 + len(obj.ServerAddr)
 	binary.BigEndian.PutUint32(data[offset:offset+4], obj.ClientTcpport)
 	offset+=4
 	binary.BigEndian.PutUint32(data[offset:offset+4], obj.ServerNumber)
@@ -1273,9 +1217,8 @@ func GetSizeSServerInfo(obj *SServerInfo) int {
 	if obj == nil {
 		return 2
 	}
-	return 2 + 4 + 4 + 2 + len(obj.Servername) + 2 + len(obj.Serverip) + 
-	4 + 2 + len(obj.Extip) + 4 + 4 + 4 + 
-	4 + 4 + 4 + 8
+	return 2 + 2 + len(obj.ServerID) + 2 + len(obj.ServerAddr) + 4 + 4 + 
+	8
 }
 func ReadMsgSTimeTickCommandByBytes(indata []byte, obj *STimeTickCommand) int {
 	offset := 0
@@ -1387,31 +1330,21 @@ func ReadMsgSLoginCommandByBytes(indata []byte, obj *SLoginCommand) int {
 	data := indata[offset:offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 > data__len{
+	if offset + 2 + len(obj.ServerID) > data__len{
 		return endpos
 	}
-	obj.Serverid = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 4 > data__len{
+	obj.ServerID = readBinaryString(data[offset:])
+	offset += 2 + len(obj.ServerID)
+	if offset + 2 + len(obj.ServerAddr) > data__len{
 		return endpos
 	}
-	obj.Servertype = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 2 + len(obj.Serverip) > data__len{
+	obj.ServerAddr = readBinaryString(data[offset:])
+	offset += 2 + len(obj.ServerAddr)
+	if offset + 8 > data__len{
 		return endpos
 	}
-	obj.Serverip = readBinaryString(data[offset:])
-	offset += 2 + len(obj.Serverip)
-	if offset + 2 + len(obj.Servername) > data__len{
-		return endpos
-	}
-	obj.Servername = readBinaryString(data[offset:])
-	offset += 2 + len(obj.Servername)
-	if offset + 4 > data__len{
-		return endpos
-	}
-	obj.Serverport = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
+	obj.ConnectPriority = readBinaryInt64(data[offset:offset+8])
+	offset+=8
 	if offset + 4 > data__len{
 		return endpos
 	}
@@ -1433,16 +1366,12 @@ func WriteMsgSLoginCommandByObj(data []byte, obj *SLoginCommand) int {
 	offset := 0
 	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(objsize))
 	offset += 2
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Serverid)
-	offset+=4
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Servertype)
-	offset+=4
-	writeBinaryString(data[offset:],obj.Serverip)
-	offset += 2 + len(obj.Serverip)
-	writeBinaryString(data[offset:],obj.Servername)
-	offset += 2 + len(obj.Servername)
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Serverport)
-	offset+=4
+	writeBinaryString(data[offset:],obj.ServerID)
+	offset += 2 + len(obj.ServerID)
+	writeBinaryString(data[offset:],obj.ServerAddr)
+	offset += 2 + len(obj.ServerAddr)
+	writeBinaryInt64(data[offset:offset+8], obj.ConnectPriority)
+	offset+=8
 	binary.BigEndian.PutUint32(data[offset:offset+4], obj.ServerNumber)
 	offset+=4
 	binary.BigEndian.PutUint64(data[offset:offset+8], obj.Version)
@@ -1453,8 +1382,8 @@ func GetSizeSLoginCommand(obj *SLoginCommand) int {
 	if obj == nil {
 		return 2
 	}
-	return 2 + 4 + 4 + 2 + len(obj.Serverip) + 2 + len(obj.Servername) + 
-	4 + 4 + 8
+	return 2 + 2 + len(obj.ServerID) + 2 + len(obj.ServerAddr) + 8 + 4 + 
+	8
 }
 func ReadMsgSLogoutCommandByBytes(indata []byte, obj *SLogoutCommand) int {
 	offset := 0

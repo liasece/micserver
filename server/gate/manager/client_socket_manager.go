@@ -50,18 +50,18 @@ func (this *ClientSocketManager) GetTaskByOpenID(
 
 // 根据 UUID 索引 Task
 func (this *ClientSocketManager) AddTaskUUID(task *tcpconn.ClientConn,
-	uuid uint64) {
+	uuid string) {
 	this.connPool.AddTaskUUID(task, uuid)
 }
 
 // 根据 UUID 索引 Task
 func (this *ClientSocketManager) GetTaskByUUID(
-	uuid uint64) *tcpconn.ClientConn {
+	uuid string) *tcpconn.ClientConn {
 	return this.connPool.GetTaskByUUID(uuid)
 }
 
 func (this *ClientSocketManager) GetTaskByTmpID(
-	webtaskid uint64) *tcpconn.ClientConn {
+	webtaskid string) *tcpconn.ClientConn {
 	return this.connPool.Get(webtaskid)
 }
 
@@ -69,7 +69,7 @@ func (this *ClientSocketManager) GetClientTcpSocketCount() uint32 {
 	return this.connPool.Len()
 }
 
-func (this *ClientSocketManager) remove(tempid uint64) {
+func (this *ClientSocketManager) remove(tempid string) {
 	value := this.GetTaskByTmpID(tempid)
 	if value == nil {
 		return
@@ -84,13 +84,13 @@ func (this *ClientSocketManager) remove(tempid uint64) {
 }
 
 func (this *ClientSocketManager) RemoveTaskByTmpID(
-	tempid uint64) {
+	tempid string) {
 	this.remove(tempid)
 }
 
 // 遍历所有的连接
 func (this *ClientSocketManager) ExecAllUsers(
-	callback func(uint64, *tcpconn.ClientConn)) {
+	callback func(string, *tcpconn.ClientConn)) {
 	this.connPool.Range(func(value *tcpconn.ClientConn) {
 		callback(value.Tempid, value)
 	})
@@ -99,7 +99,7 @@ func (this *ClientSocketManager) ExecAllUsers(
 // 遍历所有的连接，检查需要移除的连接
 func (this *ClientSocketManager) ExecRemove(
 	callback func(*tcpconn.ClientConn) bool) {
-	removelist := make([]uint64, 0)
+	removelist := make([]string, 0)
 	this.connPool.Range(func(value *tcpconn.ClientConn) {
 		// 遍历所有的连接
 		if callback(value) {
@@ -116,25 +116,3 @@ func (this *ClientSocketManager) ExecRemove(
 		"条件删除连接数 RemoveSum[%d] 当前连接数量 NowSum[%d]",
 		len(removelist), this.GetClientTcpSocketCount())
 }
-
-// func NotifyClientUserOffline(task *tcpconn.ClientConn) {
-// 	if task == nil || len(task.Openid) == 0 || !task.IsVertify() {
-// 		return
-// 	}
-// 	task.Debug("[Socket] 用户下线,断开连接了")
-// 	sendmsg := &comm.SGatewayWSOfflineUser{}
-// 	sendmsg.Openid = task.Openid
-// 	sendmsg.UUID = task.UUID
-// 	sendmsg.ClientConnID = task.Tempid
-// 	userclient := this.subnetManager.GetClientManager().
-// 		GetTCPClient(uint64(task.Userserverid))
-// 	if userclient != nil {
-// 		userclient.SendCmd(sendmsg)
-// 	}
-// 	roomclient := this.subnetManager.GetClientManager().
-// 		GetTCPClient(uint64(task.Roomserverid))
-// 	if roomclient != nil {
-// 		roomclient.SendCmd(sendmsg)
-// 	}
-// 	subnet.GetSubnetManager().GetServerManger().NotifyOtherMyInfo()
-// }

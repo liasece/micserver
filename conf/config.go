@@ -7,16 +7,11 @@ import (
 	"flag"
 	"fmt"
 	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/util"
 	"io/ioutil"
-	"math/rand"
 	_ "net/http/pprof"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 type TopConfig struct {
@@ -42,128 +37,9 @@ func LoadConfig(filepath string) (*TopConfig, error) {
 		log.Error("loadJsonConfigFile(filepath) err:%v", err)
 		return nil, err
 	}
+	res.AppConfig.BuildModuleIDFromMapkey()
 	return res, nil
 }
-
-func (this *TopConfig) AutoConfig() {
-	defer func() {
-		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			log.Error("[TopConfig.AutoConfig] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
-		}
-	}()
-
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-
-	this.loadConfigTime++
-	rand.Seed(time.Now().UnixNano())
-
-	this.initParse()
-	processid := this.GetProp("processid")
-
-	{
-		pwd, err := os.Getwd()
-		if err == nil {
-			jsonconfigpath := filepath.Join(pwd, "config", "config.json")
-			err := this.loadJsonConfigFile(jsonconfigpath)
-			if err != nil {
-				log.Error("this.loadJsonConfigFile(jsonconfigpath) err:%v", err)
-			}
-		} else {
-			log.Error("os.Getwd() err:%v", err)
-		}
-	}
-
-	// err := util.LoadJsonFromFile("dbconfig.json", &this.dbs)
-	// if err != nil {
-	// 	log.Error("[TopConfig.AutoConfig] 加载数据库配置出错 Err[%s]",
-	// 		err.Error())
-	// }
-	// this.Myserverinfo.Servertype = servertype
-
-	// 初始化日志文件
-	// 重新设置日志文件目录
-	logpath := this.getPropUnsafe("logdir")
-	if !this.hasAutoConfig {
-		logsubname := processid + ".log"
-		logfilename := filepath.Join(logpath, logsubname)
-		daemon := this.getPropUnsafe("daemon")
-		if daemon == "true" {
-			log.AddlogFile(logfilename, true)
-			log.RemoveConsoleLog()
-			log.Debug("Program is start as a daemon")
-		} else {
-			log.AddlogFile(logfilename, false)
-		}
-	} else {
-		logsubname := processid + ".log"
-		logfilename := filepath.Join(logpath, logsubname)
-		log.ChangelogFile(logfilename)
-	}
-	// 设置日志级别
-	log.SetLogLevel("debug")
-
-	// 配置 pprof
-	if !this.hasConfigPprof {
-		// 外部性能监视
-		if this.getPropUnsafe("performance_test") == "true" {
-			// 获取 pprof Port
-			// pprofport := this.getPropUintUnsafe("pprofport")
-			// 获取 pprof IP
-			// ifname := this.getPropUnsafe("ifname")
-			// localip := util.GetIPv4ByInterface(ifname)
-			// if pprofport > 0 && pprofport < 65536 && localip != "" {
-			// 	err := BindPprof(localip, pprofport)
-			// 	if err == nil {
-			// 		this.hasConfigPprof = true
-			// 	}
-			// } else {
-			// 	log.Debug("[TopConfig.AutoConfig] 未设置 pprof "+
-			// 		"IP/Port[%s:%d]",
-			// 		localip, pprofport)
-			// }
-		} else {
-			log.Debug("[TopConfig.AutoConfig] pprof 不启动 "+
-				"performance_test[%s]",
-				this.getPropUnsafe("performance_test"))
-		}
-	}
-
-	this.hasAutoConfig = true
-
-	content, _ := json.Marshal(this)
-	log.Info("[AutoConfig] 第%d次加载配置完成 配置信息： %s",
-		this.loadConfigTime, content)
-}
-
-func (this *TopConfig) ReloadConfig() {
-	this.AutoConfig()
-}
-
-// func (this *TopConfig) GetTablesSum() uint32 {
-// 	this.mutex.Lock()
-// 	defer this.mutex.Unlock()
-// 	return uint32(len(this.dbs.Tables))
-// }
-
-// func (this *TopConfig) GetTableInfo(
-// 	tableindex uint32) (*DBTableConfig, error) {
-// 	this.mutex.Lock()
-// 	defer this.mutex.Unlock()
-// 	if _, finded := this.dbs.Tables[tableindex]; !finded {
-// 		return nil,
-// 			fmt.Errorf("tableindex %d dose't exit", tableindex)
-// 	}
-// 	return this.dbs.Tables[tableindex], nil
-// }
-
-// func (this *TopConfig) GetDBsDBConfigs() map[uint32]string {
-// 	this.mutex.Lock()
-// 	defer this.mutex.Unlock()
-// 	return this.dbs.Dbs
-// }
 
 func (this *TopConfig) GetProp(propname string) string {
 	this.mutex.Lock()

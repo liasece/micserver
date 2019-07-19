@@ -1,17 +1,9 @@
 package comm
 
 type SServerInfo struct {
-	Serverid      uint32 `xml:"serverid,attr"`
-	Servertype    uint32 `xml:"servertype,attr"` // 类型
-	Servername    string `xml:"servername,attr"`
-	Serverip      string `xml:"serverip,attr"`
-	Serverport    uint32 `xml:"serverport,attr"`
-	Extip         string `xml:"extip,attr"`
-	Httpport      uint32 `xml:"httpport,attr"`
-	Httpsport     uint32 `xml:"httpsport,attr"`
-	Rpcport       uint32 `xml:"rpcport,attr"`
-	Tcpport       uint32 `xml:"tcpport,attr"`
-	ClientTcpport uint32 `xml:"tcpsocketport,attr"`
+	ServerID      string
+	ServerAddr    string
+	ClientTcpport uint32
 
 	// 服务器序号 重复不影响正常运行
 	// 但是其改动会影响 配置读取/ServerName/Log文件名
@@ -32,12 +24,11 @@ type STestCommand struct {
 }
 
 type SLoginCommand struct {
-	Serverid   uint32
-	Servertype uint32 // 类型
-	Serverip   string // IP
-	Servername string // name
-	Serverport uint32 // port
+	ServerID   string
+	ServerAddr string // IP
 
+	// 登录优先级
+	ConnectPriority int64
 	// 服务器序号 重复不影响正常运行
 	// 但是其改动会影响 配置读取/ServerName/Log文件名
 	ServerNumber uint32
@@ -55,6 +46,15 @@ type SLogoutCommand struct {
 type SSeverStartOKCommand struct {
 	Serverid uint32
 }
+
+const (
+	// 登录成功
+	LOGINRETCODE_SECESS = 0
+	// 身份验证错误
+	LOGINRETCODE_IDENTITY = 1
+	// 重复连接
+	LOGINRETCODE_IDENTICAL = 2
+)
 
 // 登录服务器返回
 type SLoginRetCommand struct {

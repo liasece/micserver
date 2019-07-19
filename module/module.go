@@ -11,34 +11,44 @@ type IModule interface {
 	InitModule(conf.ModuleConfig)
 	TopRunner()
 	KillModule()
+	InitSubnet(map[string]string)
 }
 
 type BaseModule struct {
+	*log.Logger
 	ModuleID string
 	Configer *conf.ModuleConfig
-	Logger   *log.Logger
 
 	subnetManager *subnet.SubnetManager
 }
 
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
+	this.Configer = &configer
+	// 初始化logger
+	if this.Configer.HasModuleSetting("logpath") {
+		this.Logger = log.NewLogger(this.Configer.Settings)
+		this.SetLogName(this.ModuleID)
+	} else {
+		this.Logger = log.GetDefaultLogger()
+	}
 	// 申请内存
 	if this.subnetManager == nil {
 		this.subnetManager = &subnet.SubnetManager{}
 	}
-	this.Configer = &configer
-	// 初始化logger
-	if this.Configer.HasSetting("logpath") {
-		this.Logger = log.NewLogger(this.Configer.Settings)
-	} else {
-		this.Logger = log.GetDefaultLogger()
-	}
-
+	this.subnetManager.Logger = this.Logger
 	// 初始化服务器网络管理器
-	this.subnetManager.InitManager()
+	this.subnetManager.InitManager(this.Configer)
 
-	this.Logger.Debug("module initting...")
+	this.Debug("module initting...")
 	// 显示网卡信息
+}
+
+func (this *BaseModule) InitSubnet(subnetAddrMap map[string]string) {
+	for k, addr := range subnetAddrMap {
+		if k != this.GetModuleID() {
+			this.subnetManager.TryConnectServer(k, addr)
+		}
+	}
 }
 
 func (this *BaseModule) GetModuleID() string {
@@ -46,9 +56,8 @@ func (this *BaseModule) GetModuleID() string {
 }
 
 func (this *BaseModule) TopRunner() {
-	// this.subnetManager.StartMain()
 }
 
 func (this *BaseModule) KillModule() {
-	this.Logger.Debug("KillModule...")
+	this.Debug("KillModule...")
 }

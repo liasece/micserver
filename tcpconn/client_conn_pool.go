@@ -15,39 +15,6 @@ import (
 
 const mClientConnPoolGroupSum = 10
 
-type uint64ToClientConn struct {
-	m *util.MapPool
-}
-
-func (this *uint64ToClientConn) Init(gsum int) {
-	this.m = util.NewMapPool(uint32(gsum))
-}
-
-func (this *uint64ToClientConn) Store(k uint64, v *ClientConn) {
-	this.m.Push(uint32(k%mClientConnPoolGroupSum), k, v)
-}
-
-func (this *uint64ToClientConn) Load(k uint64) (*ClientConn, bool) {
-	tv, ok := this.m.Get(uint32(k%mClientConnPoolGroupSum), k)
-	if tv == nil || !ok {
-		return nil, false
-	}
-	return tv.(*ClientConn), true
-}
-
-func (this *uint64ToClientConn) Delete(k uint64) {
-	this.m.Pop(uint32(k%mClientConnPoolGroupSum), k)
-}
-
-func (this *uint64ToClientConn) Range(callback func(uint64, *ClientConn)) {
-	this.m.RangeAll(func(tk interface{}, tv interface{}) {
-		if tk == nil || tv == nil {
-			return
-		}
-		callback(tk.(uint64), tv.(*ClientConn))
-	})
-}
-
 type stringToClientConn struct {
 	m *util.MapPool
 }
@@ -82,9 +49,9 @@ func (this *stringToClientConn) Init(gsum uint32) {
 }
 
 type ClientConnPool struct {
-	allsockets     uint64ToClientConn // 所有连接
+	allsockets     stringToClientConn // 所有连接
 	allopenidtasks stringToClientConn // 所有连接 by openid
-	alluuidtasks   uint64ToClientConn // 所有连接 by uuid
+	alluuidtasks   stringToClientConn // 所有连接 by uuid
 	linkSum        int32
 	groupID        uint16
 }
@@ -108,21 +75,21 @@ func (this *ClientConnPool) NewClientConn(conn net.Conn) (*ClientConn, error) {
 // 遍历连接池中的所有连接
 func (this *ClientConnPool) Range(
 	callback func(*ClientConn)) {
-	this.allsockets.Range(func(key uint64,
+	this.allsockets.Range(func(key string,
 		value *ClientConn) {
 		callback(value)
 	})
 }
 
 // 根据连接的 TmpID 获取一个连接
-func (this *ClientConnPool) Get(tempid uint64) *ClientConn {
+func (this *ClientConnPool) Get(tempid string) *ClientConn {
 	if tcptask, found := this.allsockets.Load(tempid); found {
 		return tcptask
 	}
 	return nil
 }
 
-func (this *ClientConnPool) Remove(tempid uint64) {
+func (this *ClientConnPool) Remove(tempid string) {
 	if value, found := this.allsockets.Load(tempid); found {
 		if value.IsVertify() {
 			if _, openidfound := this.allopenidtasks.
@@ -163,7 +130,7 @@ func (this *ClientConnPool) Len() uint32 {
 	return uint32(this.linkSum)
 }
 
-func (this *ClientConnPool) remove(tmpid uint64) {
+func (this *ClientConnPool) remove(tmpid string) {
 	if _, ok := this.allsockets.Load(tmpid); !ok {
 		return
 	}
@@ -172,7 +139,7 @@ func (this *ClientConnPool) remove(tmpid uint64) {
 	this.linkSum--
 }
 
-func (this *ClientConnPool) add(tmpid uint64, value *ClientConn) {
+func (this *ClientConnPool) add(tmpid string, value *ClientConn) {
 	if _, ok := this.allsockets.Load(tmpid); !ok {
 		// 是新增的连接
 		this.linkSum++
@@ -188,8 +155,8 @@ func (this *ClientConnPool) AddTaskOpenID(
 
 // 随机获取指定类型的一个连接
 func (this *ClientConnPool) GetRandom() *ClientConn {
-	tasklist := make([]uint64, 0)
-	this.allsockets.Range(func(key uint64, value *ClientConn) {
+	tasklist := make([]string, 0)
+	this.allsockets.Range(func(key string, value *ClientConn) {
 		tasklist = append(tasklist, key)
 	})
 
@@ -217,13 +184,13 @@ func (this *ClientConnPool) GetTaskByOpenID(
 
 // 根据 UUID 索引 Task
 func (this *ClientConnPool) AddTaskUUID(task *ClientConn,
-	uuid uint64) {
+	uuid string) {
 	this.alluuidtasks.Store(uuid, task)
 }
 
 // 根据 UUID 索引 Task
 func (this *ClientConnPool) GetTaskByUUID(
-	uuid uint64) *ClientConn {
+	uuid string) *ClientConn {
 	if oldtask, found := this.alluuidtasks.Load(uuid); found {
 		return oldtask
 	}

@@ -351,3 +351,14 @@ func Abs(n int32) uint32 {
 	}
 	return uint32(n)
 }
+
+func GetServerIDType(id string) string {
+	res := ""
+	for _, k := range id {
+		if k >= '0' && k <= '9' {
+			return res
+		}
+		res = res + fmt.Sprint(k)
+	}
+	return res
+}

@@ -3,9 +3,10 @@ package tcpconn
 import (
 	//	"os"
 	// "msg/log"
-	// "math/rand"
 	"github.com/liasece/micserver/comm"
+	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
+	"math/rand"
 	"net"
 	// "sync"
 	// "time"
@@ -30,7 +31,7 @@ const ServerConnSendBufferSize = 64 * 1024 * 1024
 
 type ServerConn struct {
 	Conn            TCPConn
-	Tempid          uint64 // 唯一编号
+	Tempid          string // 唯一编号
 	terminate_time  uint64 // 结束时间 为0表示不结束
 	terminate_force bool   // 主动断开连接
 	verify_ok       bool   // 验证是否成功，没有成功不允许处理后面的消息
@@ -38,6 +39,8 @@ type ServerConn struct {
 	jobnum          uint32 // 当前连接上的计算量，userserver表示用户数，
 	// matchserver表示正在匹配的队列数，
 	// battleserver表示在战斗的房间数
+	IsNormalDisconnect bool // 是否是正常的断开连接
+	ConnectPriority    int64
 
 	Serverinfo comm.SServerInfo // 该连接对方服务器信息
 
@@ -53,6 +56,7 @@ func NewServerConn(sctype TServerSCType, conn net.Conn) *ServerConn {
 	tcpconn.SetSC(sctype)
 	tcpconn.Conn.Init(conn, ServerConnSendMsgBufferSize,
 		ServerConnSendBufferSize, ServerConnMaxWaitSendMsgBufferSize)
+	tcpconn.ConnectPriority = rand.Int63()
 	return tcpconn
 }
 
@@ -109,6 +113,7 @@ func (this *ServerConn) GetConn() net.Conn {
 
 // 强制终止该连接
 func (this *ServerConn) Terminate() {
+	log.Debug("[ServerConn.Terminate] 连接停止 Tempid[%s]", this.Tempid)
 	this.terminate_force = true
 }
 

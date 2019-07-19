@@ -16,7 +16,7 @@ type ClientConn struct {
 	Conn TCPConn
 
 	Openid string
-	UUID   uint64
+	UUID   string
 	Quizid uint64
 
 	Roomid uint64
@@ -25,7 +25,7 @@ type ClientConn struct {
 	Roomserverid  uint32 // RoomServer 的serverid
 	Matchserverid uint32 // MatchServer 的serverid
 
-	Tempid          uint64 // 唯一编号
+	Tempid          string // 唯一编号
 	terminate_time  uint64 // 结束时间 为0表示不结束
 	terminate_force bool   // 主动断开连接
 	verify_ok       bool   // 验证是否成功，没有成功不允许处理后面的消息

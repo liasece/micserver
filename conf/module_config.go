@@ -1,12 +1,12 @@
 package conf
 
 type ModuleConfig struct {
-	ID        string            `json:"id"`
-	ProcessID string            `json:"processid"`
-	Settings  map[string]string `json:"settings"`
+	ID          string            `json:"id"`
+	Settings    map[string]string `json:"settings"`
+	AppSettings map[string]string `json:"-"`
 }
 
-func (this *ModuleConfig) HasSetting(key string) bool {
+func (this *ModuleConfig) HasModuleSetting(key string) bool {
 	if this.Settings == nil {
 		return false
 	}
@@ -16,12 +16,40 @@ func (this *ModuleConfig) HasSetting(key string) bool {
 	return false
 }
 
-func (this *ModuleConfig) GetSetting(key string) string {
+func (this *ModuleConfig) GetModuleSetting(key string) string {
 	if this.Settings == nil {
 		return ""
 	}
 	if v, ok := this.Settings[key]; ok {
 		return v
+	}
+	return ""
+}
+
+func (this *ModuleConfig) HasSetting(key string) bool {
+	if this.Settings != nil {
+		if _, ok := this.Settings[key]; ok {
+			return true
+		}
+	}
+	if this.AppSettings != nil {
+		if _, ok := this.AppSettings[key]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (this *ModuleConfig) GetSetting(key string) string {
+	if this.Settings != nil {
+		if v, ok := this.Settings[key]; ok {
+			return v
+		}
+	}
+	if this.AppSettings != nil {
+		if v, ok := this.AppSettings[key]; ok {
+			return v
+		}
 	}
 	return ""
 }
