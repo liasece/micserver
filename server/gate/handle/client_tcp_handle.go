@@ -1,12 +1,11 @@
 package handle
 
 import (
-	"fmt"
 	"github.com/liasece/micserver/comm"
 	"github.com/liasece/micserver/conf"
-	"github.com/liasece/micserver/gate/manager"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/server/gate/manager"
 	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"io"
@@ -186,21 +185,14 @@ func (this *ClientTcpHandler) ParseClientJsonMsg(msgbin *msg.MessageBinary,
 	// }
 }
 
-func (this *ClientTcpHandler) StartAddClientTcpSocketHandle(ip string, port uint32) {
-	if port < 1 {
-		log.Error("[ClientSocket] 不正确的tcpsocket端口号%d", port)
-		return
-	}
+func (this *ClientTcpHandler) StartAddClientTcpSocketHandle(addr string) {
 	// 由于部分 NAT 主机没有网卡概念，需要自己配置IP
-	ipportstr := fmt.Sprintf(":%d", port)
-	ln, err := net.Listen("tcp", ipportstr)
+	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Error("[ClientSocket] %s", err.Error())
 		return
 	}
-	// this.moduleConfig.Myserverinfo.Extip = ip
-	// this.moduleConfig.Myserverinfo.ClientTcpport = port
-	log.Debug("Gateway Client TCP服务启动成功 IPPort[%s:%d]", ip, port)
+	log.Debug("Gateway Client TCP服务启动成功 IPPort[%s]", addr)
 	go func() {
 		for {
 			// 接受连接

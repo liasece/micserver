@@ -3,6 +3,7 @@ package module
 import (
 	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/server/gate"
 	"github.com/liasece/micserver/server/subnet"
 )
 
@@ -20,6 +21,7 @@ type BaseModule struct {
 	Configer *conf.ModuleConfig
 
 	subnetManager *subnet.SubnetManager
+	gateBase      *gate.GateBase
 }
 
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
@@ -40,7 +42,11 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.subnetManager.InitManager(this.Configer)
 
 	this.Debug("module initting...")
-	// 显示网卡信息
+	// gateway初始化
+	if gateaddr := this.Configer.GetModuleSetting("gatetcpaddr"); gateaddr != "" {
+		this.gateBase = &gate.GateBase{}
+		this.gateBase.BindOuterTCP(gateaddr)
+	}
 }
 
 func (this *BaseModule) InitSubnet(subnetAddrMap map[string]string) {
