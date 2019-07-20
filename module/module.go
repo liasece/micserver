@@ -5,6 +5,7 @@ import (
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/server/gate"
 	"github.com/liasece/micserver/server/subnet"
+	"time"
 )
 
 type IModule interface {
@@ -20,8 +21,9 @@ type BaseModule struct {
 	ModuleID string
 	Configer *conf.ModuleConfig
 
-	subnetManager *subnet.SubnetManager
-	gateBase      *gate.GateBase
+	subnetManager   *subnet.SubnetManager
+	gateBase        *gate.GateBase
+	hasKilledModule bool
 }
 
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
@@ -62,8 +64,24 @@ func (this *BaseModule) GetModuleID() string {
 }
 
 func (this *BaseModule) TopRunner() {
+	// 更新定时器
+	t1sec := time.NewTimer(time.Second)
+	t1min := time.NewTimer(time.Minute)
+	for !this.hasKilledModule {
+		select {
+		case <-t1sec.C:
+		case <-t1min.C:
+			this.Debug("Timer 1 Minute")
+		}
+	}
 }
 
 func (this *BaseModule) KillModule() {
 	this.Debug("KillModule...")
+	this.hasKilledModule = true
+}
+
+// 注册各种模块事件
+func (this *BaseModule) RegisterUpdateTimer(duration time.Duration, cb func()) {
+
 }
