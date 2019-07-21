@@ -13,6 +13,10 @@ import (
 
 var pathVariableTable map[byte]func(*time.Time) int
 
+const (
+	kernel32dll = "kernel32.dll"
+)
+
 type FileWriter struct {
 	filebasename  string
 	pathFmt       string
@@ -140,7 +144,18 @@ func (w *FileWriter) Rotate() error {
 	}
 
 	if w.Redirecterr {
-		// 把错误重定向到日志文件来
+		// kernel32 := syscall.NewLazyDLL(kernel32dll)
+		// setStdHandle := kernel32.NewProc("SetStdHandle")
+		// // 把错误重定向到日志文件来
+		// _, _, e1 := setStdHandle.Call(uintptr(1), uintptr(w.file.Fd()))
+		// if e1 != nil {
+		// 	// return e1
+		// }
+		// _, _, e2 := setStdHandle.Call(uintptr(2), uintptr(w.file.Fd()))
+		// if e2 != nil {
+		// 	// return e2
+		// }
+
 		e1 := syscall.Dup2(int(w.file.Fd()), 1)
 		if e1 != nil {
 			// return e1
