@@ -18,6 +18,7 @@ type IModule interface {
 
 type BaseModule struct {
 	*log.Logger
+	Register
 	ModuleID string
 	Configer *conf.ModuleConfig
 
@@ -64,24 +65,13 @@ func (this *BaseModule) GetModuleID() string {
 }
 
 func (this *BaseModule) TopRunner() {
-	// 更新定时器
-	t1sec := time.NewTimer(time.Second)
-	t1min := time.NewTimer(time.Minute)
-	for !this.hasKilledModule {
-		select {
-		case <-t1sec.C:
-		case <-t1min.C:
-			this.Debug("Timer 1 Minute")
-		}
-	}
+	this.RegTimer(time.Second, 0, false, func(t time.Duration) {
+		this.Debug("Timer 1 Sec")
+	})
 }
 
 func (this *BaseModule) KillModule() {
 	this.Debug("KillModule...")
 	this.hasKilledModule = true
-}
-
-// 注册各种模块事件
-func (this *BaseModule) RegisterUpdateTimer(duration time.Duration, cb func()) {
-
+	this.KillRegister()
 }
