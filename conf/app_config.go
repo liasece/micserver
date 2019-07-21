@@ -1,5 +1,9 @@
 package conf
 
+import (
+	"strings"
+)
+
 type AppConfig struct {
 	AppSettings map[string]string        `json:"settings"`
 	Modules     map[string]*ModuleConfig `json:"modules"`
@@ -53,7 +57,9 @@ func (this *AppConfig) GetModuleConfig(moduleid string) *ModuleConfig {
 func (this *AppConfig) GetModuleConfigList() map[string]*ModuleConfig {
 	res := make(map[string]*ModuleConfig)
 	for k, _ := range this.Modules {
-		res[k] = this.GetModuleConfig(k)
+		if !strings.HasPrefix(k, "//") {
+			res[k] = this.GetModuleConfig(k)
+		}
 	}
 	return res
 }
@@ -61,8 +67,10 @@ func (this *AppConfig) GetModuleConfigList() map[string]*ModuleConfig {
 func (this *AppConfig) GetSubnetTCPAddrMap() map[string]string {
 	res := make(map[string]string)
 	for k, m := range this.Modules {
-		if addr, ok := m.Settings["subnettcpaddr"]; ok {
-			res[k] = addr
+		if !strings.HasPrefix(k, "//") {
+			if addr, ok := m.Settings["subnettcpaddr"]; ok {
+				res[k] = addr
+			}
 		}
 	}
 	return res

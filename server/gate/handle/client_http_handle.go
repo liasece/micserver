@@ -7,6 +7,7 @@ import (
 )
 
 type ClientHttpHandler struct {
+	*log.Logger
 }
 
 func IDIPHandler(writer http.ResponseWriter, request *http.Request) {
@@ -22,7 +23,7 @@ func IDIPHandler(writer http.ResponseWriter, request *http.Request) {
 	// msg := &gmmsg.GMReqOriginal{}
 	// json.Unmarshal(bcontent, msg)
 	// msg.Decode()
-	// log.Debug("[GM] Recv Content[%s] Msg[%s]", content, msg.Body)
+	// this.Debug("[GM] Recv Content[%s] Msg[%s]", content, msg.Body)
 
 	// switch msg.Head.CmdID {
 	// case 0x102b:
@@ -52,7 +53,7 @@ func IDIPHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func (this *ClientHttpHandler) StartAddHttpHandle(addr string) {
-	log.Debug("Gateway 对外GM HTTP服务启动成功 IPPort[%s]", addr)
+	this.Debug("Gateway 对外GM HTTP服务启动成功 IPPort[%s]", addr)
 	// gm接口
 	http.HandleFunc("/idip", IDIPHandler)
 

@@ -49,18 +49,14 @@ func (this *stringToClientConn) Init(gsum uint32) {
 }
 
 type ClientConnPool struct {
-	allsockets     stringToClientConn // 所有连接
-	allopenidtasks stringToClientConn // 所有连接 by openid
-	alluuidtasks   stringToClientConn // 所有连接 by uuid
-	linkSum        int32
-	groupID        uint16
+	allsockets stringToClientConn // 所有连接
+	linkSum    int32
+	groupID    uint16
 }
 
 func (this *ClientConnPool) Init(groupID int) {
 	this.groupID = uint16(groupID)
 	this.allsockets.Init(mClientConnPoolGroupSum)
-	this.allopenidtasks.Init(mClientConnPoolGroupSum)
-	this.alluuidtasks.Init(mClientConnPoolGroupSum)
 }
 
 func (this *ClientConnPool) NewClientConn(conn net.Conn) (*ClientConn, error) {
@@ -91,15 +87,6 @@ func (this *ClientConnPool) Get(tempid string) *ClientConn {
 
 func (this *ClientConnPool) Remove(tempid string) {
 	if value, found := this.allsockets.Load(tempid); found {
-		if value.IsVertify() {
-			if _, openidfound := this.allopenidtasks.
-				Load(value.Openid); openidfound {
-				this.allopenidtasks.Delete(value.Openid)
-			}
-			if _, uuidfound := this.alluuidtasks.Load(value.UUID); uuidfound {
-				this.alluuidtasks.Delete(value.UUID)
-			}
-		}
 		// 关闭消息发送协程
 		value.Conn.Shutdown()
 		value.Debug("[ClientConnPool.Remove] 删除连接 当前连接数量"+
@@ -147,12 +134,6 @@ func (this *ClientConnPool) add(tmpid string, value *ClientConn) {
 	this.allsockets.Store(tmpid, value)
 }
 
-// 根据 OpenID 索引 Task
-func (this *ClientConnPool) AddTaskOpenID(
-	task *ClientConn, openid string) {
-	this.allopenidtasks.Store(openid, task)
-}
-
 // 随机获取指定类型的一个连接
 func (this *ClientConnPool) GetRandom() *ClientConn {
 	tasklist := make([]string, 0)
@@ -169,30 +150,6 @@ func (this *ClientConnPool) GetRandom() *ClientConn {
 		if tcptask, found := this.allsockets.Load(id); found {
 			return tcptask
 		}
-	}
-	return nil
-}
-
-// 根据 OpenID 索引 Task
-func (this *ClientConnPool) GetTaskByOpenID(
-	openid string) *ClientConn {
-	if oldtask, found := this.allopenidtasks.Load(openid); found {
-		return oldtask
-	}
-	return nil
-}
-
-// 根据 UUID 索引 Task
-func (this *ClientConnPool) AddTaskUUID(task *ClientConn,
-	uuid string) {
-	this.alluuidtasks.Store(uuid, task)
-}
-
-// 根据 UUID 索引 Task
-func (this *ClientConnPool) GetTaskByUUID(
-	uuid string) *ClientConn {
-	if oldtask, found := this.alluuidtasks.Load(uuid); found {
-		return oldtask
 	}
 	return nil
 }

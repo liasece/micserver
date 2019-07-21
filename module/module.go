@@ -19,6 +19,7 @@ type IModule interface {
 type BaseModule struct {
 	*log.Logger
 	Register
+
 	ModuleID string
 	Configer *conf.ModuleConfig
 
@@ -47,7 +48,10 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.Debug("module initting...")
 	// gateway初始化
 	if gateaddr := this.Configer.GetModuleSetting("gatetcpaddr"); gateaddr != "" {
-		this.gateBase = &gate.GateBase{}
+		this.gateBase = &gate.GateBase{
+			Logger: this.Logger,
+		}
+		this.gateBase.Init(this.GetModuleID())
 		this.gateBase.BindOuterTCP(gateaddr)
 	}
 }
