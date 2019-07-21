@@ -65,8 +65,8 @@ func (this *BaseModule) GetModuleID() string {
 }
 
 func (this *BaseModule) TopRunner() {
-	this.RegTimer(time.Second, 0, false, func(t time.Duration) {
-		this.Debug("Timer 1 Sec")
+	this.RegTimer(time.Minute, 0, false, func(t time.Duration) {
+		this.Debug("Timer 1 Minute...")
 	})
 }
 
