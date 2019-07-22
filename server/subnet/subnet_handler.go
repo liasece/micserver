@@ -35,7 +35,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 		}
 	}()
 	// 消息缓冲
-	netbuffer := util.NewIOBuffer(conn.Conn.Conn, 6400*1024)
+	netbuffer := util.NewIOBuffer(conn.Conn, 6400*1024)
 	msgReader := msg.NewMessageBinaryReader(netbuffer)
 
 	for true {
@@ -57,7 +57,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 			}
 		}
 
-		derr := conn.Conn.Conn.SetReadDeadline(time.Now().
+		derr := conn.Conn.SetReadDeadline(time.Now().
 			Add(time.Duration(time.Millisecond * 1000)))
 		if derr != nil {
 			if !conn.IsNormalDisconnect {

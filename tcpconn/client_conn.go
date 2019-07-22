@@ -13,24 +13,18 @@ import (
 )
 
 type ClientConn struct {
-	Conn TCPConn
-
-	Openid string
-	UUID   string
-	Quizid uint64
-
-	Roomid uint64
-
-	Userserverid  uint32 // userserver 的serverid
-	Roomserverid  uint32 // RoomServer 的serverid
-	Matchserverid uint32 // MatchServer 的serverid
-
-	Tempid          string // 唯一编号
-	terminate_time  uint64 // 结束时间 为0表示不结束
-	terminate_force bool   // 主动断开连接
-	verify_ok       bool   // 验证是否成功，没有成功不允许处理后面的消息
-
-	CreateTime uint64 // 连接创建的时间
+	*log.Logger
+	TCPConn
+	// 唯一编号
+	Tempid string
+	// 结束时间 为0表示不结束
+	terminate_time int64
+	// 主动断开连接
+	terminate_force bool
+	// 验证是否成功，没有成功不允许处理后面的消息
+	verify_ok bool
+	// 连接创建的时间
+	CreateTime int64
 
 	Encryption msg.TEncryptionType
 
@@ -56,15 +50,15 @@ const ClientConnSendBufferSize = MaxMsgSize + JoinSendMsgSize
 // conn: 连接的net.Conn对象
 func NewClientConn(conn net.Conn) *ClientConn {
 	tcpconn := new(ClientConn)
-	tcpconn.Conn.Init(conn, ClientConnSendMsgBufferSize,
+	tcpconn.Init(conn, ClientConnSendMsgBufferSize,
 		ClientConnSendBufferSize, ClientConnMaxWaitSendMsgBufferSize)
-	tcpconn.CreateTime = uint64(time.Now().Unix())
+	tcpconn.CreateTime = int64(time.Now().Unix())
 	return tcpconn
 }
 
 // 返回连接是否仍可用
 func (this *ClientConn) Check() bool {
-	curtime := uint64(time.Now().Unix())
+	curtime := int64(time.Now().Unix())
 	// 检查本服务器时候还存活
 	if this.IsTerminateForce() {
 		// 本服务器关闭
@@ -91,7 +85,7 @@ func (this *ClientConn) GetPing() *Ping {
 
 // 读数据
 func (this *ClientConn) Read() (msg []byte, cmdlen int, err error) {
-	msg, err4 := ioutil.ReadAll(this.Conn.GetConn())
+	msg, err4 := ioutil.ReadAll(this.GetConn())
 	this.Debug("[ClientConn.Read] Read N[%d] ", len(msg))
 
 	return msg, len(msg), err4
@@ -108,12 +102,12 @@ func (this *ClientConn) SetVertify(value bool) {
 }
 
 // 设置过期时间
-func (this *ClientConn) SetTerminateTime(value uint64) {
+func (this *ClientConn) SetTerminateTime(value int64) {
 	this.terminate_time = value
 }
 
 // 判断是否已强制终止
-func (this *ClientConn) IsTerminateTimeout(curtime uint64) bool {
+func (this *ClientConn) IsTerminateTimeout(curtime int64) bool {
 	if this.terminate_time > 0 && this.terminate_time < curtime {
 		return true
 	}
@@ -126,16 +120,11 @@ func (this *ClientConn) IsTerminateForce() bool {
 }
 
 // 判断是否已终止
-func (this *ClientConn) IsTerminate(curtime uint64) bool {
+func (this *ClientConn) IsTerminate(curtime int64) bool {
 	if this.IsTerminateForce() || this.IsTerminateTimeout(curtime) {
 		return true
 	}
 	return false
-}
-
-// 获取本服务器连接的net.Conn对象
-func (this *ClientConn) GetConn() net.Conn {
-	return this.Conn.GetConn()
 }
 
 // 强制终止该连接
@@ -147,7 +136,7 @@ func (this *ClientConn) Terminate() {
 func (this *ClientConn) SendCmd(v msg.MsgStruct) {
 	this.Debug("[SendCmd] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())
-	this.Conn.SendCmd(v, this.Encryption)
+	this.TCPConn.SendCmd(v, this.Encryption)
 }
 
 // 异步发送一条消息，带发送完成回调
@@ -155,46 +144,41 @@ func (this *ClientConn) SendCmdWithCallback(v msg.MsgStruct,
 	callback func(interface{}), cbarg interface{}) {
 	this.Debug("[SendCmdWithCallback] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())
-	this.Conn.SendCmdWithCallback(v, callback, cbarg, this.Encryption)
+	this.TCPConn.SendCmdWithCallback(v, callback, cbarg, this.Encryption)
 }
 
 func (this *ClientConn) SendBytes(
 	cmdid uint16, protodata []byte) error {
-	return this.Conn.SendBytes(cmdid, protodata, this.Encryption)
+	return this.TCPConn.SendBytes(cmdid, protodata, this.Encryption)
 }
 
 func (this *ClientConn) GetLogHead() string {
-	// if this.loghead == "" {
-	this.loghead = fmt.Sprintf("[ClientConn] TmpID[%d] IPPort[%s] "+
-		"OID[%s] UID[%d] USID[%d] RSID[%d] ",
-		this.Tempid, this.Conn.Conn.RemoteAddr().String(), this.Openid,
-		this.UUID, this.Userserverid,
-		this.Roomserverid)
-	// }
+	this.loghead = fmt.Sprintf("[ClientConn] TmpID[%d] IPPort[%s] ",
+		this.Tempid, this.Conn.RemoteAddr().String())
 	return this.loghead
 }
 
 func (this *ClientConn) Debug(fmt string, args ...interface{}) {
 	fmt = this.GetLogHead() + fmt
-	log.Debug(fmt, args...)
+	this.Logger.Debug(fmt, args...)
 }
 
 func (this *ClientConn) Warn(fmt string, args ...interface{}) {
 	fmt = this.GetLogHead() + fmt
-	log.Warn(fmt, args...)
+	this.Logger.Warn(fmt, args...)
 }
 
 func (this *ClientConn) Info(fmt string, args ...interface{}) {
 	fmt = this.GetLogHead() + fmt
-	log.Info(fmt, args...)
+	this.Logger.Info(fmt, args...)
 }
 
 func (this *ClientConn) Error(fmt string, args ...interface{}) {
 	fmt = this.GetLogHead() + fmt
-	log.Error(fmt, args...)
+	this.Logger.Error(fmt, args...)
 }
 
 func (this *ClientConn) Fatal(fmt string, args ...interface{}) {
 	fmt = this.GetLogHead() + fmt
-	log.Fatal(fmt, args...)
+	this.Logger.Fatal(fmt, args...)
 }

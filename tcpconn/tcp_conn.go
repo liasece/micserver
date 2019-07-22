@@ -29,20 +29,22 @@ const MsgMaxSize = 64 * 1024
 const MaxMsgPackSum = 5000
 
 type TCPConn struct {
-	sendmsgchan     chan *msg.MessageBinary
-	sendmsgchandone chan struct{}
-	stopchan        chan struct{}
+	Conn        net.Conn
+	sendmsgchan chan *msg.MessageBinary
 
+	// 尝试关闭一个连接
+	shutdownChan   chan struct{}
+	stopChan       chan struct{}
+	shutdownMutex  sync.Mutex
+	hasTryShutdown bool
+	connDead       bool
+
+	// 发送缓冲区大小
 	sendBufferSize           int
 	maxWaitSendMsgBufferSize int
 
-	Conn     net.Conn
-	connDead bool
-
+	// 当前已发送数据长度
 	nowSendBufferLength int64
-
-	hasTryShutdown bool
-	shutdownMutex  sync.Mutex
 }
 
 // 初始化一个TCPConn对象
@@ -54,8 +56,8 @@ func (this *TCPConn) Init(conn net.Conn,
 	msgBufferSize uint32, sendBufferSize int,
 	maxWaitSendMsgBufferSize int) {
 	this.sendmsgchan = make(chan *msg.MessageBinary, msgBufferSize)
-	this.sendmsgchandone = make(chan struct{})
-	this.stopchan = make(chan struct{})
+	this.shutdownChan = make(chan struct{})
+	this.stopChan = make(chan struct{})
 	this.Conn = conn
 	this.sendBufferSize = sendBufferSize
 	this.maxWaitSendMsgBufferSize = maxWaitSendMsgBufferSize
@@ -84,7 +86,7 @@ func (this *TCPConn) shutdownThread() {
 	// 延迟两秒发送，否则消息可能处理不完
 	time.Sleep(2 * time.Second)
 
-	close(this.sendmsgchandone)
+	close(this.shutdownChan)
 }
 
 func (this *TCPConn) GetConn() net.Conn {
@@ -167,7 +169,7 @@ func (this *TCPConn) SendMessageBinary(
 
 	// 检查发送channel是否已经关闭
 	select {
-	case <-this.stopchan:
+	case <-this.stopChan:
 		log.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
 		return ErrCloseed
 	default:
@@ -181,7 +183,7 @@ func (this *TCPConn) SendMessageBinary(
 
 	// 确认发送channel是否已经关闭
 	select {
-	case <-this.stopchan:
+	case <-this.stopChan:
 		log.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
 		return ErrCloseed
 	case this.sendmsgchan <- msgbinary:
@@ -203,7 +205,7 @@ func (this *TCPConn) sendProcess() {
 	}
 	// 用于通知发送线程，发送channel已关闭
 	log.Debug("[TCPConn.sendProcess] 发送线程已关闭")
-	close(this.stopchan)
+	close(this.stopChan)
 	err := this.closeSocket()
 	if err != nil {
 		log.Error("[TCPConn.sendProcess] closeSocket Err[%s]",
@@ -231,7 +233,7 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 				break
 			}
 			this.SendMsgList(msg)
-		case <-this.sendmsgchandone:
+		case <-this.shutdownChan:
 			isrunning = false
 			break
 		}

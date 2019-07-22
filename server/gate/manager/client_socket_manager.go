@@ -4,7 +4,6 @@ import (
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/server/gate/handle"
-	"github.com/liasece/micserver/server/subnet"
 	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"io"
@@ -27,10 +26,11 @@ func (this *ClientSocketManager) Init(moduleID string) {
 func (this *ClientSocketManager) AddClientTcpSocket(
 	conn net.Conn) (*tcpconn.ClientConn, error) {
 	task, err := this.connPool.NewClientConn(conn)
+	task.Logger = this.Logger
 	if err != nil {
 		return nil, err
 	}
-	curtime := uint64(time.Now().Unix())
+	curtime := time.Now().Unix()
 	task.SetTerminateTime(curtime + 20) // 20秒以后还没有验证通过就断开连接
 
 	task.Debug("[ClientSocketManager.AddClientTcpSocket] "+
@@ -52,12 +52,6 @@ func (this *ClientSocketManager) remove(tempid string) {
 	value := this.GetTaskByTmpID(tempid)
 	if value == nil {
 		return
-	}
-	// 设置redis缓存
-	if value.Openid != "" && value.Userserverid != 0 {
-		subnet.GetGBRedisManager().
-			AddUserServerIDByOpenidWithDeadline(value.Openid,
-				value.Userserverid, 1*60*60)
 	}
 	this.connPool.Remove(tempid)
 }
@@ -120,7 +114,6 @@ func (this *ClientSocketManager) onNewConnect(conn net.Conn) {
 	for {
 		if !task.Check() {
 			// 强制移除客户端连接
-			// manager.NotifyClientUserOffline(task)
 			this.RemoveTaskByTmpID(task.Tempid)
 			return
 		}
@@ -140,7 +133,6 @@ func (this *ClientSocketManager) onNewConnect(conn net.Conn) {
 				task.Debug("[onNewConnect] "+
 					"Scoket数据读写异常,断开连接了,"+
 					"scoket返回 Err[%s]", err.Error())
-				// manager.NotifyClientUserOffline(task)
 				this.RemoveTaskByTmpID(task.Tempid)
 				return
 			} else {
@@ -163,7 +155,6 @@ func (this *ClientSocketManager) onNewConnect(conn net.Conn) {
 			task.Error("[onNewConnect] 解析消息错误，断开连接 "+
 				"Err[%s]", err.Error())
 			// 强制移除客户端连接
-			// manager.NotifyClientUserOffline(task)
 			this.RemoveTaskByTmpID(task.Tempid)
 			return
 		}

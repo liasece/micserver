@@ -88,7 +88,7 @@ func (this *ClientConnPool) Get(tempid string) *ClientConn {
 func (this *ClientConnPool) Remove(tempid string) {
 	if value, found := this.allsockets.Load(tempid); found {
 		// 关闭消息发送协程
-		value.Conn.Shutdown()
+		value.Shutdown()
 		value.Debug("[ClientConnPool.Remove] 删除连接 当前连接数量"+
 			" Len[%d]",
 			this.Len())

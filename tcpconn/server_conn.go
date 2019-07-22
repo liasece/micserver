@@ -30,21 +30,27 @@ const ServerConnMaxWaitSendMsgBufferSize = 512 * 1024 * 1024
 const ServerConnSendBufferSize = 64 * 1024 * 1024
 
 type ServerConn struct {
-	Conn            TCPConn
-	Tempid          string // 唯一编号
-	terminate_time  uint64 // 结束时间 为0表示不结束
-	terminate_force bool   // 主动断开连接
-	verify_ok       bool   // 验证是否成功，没有成功不允许处理后面的消息
-	isAlive         bool
-	jobnum          uint32 // 当前连接上的计算量，userserver表示用户数，
-	// matchserver表示正在匹配的队列数，
-	// battleserver表示在战斗的房间数
-	IsNormalDisconnect bool // 是否是正常的断开连接
-	ConnectPriority    int64
-
-	Serverinfo comm.SServerInfo // 该连接对方服务器信息
-
-	serverSCType TServerSCType // 用于区分该连接是服务器 client task 连接
+	TCPConn
+	// 唯一编号
+	Tempid string
+	// 结束时间 为0表示不结束
+	terminate_time uint64
+	// 主动断开连接标记
+	terminate_force bool
+	// 验证是否成功，没有成功不允许处理后面的消息
+	verify_ok bool
+	// 连接是否还可用
+	isAlive bool
+	// 当前连接上的计算量
+	jobnum uint32
+	// 是否是正常的断开连接
+	IsNormalDisconnect bool
+	// 建立连接优先级
+	ConnectPriority int64
+	// 该连接对方服务器信息
+	Serverinfo comm.SServerInfo
+	// 用于区分该连接是服务器 client task 连接
+	serverSCType TServerSCType
 }
 
 // 获取一个新的服务器连接
@@ -54,7 +60,7 @@ func NewServerConn(sctype TServerSCType, conn net.Conn) *ServerConn {
 	tcpconn := new(ServerConn)
 	tcpconn.SetAlive(true)
 	tcpconn.SetSC(sctype)
-	tcpconn.Conn.Init(conn, ServerConnSendMsgBufferSize,
+	tcpconn.Init(conn, ServerConnSendMsgBufferSize,
 		ServerConnSendBufferSize, ServerConnMaxWaitSendMsgBufferSize)
 	tcpconn.ConnectPriority = rand.Int63()
 	return tcpconn
@@ -106,11 +112,6 @@ func (this *ServerConn) IsTerminate(curtime uint64) bool {
 	return false
 }
 
-// 获取本服务器连接的net.Conn对象
-func (this *ServerConn) GetConn() net.Conn {
-	return this.Conn.GetConn()
-}
-
 // 强制终止该连接
 func (this *ServerConn) Terminate() {
 	log.Debug("[ServerConn.Terminate] 连接停止 Tempid[%s]", this.Tempid)
@@ -119,13 +120,13 @@ func (this *ServerConn) Terminate() {
 
 // 异步发送一条消息，不带发送完成回调
 func (this *ServerConn) SendCmd(v msg.MsgStruct) error {
-	return this.Conn.SendCmd(v, 0)
+	return this.TCPConn.SendCmd(v, 0)
 }
 
 // 异步发送一条消息，带发送完成回调
 func (this *ServerConn) SendCmdWithCallback(v msg.MsgStruct,
 	callback func(interface{}), cbarg interface{}) error {
-	return this.Conn.SendCmdWithCallback(v, callback, cbarg, 0)
+	return this.TCPConn.SendCmdWithCallback(v, callback, cbarg, 0)
 }
 
 // 异步发送一条消息，带发送完成回调

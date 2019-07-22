@@ -15,12 +15,9 @@ import (
 type ServerConnPool struct {
 	*log.Logger
 
-	allsockets sync.Map // 所有连接
+	allSockets sync.Map // 所有连接
 	linkSum    int32
 	groupID    uint16
-
-	TCPConnectPoolMutex sync.Mutex
-	linkSumMutex        sync.Mutex
 }
 
 func (this *ServerConnPool) Init(groupID uint16) {
@@ -42,7 +39,7 @@ func (this *ServerConnPool) NewServerConn(sctype TServerSCType,
 // 遍历连接池中的所有连接
 func (this *ServerConnPool) Range(
 	callback func(*ServerConn) bool) {
-	this.allsockets.Range(func(tkey interface{},
+	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		return callback(tvalue.(*ServerConn))
 	})
@@ -51,7 +48,7 @@ func (this *ServerConnPool) Range(
 // 将一条消息广播至指定类型的所有连接
 func (this *ServerConnPool) BroadcastByType(servertype string,
 	v msg.MsgStruct) {
-	this.allsockets.Range(func(tkey interface{},
+	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*ServerConn)
 		if util.GetServerIDType(value.Serverinfo.ServerID) == servertype {
@@ -63,7 +60,7 @@ func (this *ServerConnPool) BroadcastByType(servertype string,
 
 // 广播消息
 func (this *ServerConnPool) BroadcastCmd(v msg.MsgStruct) {
-	this.allsockets.Range(func(tkey interface{},
+	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		tvalue.(*ServerConn).SendCmd(v)
 		return true
@@ -75,7 +72,7 @@ func (this *ServerConnPool) GetMinClient(
 	servertype string) *ServerConn {
 	var jobnum uint32 = 0xFFFFFFFF
 	var serverid uint64 = 0
-	this.allsockets.Range(func(tkey interface{},
+	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*ServerConn)
 		key := tkey.(uint64)
@@ -90,7 +87,7 @@ func (this *ServerConnPool) GetMinClient(
 	if serverid == 0 {
 		return nil
 	}
-	if tcptask, found := this.allsockets.Load(serverid); found {
+	if tcptask, found := this.allSockets.Load(serverid); found {
 		return tcptask.(*ServerConn)
 	}
 	return nil
@@ -99,7 +96,7 @@ func (this *ServerConnPool) GetMinClient(
 // 获取指定类型服务器的最新版本
 func (this *ServerConnPool) GetLatestVersionByType(servertype string) uint64 {
 	latestVersion := uint64(0)
-	this.allsockets.Range(func(tkey interface{},
+	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*ServerConn)
 		if util.GetServerIDType(value.Serverinfo.ServerID) == servertype &&
@@ -119,7 +116,7 @@ func (this *ServerConnPool) GetMinClientLatestVersion(
 
 	latestVersion := this.GetLatestVersionByType(servertype)
 
-	this.allsockets.Range(func(tkey interface{},
+	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*ServerConn)
 		key := tkey.(uint64)
@@ -135,7 +132,7 @@ func (this *ServerConnPool) GetMinClientLatestVersion(
 	if serverid == 0 {
 		return nil
 	}
-	if tcptask, found := this.allsockets.Load(serverid); found {
+	if tcptask, found := this.allSockets.Load(serverid); found {
 		return tcptask.(*ServerConn)
 	}
 	return nil
@@ -145,7 +142,7 @@ func (this *ServerConnPool) GetMinClientLatestVersion(
 func (this *ServerConnPool) GetRandom(
 	servertype string) *ServerConn {
 	tasklist := make([]uint64, 0)
-	this.allsockets.Range(func(tkey interface{},
+	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*ServerConn)
 		key := tkey.(uint64)
@@ -161,7 +158,7 @@ func (this *ServerConnPool) GetRandom(
 		tmpindex := r.Intn(length)
 		serverid := tasklist[tmpindex]
 
-		if tcptask, found := this.allsockets.Load(serverid); found {
+		if tcptask, found := this.allSockets.Load(serverid); found {
 			return tcptask.(*ServerConn)
 		}
 	}
@@ -170,18 +167,18 @@ func (this *ServerConnPool) GetRandom(
 
 // 根据连接的 TmpID 获取一个连接
 func (this *ServerConnPool) Get(tempid string) *ServerConn {
-	if tcptask, found := this.allsockets.Load(tempid); found {
+	if tcptask, found := this.allSockets.Load(tempid); found {
 		return tcptask.(*ServerConn)
 	}
 	return nil
 }
 
 func (this *ServerConnPool) Remove(tempid string) {
-	if tvalue, found := this.allsockets.Load(tempid); found {
+	if tvalue, found := this.allSockets.Load(tempid); found {
 		value := tvalue.(*ServerConn)
 		value.isAlive = false
 		// 关闭消息发送协程
-		value.Conn.Shutdown()
+		value.Shutdown()
 		// 删除连接
 		this.remove(tempid)
 		this.Debug("[ServerConnPool] 删除连接 TmpID[%s] 当前连接数量"+
@@ -209,19 +206,19 @@ func (this *ServerConnPool) AddAuto(connct *ServerConn) {
 
 // 修改链接的 tempip
 func (this *ServerConnPool) ChangeTempid(tcptask *ServerConn,
-	newtempid string) error {
-	this.TCPConnectPoolMutex.Lock()
-	defer this.TCPConnectPoolMutex.Unlock()
-	if _, found := this.allsockets.Load(newtempid); found {
-		return fmt.Errorf("目标连接已存在:%s", newtempid)
-	}
-	if ttcptask, found := this.allsockets.Load(tcptask.Tempid); found {
-		tcptask := ttcptask.(*ServerConn)
+	newTempID string) error {
+	afterI, isLoad := this.allSockets.LoadOrStore(newTempID, tcptask)
+	if isLoad {
+		return fmt.Errorf("目标连接已存在:%s", newTempID)
+	} else {
+		after := afterI.(*ServerConn)
+		oldTmpID := after.Tempid
+		// 修改连接内的唯一ID标识
+		after.Tempid = newTempID
+		// 删除旧ID的索引，注意，如果你的ID生成规则不是唯一的，这里会有并发问题
+		this.remove(oldTmpID)
 		this.Debug("[ServerConnPool]修改连接tempid Old[%s] -->> New[%s]",
-			tcptask.Tempid, newtempid)
-		this.remove(tcptask.Tempid)
-		tcptask.Tempid = newtempid
-		this.add(tcptask.Tempid, tcptask)
+			oldTmpID, newTempID)
 	}
 	return nil
 }
@@ -234,20 +231,19 @@ func (this *ServerConnPool) Len() uint32 {
 }
 
 func (this *ServerConnPool) remove(tmpid string) {
-	if _, ok := this.allsockets.Load(tmpid); !ok {
+	if _, ok := this.allSockets.Load(tmpid); !ok {
 		return
 	}
 	// 删除连接
-	this.allsockets.Delete(tmpid)
+	this.allSockets.Delete(tmpid)
 	this.linkSum--
 }
 
 func (this *ServerConnPool) add(tmpid string, value *ServerConn) {
-	this.linkSumMutex.Lock()
-	defer this.linkSumMutex.Unlock()
-	if _, ok := this.allsockets.Load(tmpid); !ok {
-		// 是新增的连接
+	_, isLoad := this.allSockets.LoadOrStore(tmpid, value)
+	if !isLoad {
 		this.linkSum++
+	} else {
+		this.allSockets.Store(tmpid, value)
 	}
-	this.allsockets.Store(tmpid, value)
 }
