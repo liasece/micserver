@@ -52,7 +52,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 				this.OnRemoveTCPConnect(conn)
 				this.RemoveTCPConn(conn.Tempid)
 				this.Debug("[SubnetManager.handleConnection] "+
-					"服务器主动断开连接 TmpID[%d]", conn.Tempid)
+					"服务器主动断开连接 TmpID[%s]", conn.Tempid)
 				return
 			}
 		}

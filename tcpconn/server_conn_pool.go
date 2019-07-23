@@ -182,7 +182,7 @@ func (this *ServerConnPool) Remove(tempid string) {
 		// 删除连接
 		this.remove(tempid)
 		this.Debug("[ServerConnPool] 删除连接 TmpID[%s] 当前连接数量"+
-			" Len[%d] ServerID[%s]",
+			" LinkSum[%d] ServerID[%s]",
 			tempid, this.Len(), value.Serverinfo.ServerID)
 		return
 	}
@@ -217,6 +217,7 @@ func (this *ServerConnPool) ChangeTempid(tcptask *ServerConn,
 		after.Tempid = newTempID
 		// 删除旧ID的索引，注意，如果你的ID生成规则不是唯一的，这里会有并发问题
 		this.remove(oldTmpID)
+		this.linkSum++
 		this.Debug("[ServerConnPool]修改连接tempid Old[%s] -->> New[%s]",
 			oldTmpID, newTempID)
 	}

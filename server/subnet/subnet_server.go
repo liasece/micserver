@@ -42,7 +42,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 	var serverInfo comm.SServerInfo
 
 	// 来源服务器地址
-	remoteaddr := conn.GetConn().RemoteAddr().String()
+	remoteaddr := conn.RemoteAddr().String()
 	// 获取来源服务器ID在本地的配置
 	serverInfo.ServerID = tarinfo.ServerID
 	serverInfo.ServerAddr = tarinfo.ServerAddr

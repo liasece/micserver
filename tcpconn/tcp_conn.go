@@ -20,7 +20,7 @@ import (
 	"net"
 	// "runtime"
 	// "errors"
-	"sync"
+	"io/ioutil"
 	"sync/atomic"
 	"time"
 )
@@ -28,16 +28,26 @@ import (
 const MsgMaxSize = 64 * 1024
 const MaxMsgPackSum = 5000
 
+// TCPConn 的连接状态枚举
+const (
+	// 未连接
+	TCPCONNSTATE_NONE = 0
+	// 已连接
+	TCPCONNSTATE_LINKED = 1
+	// 标记不可发送
+	TCPCONNSTATE_HOLD = 2
+	// 已关闭
+	TCPCONNSTATE_CLOSED = 3
+)
+
 type TCPConn struct {
-	Conn        net.Conn
+	net.Conn
 	sendmsgchan chan *msg.MessageBinary
 
 	// 尝试关闭一个连接
-	shutdownChan   chan struct{}
-	stopChan       chan struct{}
-	shutdownMutex  sync.Mutex
-	hasTryShutdown bool
-	connDead       bool
+	shutdownChan chan struct{}
+	stopChan     chan struct{}
+	state        int32
 
 	// 发送缓冲区大小
 	sendBufferSize           int
@@ -61,17 +71,20 @@ func (this *TCPConn) Init(conn net.Conn,
 	this.Conn = conn
 	this.sendBufferSize = sendBufferSize
 	this.maxWaitSendMsgBufferSize = maxWaitSendMsgBufferSize
+	this.state = TCPCONNSTATE_LINKED
 
 	go this.sendProcess()
 }
 
 // 尝试关闭此连接
 func (this *TCPConn) Shutdown() {
-	this.shutdownMutex.Lock()
-	defer this.shutdownMutex.Unlock()
-	if !this.hasTryShutdown {
+	if this.state < TCPCONNSTATE_LINKED {
+		return
+	}
+	sec := atomic.CompareAndSwapInt32(&this.state,
+		TCPCONNSTATE_LINKED, TCPCONNSTATE_HOLD)
+	if sec {
 		go this.shutdownThread()
-		this.hasTryShutdown = true
 	}
 }
 
@@ -85,24 +98,23 @@ func (this *TCPConn) shutdownThread() {
 	}()
 	// 延迟两秒发送，否则消息可能处理不完
 	time.Sleep(2 * time.Second)
-
 	close(this.shutdownChan)
-}
-
-func (this *TCPConn) GetConn() net.Conn {
-	return this.Conn
 }
 
 //关闭socket
 func (this *TCPConn) closeSocket() error {
-	this.connDead = true
+	this.state = TCPCONNSTATE_CLOSED
 	return this.Conn.Close()
+}
+
+func (this *TCPConn) ReadAll() ([]byte, error) {
+	return ioutil.ReadAll(this.Conn)
 }
 
 // 异步发送一条消息，不带发送完成回调
 func (this *TCPConn) SendCmd(v msg.MsgStruct,
 	encryption msg.TEncryptionType) error {
-	if this.connDead {
+	if this.state >= TCPCONNSTATE_HOLD {
 		log.Warn("[TCPConn.SendCmd] 连接已失效，取消发送")
 		return ErrCloseed
 	}
@@ -117,7 +129,7 @@ func (this *TCPConn) SendCmd(v msg.MsgStruct,
 func (this *TCPConn) SendCmdWithCallback(v msg.MsgStruct,
 	callback func(interface{}), cbarg interface{},
 	encryption msg.TEncryptionType) error {
-	if this.connDead {
+	if this.state >= TCPCONNSTATE_HOLD {
 		log.Warn("[TCPConn.SendCmdWithCallback] 连接已失效，取消发送")
 		return ErrCloseed
 	}
@@ -135,7 +147,7 @@ func (this *TCPConn) SendCmdWithCallback(v msg.MsgStruct,
 // 发送 Bytes
 func (this *TCPConn) SendBytes(
 	cmdid uint16, protodata []byte, encryption msg.TEncryptionType) error {
-	if this.connDead {
+	if this.state >= TCPCONNSTATE_HOLD {
 		log.Warn("[TCPConn.SendBytes] 连接已失效，取消发送")
 		return ErrCloseed
 	}
@@ -157,7 +169,7 @@ func (this *TCPConn) SendMessageBinary(
 		}
 	}()
 	// 检查连接是否已死亡
-	if this.connDead {
+	if this.state >= TCPCONNSTATE_HOLD {
 		log.Warn("[TCPConn.SendMessageBinary] 连接已失效，取消发送")
 		return ErrCloseed
 	}
@@ -232,7 +244,7 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 					"Channle已关闭，发送行为终止")
 				break
 			}
-			this.SendMsgList(msg)
+			this.sendMsgList(msg)
 		case <-this.shutdownChan:
 			isrunning = false
 			break
@@ -248,7 +260,7 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 					"Channle已关闭，发送行为终止")
 				break
 			}
-			this.SendMsgList(msg)
+			this.sendMsgList(msg)
 		default:
 			waitting = false
 			break
@@ -260,7 +272,7 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 
 // 发送拼接消息
 // 	tmsg 首消息，如果没有需要加入的第一个消息，直接给Nil即可
-func (this *TCPConn) SendMsgList(tmsg *msg.MessageBinary) {
+func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 	// 开始拼包
 	msglist, buflist, nowpkglen, maxlow := this.joinMsgByFunc(
 		func(nowpkgsum uint32, nowpkglen int) *msg.MessageBinary {

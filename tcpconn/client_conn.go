@@ -8,7 +8,6 @@ import (
 	// "servercomm"
 	// "sync"
 	"fmt"
-	"io/ioutil"
 	"time"
 )
 
@@ -85,7 +84,7 @@ func (this *ClientConn) GetPing() *Ping {
 
 // 读数据
 func (this *ClientConn) Read() (msg []byte, cmdlen int, err error) {
-	msg, err4 := ioutil.ReadAll(this.GetConn())
+	msg, err4 := this.ReadAll()
 	this.Debug("[ClientConn.Read] Read N[%d] ", len(msg))
 
 	return msg, len(msg), err4
