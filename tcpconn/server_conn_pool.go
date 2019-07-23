@@ -71,26 +71,19 @@ func (this *ServerConnPool) BroadcastCmd(v msg.MsgStruct) {
 func (this *ServerConnPool) GetMinClient(
 	servertype string) *ServerConn {
 	var jobnum uint32 = 0xFFFFFFFF
-	var serverid uint64 = 0
+	var res *ServerConn
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*ServerConn)
-		key := tkey.(uint64)
 		if util.GetServerIDType(value.Serverinfo.ServerID) == servertype {
 			if jobnum >= value.GetJobNum() {
 				jobnum = value.GetJobNum()
-				serverid = key
+				res = value
 			}
 		}
 		return true
 	})
-	if serverid == 0 {
-		return nil
-	}
-	if tcptask, found := this.allSockets.Load(serverid); found {
-		return tcptask.(*ServerConn)
-	}
-	return nil
+	return res
 }
 
 // 获取指定类型服务器的最新版本
@@ -176,7 +169,6 @@ func (this *ServerConnPool) Get(tempid string) *ServerConn {
 func (this *ServerConnPool) Remove(tempid string) {
 	if tvalue, found := this.allSockets.Load(tempid); found {
 		value := tvalue.(*ServerConn)
-		value.isAlive = false
 		// 关闭消息发送协程
 		value.Shutdown()
 		// 删除连接

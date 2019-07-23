@@ -146,30 +146,7 @@ func (this *SubnetManager) msgParseTCPConn(conn *tcpconn.ServerConn,
 			}
 			return
 		}
-		// if err := this.ChangeTCPConnTempid(conn, recvmsg.Taskinfo.ServerID); err != nil {
-		// 	this.Debug("-------删除我方低优先级连接 %s---------",
-		// 		recvmsg.Taskinfo.ServerID)
-		// 	myconn := this.GetTCPConn(recvmsg.Taskinfo.ServerID)
-		// 	sec := false
-		// 	if myconn != nil {
-		// 		// 对方连接的优先级比较高，删除我方连接
-		// 		myconn.IsNormalDisconnect = true
-		// 		myconn.Terminate()
-		// 		this.RemoveTCPConn(myconn.Tempid)
-		// 		err := this.ChangeTCPConnTempid(conn, recvmsg.Taskinfo.ServerID)
-		// 		if err == nil {
-		// 			sec = true
-		// 		}
-		// 	}
-		// 	if !sec {
-		// 		conn.IsNormalDisconnect = true
-		// 		this.RemoveTCPConn(conn.Tempid)
-		// 		this.Debug("[SubnetManager.msgParseTCPConn] "+
-		// 			"Err:%s", err.Error())
-		// 		return
-		// 	}
-		// }
-		conn.Serverinfo = recvmsg.Taskinfo
+		conn.Serverinfo = recvmsg.Destination
 		this.Debug("[SubnetManager.msgParseTCPConn] "+
 			"连接服务器验证成功,id:%s,ipport:%s",
 			conn.Serverinfo.ServerID, conn.Serverinfo.ServerAddr)
@@ -188,28 +165,12 @@ func (this *SubnetManager) msgParseTCPConn(conn *tcpconn.ServerConn,
 		this.Debug("[msgParseTCPConn] 服务器已主动关闭，不再尝试连接它了 "+
 			"ServerInfo[%s]", conn.Serverinfo.GetJson())
 		return
-	case comm.SStartMyNotifyCommandID:
-		// // 收到依赖我的服务器的信息
-		// recvmsg := &comm.SStartMyNotifyCommand{}
-		// recvmsg.ReadBinary([]byte(msgbin.ProtoData))
-		// serverinfo := recvmsg.Serverinfo
-		// this.Debug("[SubnetManager.msgParseTCPConn] "+
-		// 	"收到服务器启动信息"+
-		// 	" ServerID[%s] IPPort[%s]",
-		// 	serverinfo.ServerID, serverinfo.ServerAddr)
-		// this.connectMutex.Lock()
-		// defer this.connectMutex.Unlock()
-		// this.connInfos.AddConnInfo(serverinfo)
-		return
 	case comm.SNotifyAllInfoID:
 		// 收到所有服务器的配置信息
 		recvmsg := &comm.SNotifyAllInfo{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		this.connectMutex.Lock()
 		defer this.connectMutex.Unlock()
-		// if conn.Serverinfo.Servertype == def.TypeSuperServer {
-		// 	this.connInfos.CleanConnInfo()
-		// }
 		this.Debug("[SubnetManager.msgParseTCPConn] " +
 			"收到所有服务器列表信息")
 		// 所有服务器信息列表

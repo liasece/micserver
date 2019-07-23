@@ -36,6 +36,16 @@ func (this *GroupItem) Get(key interface{}) (interface{}, bool) {
 	return nil, false
 }
 
+func (this *GroupItem) LoadOfStroe(key interface{}, value interface{}) (interface{}, bool) {
+	vi, isLoad := this.datas.LoadOrStore(key, value)
+	if !isLoad {
+		this.length++
+	} else {
+		this.datas.Store(key, value)
+	}
+	return vi, isLoad
+}
+
 func (this *GroupItem) remove(key interface{}) {
 	if _, ok := this.datas.Load(key); !ok {
 		return
@@ -107,6 +117,11 @@ func (this *MapPool) Pop(groupIndex uint32,
 func (this *MapPool) Get(groupIndex uint32,
 	key interface{}) (interface{}, bool) {
 	return this.groups[groupIndex].Get(key)
+}
+
+func (this *MapPool) LoadOfStroe(groupIndex uint32,
+	key interface{}, value interface{}) (interface{}, bool) {
+	return this.groups[groupIndex].LoadOfStroe(key, value)
 }
 
 func NewMapPool(groupSum uint32) *MapPool {

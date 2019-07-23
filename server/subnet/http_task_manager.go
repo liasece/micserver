@@ -226,25 +226,4 @@ func (this *GBHttpTaskManger) GetHttpTask(tempid uint64) *GBHttpTask {
 func HttpRpcStart(serverinfo string, serviceMethod string,
 	args interface{}, reply interface{}) error {
 	return nil
-
-	// client, err := rpc.DialHTTP("tcp", serverinfo)
-	// if err != nil {
-	// 	log.Error("[RPC] 链接rpc服务器失败 [DialHTTP] "+
-	// 		"Method[%s] ServerInfo[%s] Error[%s]",
-	// 		serviceMethod, serverinfo, err.Error())
-	// 	return err
-	// }
-	// defer client.Close()
-	// err = client.Call(serviceMethod, args, reply)
-	// if err != nil {
-	// 	log.Error("[RPC] 链接rpc服务器失败 "+
-	// 		"Method[%s] ServerInfo[%s] Error[%s]",
-	// 		serviceMethod, serverinfo, err.Error())
-	// } else {
-	// 	log.Debug("[RPC] 链接rpc服务器成功 "+
-	// 		"Method[%s] ServerInfo[%s]",
-	// 		serviceMethod, serverinfo)
-	// 	return nil
-	// }
-	// return nil
 }

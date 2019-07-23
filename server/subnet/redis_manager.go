@@ -1,12 +1,3 @@
-/**
- * \file GBRedisManager.go
- * \version
- * \author wzy
- * \date  2018年06月05日 14:28:58
- * \brief 管理redis连接相关 把所有用户所在user服务器的信息加载到内存
- * \brief super 连接所有redis负责往里面写数据,其它只随机连接一个只读数据
- *
- */
 package subnet
 
 import (
@@ -67,12 +58,6 @@ func (this *GBRedisManager) connectRedisServer(address string) bool {
 
 // 初始化连接到redis
 func (this *GBRedisManager) InitRedisManager() {
-	// for _, v := range this.modleConfig.RedisConfig.RedisList {
-	// 	address := fmt.Sprintf("%s:%d", v.IP, v.Port)
-	// 	log.Debug("[GBRedisManager.InitRedisManager] "+
-	// 		"初始化Redis连接 IPPort[%s]", address)
-	// 	this.connectRedisServer(address)
-	// }
 	log.Debug("[GBRedisManager.InitRedisManager] "+
 		"启动初始化成功,连接数量:%d", len(this.redispools))
 }
@@ -90,9 +75,6 @@ func (this *GBRedisManager) GetString(key string) (string, error) {
 		} else {
 			return tmpvalue, nil
 		}
-		// if tmpvalue != "" {
-		// 	break
-		// }
 	}
 	return "", nil
 }

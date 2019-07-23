@@ -75,10 +75,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 	// 向来源服务器回复登陆成功消息
 	retmsg := &comm.SLoginRetCommand{}
 	retmsg.Loginfailed = 0
-	retmsg.Clientinfo = serverInfo
-	retmsg.Taskinfo = this.myServerInfo
-	// retmsg.Taskinfo = this.moudleConf.Myserverinfo
-	// retmsg.Redisinfo = this.moudleConf.RedisConfig
+	retmsg.Destination = this.myServerInfo
 	conn.SendCmd(retmsg)
 
 	// 通知其他服务器，次服务器登陆完成
@@ -104,7 +101,6 @@ func (this *SubnetManager) BindTCPSubnet(settings map[string]string) error {
 			addr, err.Error())
 		return err
 	}
-	// myservertype := this.moudleConf.Myserverinfo.Servertype
 	this.Debug("[SubNetManager.BindTCPServer] "+
 		"服务器绑定成功 IPPort[%s]", addr)
 	this.myServerInfo.ServerAddr = addr

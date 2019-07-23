@@ -86,7 +86,7 @@ func (this *ClientSocketManager) ExecRemove(
 	}
 
 	this.Debug("[ClientSocketManager.ExecRemove] "+
-		"条件删除连接数 RemoveSum[%d] 当前连接数量 NowSum[%d]",
+		"条件删除连接数 RemoveSum[%d] 当前连接数量 LinkSum[%d]",
 		len(removelist), this.GetClientTcpSocketCount())
 }
 

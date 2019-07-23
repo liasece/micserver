@@ -1,14 +1,11 @@
 package comm
 
 type SServerInfo struct {
-	ServerID      string
-	ServerAddr    string
-	ClientTcpport uint32
-
+	ServerID   string
+	ServerAddr string
 	// 服务器序号 重复不影响正常运行
 	// 但是其改动会影响 配置读取/ServerName/Log文件名
 	ServerNumber uint32
-
 	// 服务器数字版本
 	// 命名规则为： YYYYMMDDhhmm (年月日时分)
 	Version uint64
@@ -26,13 +23,11 @@ type STestCommand struct {
 type SLoginCommand struct {
 	ServerID   string
 	ServerAddr string // IP
-
 	// 登录优先级
 	ConnectPriority int64
 	// 服务器序号 重复不影响正常运行
 	// 但是其改动会影响 配置读取/ServerName/Log文件名
 	ServerNumber uint32
-
 	// 服务器数字版本
 	// 命名规则为： YYYYMMDDhhmm (年月日时分)
 	Version uint64
@@ -58,10 +53,8 @@ const (
 
 // 登录服务器返回
 type SLoginRetCommand struct {
-	Loginfailed uint32       // 是否连接成功,0成功
-	Clientinfo  SServerInfo  // 连接服务器client信息
-	Taskinfo    SServerInfo  //	tcptask 所在服务器信息
-	Redisinfo   SRedisConfig // Redis连接配置
+	Loginfailed uint32      // 是否连接成功,0成功
+	Destination SServerInfo //	tcptask 所在服务器信息
 }
 
 // super通知其它服务器启动成功
@@ -290,17 +283,6 @@ type SMatchBroadcast2UserServerCommand struct {
 	Cmdid      uint16
 	Cmdlen     uint16
 	Cmddatas   []byte
-}
-
-// Redis配置 单项
-type SRedisConfigItem struct {
-	IP   string
-	Port uint32
-}
-
-// Redis配置
-type SRedisConfig struct {
-	RedisList []SRedisConfigItem
 }
 
 type SRequestServerInfo struct {

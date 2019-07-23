@@ -27,24 +27,21 @@ func CheckServerType(servertype uint32) bool {
 // websocket连接管理器
 type SubnetManager struct {
 	*log.Logger
-
-	connInfos serconfs.ConnInfosManager // 所有服务器信息
-
+	// 配置信息
+	connInfos  serconfs.ConnInfosManager // 所有服务器信息
 	moudleConf *conf.ModuleConfig
-
-	connPool tcpconn.ServerConnPool
-
-	// runningMsgQueue  int
+	// 服务器连接池
+	connPool     tcpconn.ServerConnPool
+	connectMutex sync.Mutex
+	// 服务器重连任务相关
+	serverexitchan map[string]chan bool
+	// 消息处理相关
 	runningMsgChan   []chan *ConnectMsgQueueStruct
 	maxRunningMsgNum int32
-
-	connectMutex   sync.Mutex
-	serverexitchan map[string]chan bool
-
-	// lastchan         int
+	// 防止日志频繁
 	lastwarningtime1 uint32
 	lastwarningtime2 uint32
-
+	// 我的服务器信息
 	myServerInfo comm.SServerInfo
 }
 
@@ -53,16 +50,19 @@ func (this *SubnetManager) InitManager(moudleConf *conf.ModuleConfig) {
 	this.connPool.Logger = this.Logger
 	// 初始化连接
 	this.BindTCPSubnet(this.moudleConf.Settings)
-
+	// 初始化消息处理队列
 	if msgthreadnumstr := moudleConf.GetSetting("msgthreadnum"); msgthreadnumstr != "" {
 		msgthreadnum, err := strconv.Atoi(msgthreadnumstr)
 		if err == nil {
 			this.InitMsgQueue(int32(msgthreadnum))
 		}
 	}
+	// 我的服务器信息
 	this.myServerInfo.ServerID = this.moudleConf.ID
+	this.connInfos.Logger = this.Logger
 }
 
+// 指定类型的获取最新版本的服务器版本号
 func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uint64 {
 	latestVersion := uint64(0)
 	this.connInfos.RangeConnInfo(
@@ -76,11 +76,13 @@ func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uin
 	return latestVersion
 }
 
+// 像指定类型的服务器进行广播
 func (this *SubnetManager) BroadcastByType(
 	servertype string, v msg.MsgStruct) {
 	this.connPool.BroadcastByType(servertype, v)
 }
 
+// 像所有连接到本服务器的服务器广播一个消息
 func (this *SubnetManager) BroadcastAll(v msg.MsgStruct) {
 	this.connPool.BroadcastCmd(v)
 }

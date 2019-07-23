@@ -7,6 +7,7 @@ import (
 )
 
 type ConnInfosManager struct {
+	*log.Logger
 	ConnInfos   sync.Map // 所需要的所有服务器信息
 	ConnInfoSum uint32
 }
@@ -41,8 +42,8 @@ func (this *ConnInfosManager) AddConnInfo(
 			"尝试添加一个ID为空的服务器 拒绝 Info[%s]", newinfo.GetJson())
 		return
 	}
-	// log.Debug("[ConnInfosManager.AddConnInfo] "+
-	// 	"添加服务器信息 Info[%s]", newinfo.GetJson())
+	log.Debug("[ConnInfosManager.AddConnInfo] "+
+		"添加服务器信息 Info[%s]", newinfo.GetJson())
 	if _, finded := this.ConnInfos.Load(newinfo.ServerID); !finded {
 		this.ConnInfoSum++
 	}

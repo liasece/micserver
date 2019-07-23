@@ -73,7 +73,14 @@ func (this *TCPConn) Init(conn net.Conn,
 	this.maxWaitSendMsgBufferSize = maxWaitSendMsgBufferSize
 	this.state = TCPCONNSTATE_LINKED
 
-	go this.sendProcess()
+	go this.sendThread()
+}
+
+func (this *TCPConn) IsAlive() bool {
+	if this.state == TCPCONNSTATE_LINKED {
+		return true
+	}
+	return false
 }
 
 // 尝试关闭此连接
@@ -88,6 +95,8 @@ func (this *TCPConn) Shutdown() {
 	}
 }
 
+// 异步 停止一个TCP连接的发送过程
+// 异步是为了推迟实际关闭连接的时间，给处理剩余未发送的消息的时间
 func (this *TCPConn) shutdownThread() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
@@ -208,7 +217,7 @@ func (this *TCPConn) SendMessageBinary(
 }
 
 // 消息发送进程
-func (this *TCPConn) sendProcess() {
+func (this *TCPConn) sendThread() {
 	for {
 		if this.asyncSendCmd() {
 			// 正常退出
@@ -216,11 +225,11 @@ func (this *TCPConn) sendProcess() {
 		}
 	}
 	// 用于通知发送线程，发送channel已关闭
-	log.Debug("[TCPConn.sendProcess] 发送线程已关闭")
+	log.Debug("[TCPConn.sendThread] 发送线程已关闭")
 	close(this.stopChan)
 	err := this.closeSocket()
 	if err != nil {
-		log.Error("[TCPConn.sendProcess] closeSocket Err[%s]",
+		log.Error("[TCPConn.sendThread] closeSocket Err[%s]",
 			err.Error())
 	}
 }

@@ -23,6 +23,12 @@ func (this *stringToClientConn) Store(k string, v *ClientConn) {
 	this.m.Push(util.GetStringHash(k)%mClientConnPoolGroupSum, k, v)
 }
 
+func (this *stringToClientConn) LoadOrStore(k string, v *ClientConn) (*ClientConn, bool) {
+	vi, isLoad := this.m.LoadOfStroe(util.GetStringHash(k)%mClientConnPoolGroupSum, k, v)
+	res := vi.(*ClientConn)
+	return res, isLoad
+}
+
 func (this *stringToClientConn) Load(k string) (*ClientConn, bool) {
 	tv, ok := this.m.Get(util.GetStringHash(k)%mClientConnPoolGroupSum, k)
 	if tv == nil || !ok {
@@ -49,14 +55,14 @@ func (this *stringToClientConn) Init(gsum uint32) {
 }
 
 type ClientConnPool struct {
-	allsockets stringToClientConn // 所有连接
+	allSockets stringToClientConn // 所有连接
 	linkSum    int32
 	groupID    uint16
 }
 
 func (this *ClientConnPool) Init(groupID int) {
 	this.groupID = uint16(groupID)
-	this.allsockets.Init(mClientConnPoolGroupSum)
+	this.allSockets.Init(mClientConnPoolGroupSum)
 }
 
 func (this *ClientConnPool) NewClientConn(conn net.Conn) (*ClientConn, error) {
@@ -71,7 +77,7 @@ func (this *ClientConnPool) NewClientConn(conn net.Conn) (*ClientConn, error) {
 // 遍历连接池中的所有连接
 func (this *ClientConnPool) Range(
 	callback func(*ClientConn)) {
-	this.allsockets.Range(func(key string,
+	this.allSockets.Range(func(key string,
 		value *ClientConn) {
 		callback(value)
 	})
@@ -79,14 +85,14 @@ func (this *ClientConnPool) Range(
 
 // 根据连接的 TmpID 获取一个连接
 func (this *ClientConnPool) Get(tempid string) *ClientConn {
-	if tcptask, found := this.allsockets.Load(tempid); found {
+	if tcptask, found := this.allSockets.Load(tempid); found {
 		return tcptask
 	}
 	return nil
 }
 
 func (this *ClientConnPool) Remove(tempid string) {
-	if value, found := this.allsockets.Load(tempid); found {
+	if value, found := this.allSockets.Load(tempid); found {
 		// 关闭消息发送协程
 		value.Shutdown()
 		value.Debug("[ClientConnPool.Remove] 删除连接 当前连接数量"+
@@ -118,26 +124,27 @@ func (this *ClientConnPool) Len() uint32 {
 }
 
 func (this *ClientConnPool) remove(tmpid string) {
-	if _, ok := this.allsockets.Load(tmpid); !ok {
+	if _, ok := this.allSockets.Load(tmpid); !ok {
 		return
 	}
 	// 删除连接
-	this.allsockets.Delete(tmpid)
+	this.allSockets.Delete(tmpid)
 	this.linkSum--
 }
 
 func (this *ClientConnPool) add(tmpid string, value *ClientConn) {
-	if _, ok := this.allsockets.Load(tmpid); !ok {
-		// 是新增的连接
+	_, isLoad := this.allSockets.LoadOrStore(tmpid, value)
+	if !isLoad {
 		this.linkSum++
+	} else {
+		this.allSockets.Store(tmpid, value)
 	}
-	this.allsockets.Store(tmpid, value)
 }
 
 // 随机获取指定类型的一个连接
 func (this *ClientConnPool) GetRandom() *ClientConn {
 	tasklist := make([]string, 0)
-	this.allsockets.Range(func(key string, value *ClientConn) {
+	this.allSockets.Range(func(key string, value *ClientConn) {
 		tasklist = append(tasklist, key)
 	})
 
@@ -147,7 +154,7 @@ func (this *ClientConnPool) GetRandom() *ClientConn {
 		tmpindex := r.Intn(length)
 		id := tasklist[tmpindex]
 
-		if tcptask, found := this.allsockets.Load(id); found {
+		if tcptask, found := this.allSockets.Load(id); found {
 			return tcptask
 		}
 	}

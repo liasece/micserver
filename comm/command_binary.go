@@ -38,10 +38,8 @@ const (
 	SQSTemplateMessageID = 66
 	SGatewayChangeAccessTokenID = 67
 	SMatchBroadcast2UserServerCommandID = 68
-	SRedisConfigItemID = 69
-	SRedisConfigID = 70
-	SRequestServerInfoID = 71
-	SNotifySafelyQuitID = 72
+	SRequestServerInfoID = 69
+	SNotifySafelyQuitID = 70
 )
 const (
 	SServerInfoName = "comm.SServerInfo"
@@ -77,8 +75,6 @@ const (
 	SQSTemplateMessageName = "comm.SQSTemplateMessage"
 	SGatewayChangeAccessTokenName = "comm.SGatewayChangeAccessToken"
 	SMatchBroadcast2UserServerCommandName = "comm.SMatchBroadcast2UserServerCommand"
-	SRedisConfigItemName = "comm.SRedisConfigItem"
-	SRedisConfigName = "comm.SRedisConfig"
 	SRequestServerInfoName = "comm.SRequestServerInfo"
 	SNotifySafelyQuitName = "comm.SNotifySafelyQuit"
 )
@@ -180,12 +176,6 @@ func (this *SGatewayChangeAccessToken) WriteBinary(data []byte) int {
 }
 func (this *SMatchBroadcast2UserServerCommand) WriteBinary(data []byte) int {
 	return WriteMsgSMatchBroadcast2UserServerCommandByObj(data,this)
-}
-func (this *SRedisConfigItem) WriteBinary(data []byte) int {
-	return WriteMsgSRedisConfigItemByObj(data,this)
-}
-func (this *SRedisConfig) WriteBinary(data []byte) int {
-	return WriteMsgSRedisConfigByObj(data,this)
 }
 func (this *SRequestServerInfo) WriteBinary(data []byte) int {
 	return WriteMsgSRequestServerInfoByObj(data,this)
@@ -292,12 +282,6 @@ func (this *SGatewayChangeAccessToken) ReadBinary(data []byte) int {
 func (this *SMatchBroadcast2UserServerCommand) ReadBinary(data []byte) int {
 	return ReadMsgSMatchBroadcast2UserServerCommandByBytes(data, this)
 }
-func (this *SRedisConfigItem) ReadBinary(data []byte) int {
-	return ReadMsgSRedisConfigItemByBytes(data, this)
-}
-func (this *SRedisConfig) ReadBinary(data []byte) int {
-	return ReadMsgSRedisConfigByBytes(data, this)
-}
 func (this *SRequestServerInfo) ReadBinary(data []byte) int {
 	return ReadMsgSRequestServerInfoByBytes(data, this)
 }
@@ -372,10 +356,6 @@ func MsgIdToString(id uint16) string {
 		return SGatewayChangeAccessTokenName
 		case SMatchBroadcast2UserServerCommandID: 
 		return SMatchBroadcast2UserServerCommandName
-		case SRedisConfigItemID: 
-		return SRedisConfigItemName
-		case SRedisConfigID: 
-		return SRedisConfigName
 		case SRequestServerInfoID: 
 		return SRequestServerInfoName
 		case SNotifySafelyQuitID: 
@@ -452,10 +432,6 @@ func StringToMsgId(msgname string) uint16 {
 		return SGatewayChangeAccessTokenID
 		case SMatchBroadcast2UserServerCommandName: 
 		return SMatchBroadcast2UserServerCommandID
-		case SRedisConfigItemName: 
-		return SRedisConfigItemID
-		case SRedisConfigName: 
-		return SRedisConfigID
 		case SRequestServerInfoName: 
 		return SRequestServerInfoID
 		case SNotifySafelyQuitName: 
@@ -531,10 +507,6 @@ func MsgIdToType(id uint16) rune {
 		case SGatewayChangeAccessTokenID: 
 		return rune('S')
 		case SMatchBroadcast2UserServerCommandID: 
-		return rune('S')
-		case SRedisConfigItemID: 
-		return rune('S')
-		case SRedisConfigID: 
 		return rune('S')
 		case SRequestServerInfoID: 
 		return rune('S')
@@ -643,12 +615,6 @@ func (this *SGatewayChangeAccessToken) GetMsgId() uint16 {
 func (this *SMatchBroadcast2UserServerCommand) GetMsgId() uint16 {
 	return SMatchBroadcast2UserServerCommandID
 }
-func (this *SRedisConfigItem) GetMsgId() uint16 {
-	return SRedisConfigItemID
-}
-func (this *SRedisConfig) GetMsgId() uint16 {
-	return SRedisConfigID
-}
 func (this *SRequestServerInfo) GetMsgId() uint16 {
 	return SRequestServerInfoID
 }
@@ -754,12 +720,6 @@ func (this *SGatewayChangeAccessToken) GetMsgName() string {
 func (this *SMatchBroadcast2UserServerCommand) GetMsgName() string {
 	return SMatchBroadcast2UserServerCommandName
 }
-func (this *SRedisConfigItem) GetMsgName() string {
-	return SRedisConfigItemName
-}
-func (this *SRedisConfig) GetMsgName() string {
-	return SRedisConfigName
-}
 func (this *SRequestServerInfo) GetMsgName() string {
 	return SRequestServerInfoName
 }
@@ -864,12 +824,6 @@ func (this *SGatewayChangeAccessToken) GetSize() int {
 }
 func (this *SMatchBroadcast2UserServerCommand) GetSize() int {
 	return GetSizeSMatchBroadcast2UserServerCommand(this)
-}
-func (this *SRedisConfigItem) GetSize() int {
-	return GetSizeSRedisConfigItem(this)
-}
-func (this *SRedisConfig) GetSize() int {
-	return GetSizeSRedisConfig(this)
 }
 func (this *SRequestServerInfo) GetSize() int {
 	return GetSizeSRequestServerInfo(this)
@@ -1006,14 +960,6 @@ func (this *SGatewayChangeAccessToken) GetJson() string {
 	return string(json)
 }
 func (this *SMatchBroadcast2UserServerCommand) GetJson() string {
-	json,_ := json.Marshal(this)
-	return string(json)
-}
-func (this *SRedisConfigItem) GetJson() string {
-	json,_ := json.Marshal(this)
-	return string(json)
-}
-func (this *SRedisConfig) GetJson() string {
 	json,_ := json.Marshal(this)
 	return string(json)
 }
@@ -1178,11 +1124,6 @@ func ReadMsgSServerInfoByBytes(indata []byte, obj *SServerInfo) int {
 	if offset + 4 > data__len{
 		return endpos
 	}
-	obj.ClientTcpport = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 4 > data__len{
-		return endpos
-	}
 	obj.ServerNumber = binary.BigEndian.Uint32(data[offset:offset+4])
 	offset+=4
 	if offset + 8 > data__len{
@@ -1205,8 +1146,6 @@ func WriteMsgSServerInfoByObj(data []byte, obj *SServerInfo) int {
 	offset += 2 + len(obj.ServerID)
 	writeBinaryString(data[offset:],obj.ServerAddr)
 	offset += 2 + len(obj.ServerAddr)
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.ClientTcpport)
-	offset+=4
 	binary.BigEndian.PutUint32(data[offset:offset+4], obj.ServerNumber)
 	offset+=4
 	binary.BigEndian.PutUint64(data[offset:offset+8], obj.Version)
@@ -1217,8 +1156,7 @@ func GetSizeSServerInfo(obj *SServerInfo) int {
 	if obj == nil {
 		return 2
 	}
-	return 2 + 2 + len(obj.ServerID) + 2 + len(obj.ServerAddr) + 4 + 4 + 
-	8
+	return 2 + 2 + len(obj.ServerID) + 2 + len(obj.ServerAddr) + 4 + 8
 }
 func ReadMsgSTimeTickCommandByBytes(indata []byte, obj *STimeTickCommand) int {
 	offset := 0
@@ -1483,18 +1421,10 @@ func ReadMsgSLoginRetCommandByBytes(indata []byte, obj *SLoginRetCommand) int {
 	}
 	obj.Loginfailed = binary.BigEndian.Uint32(data[offset:offset+4])
 	offset+=4
-	if offset + obj.Clientinfo.GetSize() > data__len{
+	if offset + obj.Destination.GetSize() > data__len{
 		return endpos
 	}
-	offset += ReadMsgSServerInfoByBytes(data[offset:], &obj.Clientinfo)
-	if offset + obj.Taskinfo.GetSize() > data__len{
-		return endpos
-	}
-	offset += ReadMsgSServerInfoByBytes(data[offset:], &obj.Taskinfo)
-	if offset + obj.Redisinfo.GetSize() > data__len{
-		return endpos
-	}
-	offset += ReadMsgSRedisConfigByBytes(data[offset:], &obj.Redisinfo)
+	offset += ReadMsgSServerInfoByBytes(data[offset:], &obj.Destination)
 	return endpos
 }
 func WriteMsgSLoginRetCommandByObj(data []byte, obj *SLoginRetCommand) int {
@@ -1508,16 +1438,14 @@ func WriteMsgSLoginRetCommandByObj(data []byte, obj *SLoginRetCommand) int {
 	offset += 2
 	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Loginfailed)
 	offset+=4
-	offset += WriteMsgSServerInfoByObj(data[offset:], &obj.Clientinfo)
-	offset += WriteMsgSServerInfoByObj(data[offset:], &obj.Taskinfo)
-	offset += WriteMsgSRedisConfigByObj(data[offset:], &obj.Redisinfo)
+	offset += WriteMsgSServerInfoByObj(data[offset:], &obj.Destination)
 	return offset
 }
 func GetSizeSLoginRetCommand(obj *SLoginRetCommand) int {
 	if obj == nil {
 		return 2
 	}
-	return 2 + 4 + obj.Clientinfo.GetSize() + obj.Taskinfo.GetSize() + obj.Redisinfo.GetSize()
+	return 2 + 4 + obj.Destination.GetSize()
 }
 func ReadMsgSStartRelyNotifyCommandByBytes(indata []byte, obj *SStartRelyNotifyCommand) int {
 	offset := 0
@@ -3698,124 +3626,6 @@ func GetSizeSMatchBroadcast2UserServerCommand(obj *SMatchBroadcast2UserServerCom
 	}
 	return 2 + 8 + 8 + 2 + 2 + 
 	2 + len(obj.Cmddatas) * 1
-}
-func ReadMsgSRedisConfigItemByBytes(indata []byte, obj *SRedisConfigItem) int {
-	offset := 0
-	if len(indata) < 2 {
-		return 0
-	}
-	objsize := int(binary.BigEndian.Uint16(indata[offset:offset+2]))
-	offset += 2
-	if objsize == 0 {
-		return 2
-	}
-	if offset + objsize > len(indata ) {
-		return 2
-	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
-	offset = 0
-	data__len := len(data)
-	if offset + 2 + len(obj.IP) > data__len{
-		return endpos
-	}
-	obj.IP = readBinaryString(data[offset:])
-	offset += 2 + len(obj.IP)
-	if offset + 4 > data__len{
-		return endpos
-	}
-	obj.Port = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	return endpos
-}
-func WriteMsgSRedisConfigItemByObj(data []byte, obj *SRedisConfigItem) int {
-	if obj == nil {
-		binary.BigEndian.PutUint16(data[0:2],0)
-		return 2
-	}
-	objsize := obj.GetSize() - 2
-	offset := 0
-	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(objsize))
-	offset += 2
-	writeBinaryString(data[offset:],obj.IP)
-	offset += 2 + len(obj.IP)
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Port)
-	offset+=4
-	return offset
-}
-func GetSizeSRedisConfigItem(obj *SRedisConfigItem) int {
-	if obj == nil {
-		return 2
-	}
-	return 2 + 2 + len(obj.IP) + 4
-}
-func ReadMsgSRedisConfigByBytes(indata []byte, obj *SRedisConfig) int {
-	offset := 0
-	if len(indata) < 2 {
-		return 0
-	}
-	objsize := int(binary.BigEndian.Uint16(indata[offset:offset+2]))
-	offset += 2
-	if objsize == 0 {
-		return 2
-	}
-	if offset + objsize > len(indata ) {
-		return 2
-	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
-	offset = 0
-	data__len := len(data)
-	RedisList_slent := uint16(0)
-	if offset + 2 > data__len{
-		return endpos
-	}
-	RedisList_slen := 0
-	RedisList_slent = binary.BigEndian.Uint16(data[offset:offset+2])
-	offset+=2
-	RedisList_slen = int(RedisList_slent)
-	obj.RedisList = make([]SRedisConfigItem,RedisList_slen)
-	i1i := 0
-	for RedisList_slen > i1i {
-		offset += ReadMsgSRedisConfigItemByBytes(data[offset:],&obj.RedisList[i1i])
-		i1i++
-	}
-	return endpos
-}
-func WriteMsgSRedisConfigByObj(data []byte, obj *SRedisConfig) int {
-	if obj == nil {
-		binary.BigEndian.PutUint16(data[0:2],0)
-		return 2
-	}
-	objsize := obj.GetSize() - 2
-	offset := 0
-	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(objsize))
-	offset += 2
-	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(len(obj.RedisList)))
-	offset += 2
-	i1i := 0
-	RedisList_slen := len(obj.RedisList)
-	for RedisList_slen > i1i {
-		offset += WriteMsgSRedisConfigItemByObj(data[offset:],&obj.RedisList[i1i])
-		i1i++
-	}
-	return offset
-}
-func GetSizeSRedisConfig(obj *SRedisConfig) int {
-	if obj == nil {
-		return 2
-	}
-	sizerelySRedisConfigItem1 := func()int{
-		resnum := 0
-		i1i := 0
-		RedisList_slen := len(obj.RedisList)
-		for RedisList_slen > i1i {
-			resnum += obj.RedisList[i1i].GetSize()
-			i1i++
-		}
-		return resnum
-	}
-	return 2 + 2 + sizerelySRedisConfigItem1()
 }
 func ReadMsgSRequestServerInfoByBytes(indata []byte, obj *SRequestServerInfo) int {
 	offset := 0

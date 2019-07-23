@@ -10,10 +10,8 @@ func (this *SubnetManager) AddTCPConn(sctype tcpconn.TServerSCType,
 	conn net.Conn, serverid string) *tcpconn.ServerConn {
 	tcptask := this.connPool.NewServerConn(sctype, conn, serverid)
 
-	tcptask.SetAlive(true)
-
 	this.Debug("[SubnetManager.AddTCPClient] "+
-		"AddTCPClient ServerID[%s] 当前连接数量 NowSum[%d]",
+		"AddTCPClient ServerID[%s] 当前连接数量 LinkSum[%d]",
 		serverid, this.connPool.Len())
 
 	return tcptask

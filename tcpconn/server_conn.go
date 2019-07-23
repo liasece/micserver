@@ -15,9 +15,9 @@ import (
 type TServerSCType uint32
 
 const (
-	ServerSCTypeNone TServerSCType = iota
-	ServerSCTypeTask
-	ServerSCTypeClient
+	ServerSCTypeNone   TServerSCType = 1
+	ServerSCTypeTask   TServerSCType = 2
+	ServerSCTypeClient TServerSCType = 3
 )
 
 // 服务器连接发送消息缓冲要考虑到服务器处理消息的能力
@@ -39,8 +39,6 @@ type ServerConn struct {
 	terminate_force bool
 	// 验证是否成功，没有成功不允许处理后面的消息
 	verify_ok bool
-	// 连接是否还可用
-	isAlive bool
 	// 当前连接上的计算量
 	jobnum uint32
 	// 是否是正常的断开连接
@@ -58,7 +56,6 @@ type ServerConn struct {
 // conn: 连接的net.Conn对象
 func NewServerConn(sctype TServerSCType, conn net.Conn) *ServerConn {
 	tcpconn := new(ServerConn)
-	tcpconn.SetAlive(true)
 	tcpconn.SetSC(sctype)
 	tcpconn.Init(conn, ServerConnSendMsgBufferSize,
 		ServerConnSendBufferSize, ServerConnMaxWaitSendMsgBufferSize)
@@ -127,16 +124,6 @@ func (this *ServerConn) SendCmd(v msg.MsgStruct) error {
 func (this *ServerConn) SendCmdWithCallback(v msg.MsgStruct,
 	callback func(interface{}), cbarg interface{}) error {
 	return this.TCPConn.SendCmdWithCallback(v, callback, cbarg, 0)
-}
-
-// 异步发送一条消息，带发送完成回调
-func (this *ServerConn) IsAlive() bool {
-	return this.isAlive
-}
-
-// 异步发送一条消息，带发送完成回调
-func (this *ServerConn) SetAlive(value bool) {
-	this.isAlive = value
 }
 
 func (this *ServerConn) SetSC(sctype TServerSCType) {
