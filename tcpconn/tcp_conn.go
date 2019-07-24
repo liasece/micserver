@@ -106,7 +106,7 @@ func (this *TCPConn) shutdownThread() {
 		}
 	}()
 	// 延迟两秒发送，否则消息可能处理不完
-	time.Sleep(2 * time.Second)
+	// time.Sleep(2 * time.Second)
 	close(this.shutdownChan)
 }
 

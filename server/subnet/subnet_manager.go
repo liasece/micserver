@@ -93,8 +93,3 @@ func (this *SubnetManager) NotifyAllServerInfo(
 		tcptask.SendCmd(retmsg)
 	}
 }
-
-// 广播消息
-func (this *SubnetManager) BroadcastCmd(v msg.MsgStruct) {
-	this.BroadcastCmd(v)
-}

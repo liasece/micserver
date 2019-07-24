@@ -50,7 +50,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 		if conn.GetSCType() == tcpconn.ServerSCTypeTask {
 			curtime := uint64(time.Now().Unix())
 			if conn.IsTerminateTimeout(curtime) {
-				this.Remove(conn.Tempid)
+				this.RemoveServerConn(conn.Tempid)
 				this.Error("[SubnetManager.handleConnection] "+
 					"长时间未通过验证，断开连接 TmpID[%d]",
 					conn.Tempid)
@@ -58,7 +58,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 			}
 			if conn.IsTerminateForce() {
 				this.OnRemoveTCPConnect(conn)
-				this.Remove(conn.Tempid)
+				this.RemoveServerConn(conn.Tempid)
 				this.Debug("[SubnetManager.handleConnection] "+
 					"服务器主动断开连接 TmpID[%s]", conn.Tempid)
 				return

@@ -14,7 +14,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 	defer this.connectMutex.Unlock()
 
 	// 来源服务器请求登陆本服务器
-	myconn := this.Get(fmt.Sprint(tarinfo.ServerID))
+	myconn := this.GetServerConn(fmt.Sprint(tarinfo.ServerID))
 	if myconn != nil {
 		this.Debug("-----------重复连接 %s 优先级：%d:%d------------",
 			tarinfo.ServerID,
@@ -24,8 +24,8 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 			myconn.IsNormalDisconnect = true
 			myconn.Terminate()
 			unuseid, _ := util.NewUniqueID(0xff)
-			this.ChangeTempid(myconn, myconn.Tempid+"unuse"+fmt.Sprint(
-				unuseid))
+			this.ChangeServerConnTempid(
+				myconn, myconn.Tempid+"unuse"+fmt.Sprint(unuseid))
 		} else {
 			// 我方优先级比较高已经连接成功过了，非法连接
 			this.Debug("[SubNetManager.OnServerLogin] "+
@@ -64,7 +64,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 
 	// 来源服务器检查完毕
 	// 完善来源服务器在本服务器的信息
-	this.ChangeTempid(conn, fmt.Sprint(serverInfo.ServerID))
+	this.ChangeServerConnTempid(conn, fmt.Sprint(serverInfo.ServerID))
 	conn.Serverinfo = serverInfo
 	conn.SetVertify(true)
 	conn.SetTerminateTime(0) // 清除终止时间状态
