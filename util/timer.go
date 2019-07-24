@@ -1,4 +1,4 @@
-package module
+package util
 
 import (
 	"sync"
@@ -52,7 +52,7 @@ func (this *Timer) KillTimer() {
 	this.killChan <- struct{}{}
 }
 
-type Register struct {
+type TimerManager struct {
 	timerList            sync.Map
 	timeTriggerChan      chan *Timer
 	timeTriggerChanMutex sync.Mutex
@@ -64,7 +64,7 @@ type Register struct {
 // 如果 engross 为 true，那么这个 timer 的执行将独占一个协程
 // 如果一个定时操作很耗时，你应该将它作为一个单独的协程去处理，但是这样你可能
 // 要考虑并行执行带来的问题
-func (this *Register) RegTimer(duration time.Duration, limitTimes int64,
+func (this *TimerManager) RegTimer(duration time.Duration, limitTimes int64,
 	engross bool, cb func(time.Duration)) {
 	timer := &Timer{
 		cb:           cb,
@@ -93,7 +93,7 @@ func (this *Register) RegTimer(duration time.Duration, limitTimes int64,
 	}
 }
 
-func (this *Register) KillRegister() {
+func (this *TimerManager) KillRegister() {
 	this.timerList.Range(func(ki, listi interface{}) bool {
 		if list, ok := listi.([]*Timer); ok {
 			for _, t := range list {
@@ -108,7 +108,7 @@ func (this *Register) KillRegister() {
 	this.timeTriggerChan <- nil
 }
 
-func (this *Register) goSelectTimer() {
+func (this *TimerManager) goSelectTimer() {
 	for !this.hasKilled {
 		select {
 		case t := <-this.timeTriggerChan:

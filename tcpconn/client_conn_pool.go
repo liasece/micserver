@@ -50,7 +50,7 @@ func (this *stringToClientConn) Range(callback func(string, *ClientConn)) {
 	})
 }
 
-func (this *stringToClientConn) Init(gsum uint32) {
+func (this *stringToClientConn) InitMapPool(gsum uint32) {
 	this.m = util.NewMapPool(gsum)
 }
 
@@ -60,9 +60,9 @@ type ClientConnPool struct {
 	groupID    uint16
 }
 
-func (this *ClientConnPool) Init(groupID int) {
+func (this *ClientConnPool) Init(groupID int32) {
 	this.groupID = uint16(groupID)
-	this.allSockets.Init(mClientConnPoolGroupSum)
+	this.allSockets.InitMapPool(mClientConnPoolGroupSum)
 }
 
 func (this *ClientConnPool) NewClientConn(conn net.Conn) (*ClientConn, error) {

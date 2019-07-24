@@ -20,23 +20,23 @@ type ClientSocketManager struct {
 }
 
 func (this *ClientSocketManager) Init(moduleID string) {
-	this.connPool.Init(0)
+	this.connPool.Init(int32(util.GetStringHash(moduleID)))
 }
 
 func (this *ClientSocketManager) AddClientTcpSocket(
-	conn net.Conn) (*tcpconn.ClientConn, error) {
-	task, err := this.connPool.NewClientConn(conn)
-	task.Logger = this.Logger
+	netConn net.Conn) (*tcpconn.ClientConn, error) {
+	conn, err := this.connPool.NewClientConn(netConn)
+	conn.Logger = this.Logger
 	if err != nil {
 		return nil, err
 	}
 	curtime := time.Now().Unix()
-	task.SetTerminateTime(curtime + 20) // 20秒以后还没有验证通过就断开连接
+	conn.SetTerminateTime(curtime + 20) // 20秒以后还没有验证通过就断开连接
 
-	task.Debug("[ClientSocketManager.AddClientTcpSocket] "+
+	conn.Debug("[ClientSocketManager.AddClientTcpSocket] "+
 		"新增连接数 当前连接数量 NowSum[%d]",
 		this.GetClientTcpSocketCount())
-	return task, nil
+	return conn, nil
 }
 
 func (this *ClientSocketManager) GetTaskByTmpID(
@@ -90,7 +90,7 @@ func (this *ClientSocketManager) ExecRemove(
 		len(removelist), this.GetClientTcpSocketCount())
 }
 
-func (this *ClientSocketManager) onNewConnect(conn net.Conn) {
+func (this *ClientSocketManager) onNewConnect(netConn net.Conn) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
@@ -98,30 +98,30 @@ func (this *ClientSocketManager) onNewConnect(conn net.Conn) {
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
-	this.Debug("[onNewConnect] Receive one conn connect json")
-	task, err := this.AddClientTcpSocket(conn)
-	if err != nil || task == nil {
+	this.Debug("[onNewConnect] Receive one netConn connect json")
+	conn, err := this.AddClientTcpSocket(netConn)
+	if err != nil || conn == nil {
 		this.Error("[onNewConnect] "+
 			"创建 ClientTcpSocket 对象失败，断开连接 Err[%s]", err.Error())
 		return
 	}
-	netbuffer := util.NewIOBuffer(conn, 64*1024)
+	netbuffer := util.NewIOBuffer(netConn, 64*1024)
 	msgReader := msg.NewMessageBinaryReader(netbuffer)
 
 	// 所有连接都需要经过加密
-	// task.Encryption = base.EncryptionTypeXORSimple
+	// conn.Encryption = base.EncryptionTypeXORSimple
 
 	for {
-		if !task.Check() {
+		if !conn.Check() {
 			// 强制移除客户端连接
-			this.RemoveTaskByTmpID(task.Tempid)
+			this.RemoveTaskByTmpID(conn.Tempid)
 			return
 		}
 		// 设置阻塞读取过期时间
-		err := conn.SetReadDeadline(
+		err := netConn.SetReadDeadline(
 			time.Now().Add(time.Duration(time.Millisecond * 250)))
 		if err != nil {
-			task.Error("[onNewConnect] SetReadDeadline Err[%s]",
+			conn.Error("[onNewConnect] SetReadDeadline Err[%s]",
 				err.Error())
 		}
 		// buffer从连接中读取socket数据
@@ -130,10 +130,10 @@ func (this *ClientSocketManager) onNewConnect(conn net.Conn) {
 		// 异常
 		if err != nil {
 			if err == io.EOF {
-				task.Debug("[onNewConnect] "+
+				conn.Debug("[onNewConnect] "+
 					"Scoket数据读写异常,断开连接了,"+
 					"scoket返回 Err[%s]", err.Error())
-				this.RemoveTaskByTmpID(task.Tempid)
+				this.RemoveTaskByTmpID(conn.Tempid)
 				return
 			} else {
 				continue
@@ -141,21 +141,21 @@ func (this *ClientSocketManager) onNewConnect(conn net.Conn) {
 		}
 
 		err = msgReader.RangeMsgBinary(func(msgbinary *msg.MessageBinary) {
-			if task.Encryption != msg.EncryptionTypeNone &&
-				msgbinary.CmdMask != task.Encryption {
-				task.Error("加密方式错误，加密方式应为 %d 此消息为 %d "+
-					"MsgID[%d]", task.Encryption,
+			if conn.Encryption != msg.EncryptionTypeNone &&
+				msgbinary.CmdMask != conn.Encryption {
+				conn.Error("加密方式错误，加密方式应为 %d 此消息为 %d "+
+					"MsgID[%d]", conn.Encryption,
 					msgbinary.CmdMask, msgbinary.CmdID)
 			} else {
 				// 解析消息
-				this.OnRecvSocketPackage(msgbinary, task)
+				this.OnRecvSocketPackage(conn, msgbinary)
 			}
 		})
 		if err != nil {
-			task.Error("[onNewConnect] 解析消息错误，断开连接 "+
+			conn.Error("[onNewConnect] 解析消息错误，断开连接 "+
 				"Err[%s]", err.Error())
 			// 强制移除客户端连接
-			this.RemoveTaskByTmpID(task.Tempid)
+			this.RemoveTaskByTmpID(conn.Tempid)
 			return
 		}
 	}
@@ -172,14 +172,14 @@ func (this *ClientSocketManager) StartAddClientTcpSocketHandle(addr string) {
 	go func() {
 		for {
 			// 接受连接
-			conn, err := ln.Accept()
+			netConn, err := ln.Accept()
 			if err != nil {
 				// handle error
 				this.Error("[StartAddClientTcpSocketHandle] Accept() ERR:%q",
 					err.Error())
 				continue
 			}
-			go this.onNewConnect(conn)
+			go this.onNewConnect(netConn)
 		}
 	}()
 }

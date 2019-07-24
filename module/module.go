@@ -5,6 +5,7 @@ import (
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/server/gate"
 	"github.com/liasece/micserver/server/subnet"
+	"github.com/liasece/micserver/util"
 	"time"
 )
 
@@ -18,7 +19,7 @@ type IModule interface {
 
 type BaseModule struct {
 	*log.Logger
-	Register
+	util.TimerManager
 
 	ModuleID string
 	Configer *conf.ModuleConfig
