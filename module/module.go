@@ -12,10 +12,11 @@ import (
 type IModule interface {
 	GetModuleID() string
 	InitModule(conf.ModuleConfig)
+	InitSubnet(map[string]string)
 	AfterInitModule()
 	TopRunner()
 	KillModule()
-	InitSubnet(map[string]string)
+	IsStopped() bool
 }
 
 type BaseModule struct {
@@ -28,6 +29,7 @@ type BaseModule struct {
 	subnetManager   *subnet.SubnetManager
 	gateBase        *gate.GateBase
 	hasKilledModule bool
+	hasStopped      bool
 }
 
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
@@ -89,4 +91,11 @@ func (this *BaseModule) KillModule() {
 	this.Debug("KillModule...")
 	this.hasKilledModule = true
 	this.KillRegister()
+
+	// 退出完成
+	this.hasStopped = true
+}
+
+func (this *BaseModule) IsStopped() bool {
+	return this.hasStopped
 }

@@ -109,7 +109,7 @@ func (this *App) SignalListen() {
 }
 
 func (this *App) Run() {
-	this.Debug("[App.Run] ----- Main is start ----- ")
+	this.Debug("[App.Run] ----- Main has started ----- ")
 
 	// 监听系统Signal
 	go this.SignalListen()
@@ -123,11 +123,18 @@ func (this *App) Run() {
 		v.KillModule()
 	}
 
+	for _, v := range this.modules {
+		if !v.IsStopped() {
+			// 等待模块退出完成
+			time.Sleep(300 * time.Millisecond)
+		}
+	}
+
 	// 当程序即将结束时
 	// server.OnFinal()
 	this.Debug("[App.Run] All server is over add save datas")
 
+	this.Debug("[App.Run] ----- Main has stopped ----- ")
 	// 等日志打完
 	time.Sleep(1 * time.Second)
-	this.Debug("[App.Run] ----- Main is quit ----- ")
 }
