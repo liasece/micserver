@@ -9,14 +9,22 @@ import (
 	"time"
 )
 
+type ConnectMsgQueueStruct struct {
+	conn *tcpconn.ServerConn
+	msg  *msg.MessageBinary
+}
+
+// 当TCP连接被移除时调用
 func (this *SubnetManager) OnRemoveTCPConnect(conn *tcpconn.ServerConn) {
 }
 
-func (this *SubnetManager) OnRecvTCPMsg(task *tcpconn.ServerConn,
+// 当收到TCP消息时调用
+func (this *SubnetManager) OnRecvTCPMsg(conn *tcpconn.ServerConn,
 	msgbinary *msg.MessageBinary) {
 }
 
-func (this *SubnetManager) OnGetRecvTCPMsgParseChan(task *tcpconn.ServerConn,
+// 获取TCP消息的消息处理通道
+func (this *SubnetManager) OnGetRecvTCPMsgParseChan(conn *tcpconn.ServerConn,
 	maxChan int32, msgbinary *msg.MessageBinary) int32 {
 	return 0
 }
@@ -30,7 +38,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			this.Error("[handleClientConnection] "+
+			this.Error("[SubnetManager.handleClientConnection] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -42,7 +50,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 		if conn.GetSCType() == tcpconn.ServerSCTypeTask {
 			curtime := uint64(time.Now().Unix())
 			if conn.IsTerminateTimeout(curtime) {
-				this.RemoveTCPConn(conn.Tempid)
+				this.Remove(conn.Tempid)
 				this.Error("[SubnetManager.handleConnection] "+
 					"长时间未通过验证，断开连接 TmpID[%d]",
 					conn.Tempid)
@@ -50,7 +58,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 			}
 			if conn.IsTerminateForce() {
 				this.OnRemoveTCPConnect(conn)
-				this.RemoveTCPConn(conn.Tempid)
+				this.Remove(conn.Tempid)
 				this.Debug("[SubnetManager.handleConnection] "+
 					"服务器主动断开连接 TmpID[%s]", conn.Tempid)
 				return
@@ -61,8 +69,8 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 			Add(time.Duration(time.Millisecond * 1000)))
 		if derr != nil {
 			if !conn.IsNormalDisconnect {
-				this.Error("[handleClientConnection] SetReadDeadline Err[%s]"+
-					"ServerID[%s]",
+				this.Error("[SubnetManager.handleClientConnection] "+
+					"SetReadDeadline Err[%s] ServerID[%s]",
 					derr.Error(), conn.Serverinfo.ServerID)
 			}
 			this.onClientDisconnected(conn)
@@ -181,7 +189,7 @@ func (this *SubnetManager) msgParseTCPConn(conn *tcpconn.ServerConn,
 		return
 	}
 	msgqueues := &ConnectMsgQueueStruct{}
-	msgqueues.task = conn
+	msgqueues.conn = conn
 	msgqueues.msg = msgbin
 	this.MultiQueueControl(msgqueues)
 }
@@ -190,10 +198,10 @@ func (this *SubnetManager) msgParseTCPConn(conn *tcpconn.ServerConn,
 func (this *SubnetManager) MultiQueueControl(
 	msgqueues *ConnectMsgQueueStruct) {
 	if this.maxRunningMsgNum < 1 {
-		this.OnRecvTCPMsg(msgqueues.task, msgqueues.msg)
+		this.OnRecvTCPMsg(msgqueues.conn, msgqueues.msg)
 		return
 	}
-	who := this.OnGetRecvTCPMsgParseChan(msgqueues.task,
+	who := this.OnGetRecvTCPMsgParseChan(msgqueues.conn,
 		this.maxRunningMsgNum, msgqueues.msg)
 	this.runningMsgChan[who] <- msgqueues
 }
@@ -249,7 +257,7 @@ func (this *SubnetManager) MultiRecvmsgQueue(
 		}
 		functiontime := util.FunctionTime{}
 		functiontime.Start("MultiRecvmsgQueue")
-		this.OnRecvTCPMsg(msgqueues.task, msgqueues.msg)
+		this.OnRecvTCPMsg(msgqueues.conn, msgqueues.msg)
 		functiontime.Stop()
 	}
 	return true

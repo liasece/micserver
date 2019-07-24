@@ -12,11 +12,6 @@ import (
 	"sync"
 )
 
-type ConnectMsgQueueStruct struct {
-	task *tcpconn.ServerConn
-	msg  *msg.MessageBinary
-}
-
 func CheckServerType(servertype uint32) bool {
 	if servertype <= 0 || servertype > 10 {
 		return false
@@ -27,11 +22,11 @@ func CheckServerType(servertype uint32) bool {
 // websocket连接管理器
 type SubnetManager struct {
 	*log.Logger
-	// 配置信息
-	connInfos  serconfs.ConnInfosManager // 所有服务器信息
-	moudleConf *conf.ModuleConfig
 	// 服务器连接池
-	connPool     tcpconn.ServerConnPool
+	tcpconn.ServerConnPool
+	// 配置信息
+	connInfos    serconfs.ConnInfosManager // 所有服务器信息
+	moudleConf   *conf.ModuleConfig
 	connectMutex sync.Mutex
 	// 服务器重连任务相关
 	serverexitchan map[string]chan bool
@@ -47,7 +42,7 @@ type SubnetManager struct {
 
 func (this *SubnetManager) InitManager(moudleConf *conf.ModuleConfig) {
 	this.moudleConf = moudleConf
-	this.connPool.Logger = this.Logger
+	this.ServerConnPool.Logger = this.Logger
 	// 初始化连接
 	this.BindTCPSubnet(this.moudleConf.Settings)
 	// 初始化消息处理队列
@@ -79,12 +74,7 @@ func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uin
 // 像指定类型的服务器进行广播
 func (this *SubnetManager) BroadcastByType(
 	servertype string, v msg.MsgStruct) {
-	this.connPool.BroadcastByType(servertype, v)
-}
-
-// 像所有连接到本服务器的服务器广播一个消息
-func (this *SubnetManager) BroadcastAll(v msg.MsgStruct) {
-	this.connPool.BroadcastCmd(v)
+	this.BroadcastByType(servertype, v)
 }
 
 //通知所有服务器列表信息
@@ -106,5 +96,5 @@ func (this *SubnetManager) NotifyAllServerInfo(
 
 // 广播消息
 func (this *SubnetManager) BroadcastCmd(v msg.MsgStruct) {
-	this.connPool.BroadcastCmd(v)
+	this.BroadcastCmd(v)
 }

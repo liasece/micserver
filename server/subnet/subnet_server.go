@@ -14,7 +14,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 	defer this.connectMutex.Unlock()
 
 	// 来源服务器请求登陆本服务器
-	myconn := this.GetTCPConn(fmt.Sprint(tarinfo.ServerID))
+	myconn := this.Get(fmt.Sprint(tarinfo.ServerID))
 	if myconn != nil {
 		this.Debug("-----------重复连接 %s 优先级：%d:%d------------",
 			tarinfo.ServerID,
@@ -24,7 +24,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 			myconn.IsNormalDisconnect = true
 			myconn.Terminate()
 			unuseid, _ := util.NewUniqueID(0xff)
-			this.ChangeTCPConnTempid(myconn, myconn.Tempid+"unuse"+fmt.Sprint(
+			this.ChangeTempid(myconn, myconn.Tempid+"unuse"+fmt.Sprint(
 				unuseid))
 		} else {
 			// 我方优先级比较高已经连接成功过了，非法连接
@@ -64,7 +64,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 
 	// 来源服务器检查完毕
 	// 完善来源服务器在本服务器的信息
-	this.ChangeTCPConnTempid(conn, fmt.Sprint(serverInfo.ServerID))
+	this.ChangeTempid(conn, fmt.Sprint(serverInfo.ServerID))
 	conn.Serverinfo = serverInfo
 	conn.SetVertify(true)
 	conn.SetTerminateTime(0) // 清除终止时间状态
@@ -85,7 +85,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 	// 把来源服务器信息广播给其它所有服务器
 	notifymsg := &comm.SStartMyNotifyCommand{}
 	notifymsg.Serverinfo = serverInfo
-	this.BroadcastAll(notifymsg)
+	this.BroadcastCmd(notifymsg)
 }
 
 func (this *SubnetManager) BindTCPSubnet(settings map[string]string) error {
@@ -127,7 +127,7 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
-			this.Error("mTCPServerListener "+
+			this.Error("[mTCPServerListener] "+
 				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -143,7 +143,7 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 		this.Debug("[SubNetManager.BindTCPServer] "+
 			"收到新的TCP连接 Addr[%s]",
 			newconn.RemoteAddr().String())
-		conn := this.AddTCPConn(tcpconn.ServerSCTypeTask, newconn, "")
+		conn := this.NewServerConn(tcpconn.ServerSCTypeTask, newconn, "")
 		if conn != nil {
 			this.OnCreateTCPConnect(conn)
 		}
