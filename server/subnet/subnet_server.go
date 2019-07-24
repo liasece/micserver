@@ -16,7 +16,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 	// 来源服务器请求登陆本服务器
 	myconn := this.GetServerConn(fmt.Sprint(tarinfo.ServerID))
 	if myconn != nil {
-		this.Debug("-----------重复连接 %s 优先级：%d:%d------------",
+		this.Debug("[SubnetManager.OnServerLogin] 重复连接 %s 优先级：%d:%d",
 			tarinfo.ServerID,
 			myconn.ConnectPriority, tarinfo.ConnectPriority)
 		if myconn.ConnectPriority < tarinfo.ConnectPriority {

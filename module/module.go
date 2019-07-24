@@ -12,6 +12,7 @@ import (
 type IModule interface {
 	GetModuleID() string
 	InitModule(conf.ModuleConfig)
+	AfterInitModule()
 	TopRunner()
 	KillModule()
 	InitSubnet(map[string]string)
@@ -46,7 +47,7 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	// 初始化服务器网络管理器
 	this.subnetManager.InitManager(this.Configer)
 
-	this.Debug("module initting...")
+	this.Debug("[BaseModule.InitModule] module initting...")
 	// gateway初始化
 	if gateaddr := this.Configer.GetModuleSetting("gatetcpaddr"); gateaddr != "" {
 		this.gateBase = &gate.GateBase{
@@ -57,12 +58,21 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	}
 }
 
+func (this *BaseModule) AfterInitModule() {
+	this.Debug("[BaseModule.AfterInitModule] 模块 [%s] 初始化完成",
+		this.GetModuleID())
+}
+
 func (this *BaseModule) InitSubnet(subnetAddrMap map[string]string) {
 	for k, addr := range subnetAddrMap {
 		if k != this.GetModuleID() {
 			this.subnetManager.TryConnectServer(k, addr)
 		}
 	}
+}
+
+func (this *BaseModule) GetGate() *gate.GateBase {
+	return this.gateBase
 }
 
 func (this *BaseModule) GetModuleID() string {

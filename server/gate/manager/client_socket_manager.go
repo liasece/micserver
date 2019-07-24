@@ -165,17 +165,20 @@ func (this *ClientSocketManager) StartAddClientTcpSocketHandle(addr string) {
 	// 由于部分 NAT 主机没有网卡概念，需要自己配置IP
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		this.Error("[ClientSocket] %s", err.Error())
+		this.Error("[ClientSocketManager.StartAddClientTcpSocketHandle] %s",
+			err.Error())
 		return
 	}
-	this.Debug("Gateway Client TCP服务启动成功 IPPort[%s]", addr)
+	this.Debug("[ClientSocketManager.StartAddClientTcpSocketHandle] "+
+		"Gateway Client TCP服务启动成功 IPPort[%s]", addr)
 	go func() {
 		for {
 			// 接受连接
 			netConn, err := ln.Accept()
 			if err != nil {
 				// handle error
-				this.Error("[StartAddClientTcpSocketHandle] Accept() ERR:%q",
+				this.Error("[ClientSocketManager.StartAddClientTcpSocketHandle] "+
+					"Accept() ERR:%q",
 					err.Error())
 				continue
 			}

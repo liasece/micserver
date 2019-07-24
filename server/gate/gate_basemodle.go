@@ -9,21 +9,20 @@ import (
 
 type GateBase struct {
 	*log.Logger
+	*manager.ClientSocketManager
 
 	subnetManager *subnet.SubnetManager
 	modleConf     *conf.TopConfig
-
-	clientSocketManager *manager.ClientSocketManager
 }
 
 func (this *GateBase) Init(moduleID string) {
-	this.clientSocketManager = &manager.ClientSocketManager{
+	this.ClientSocketManager = &manager.ClientSocketManager{
 		Logger: this.Logger,
 	}
-	this.clientSocketManager.Init(moduleID)
+	this.ClientSocketManager.Init(moduleID)
 }
 
 func (this *GateBase) BindOuterTCP(addr string) {
 	// 绑定 TCPSocket 服务
-	this.clientSocketManager.StartAddClientTcpSocketHandle(addr)
+	this.StartAddClientTcpSocketHandle(addr)
 }

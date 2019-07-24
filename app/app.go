@@ -33,8 +33,9 @@ func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 	this.modules = modules
 	// create all module
 	for _, m := range this.modules {
-		this.Debug("init module: %s", m.GetModuleID())
+		this.Debug("[App.Init] init module: %s", m.GetModuleID())
 		m.InitModule(*this.Configer.AppConfig.GetModuleConfig(m.GetModuleID()))
+		m.AfterInitModule()
 		go m.TopRunner()
 	}
 
@@ -43,7 +44,7 @@ func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 		m.InitSubnet(subnetTCPAddrMap)
 	}
 
-	this.Debug("App 初始化成功！")
+	this.Debug("[App.Init] App 初始化成功！")
 }
 
 // cpu性能测试
