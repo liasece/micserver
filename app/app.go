@@ -47,6 +47,7 @@ func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 	}
 
 	this.Debug("[App.Init] App 初始化成功！")
+	this.Debug("[App.Init] App 初始化 Module 数量：%d", len(this.modules))
 }
 
 // cpu性能测试

@@ -21,7 +21,6 @@ type Logger struct {
 
 func NewLogger(settings map[string]string) *Logger {
 	l := new(Logger)
-	l.SetLogName("log")
 	l.writers = make([]Writer, 0, 2)
 	l.tunnel = make(chan *Record, tunnel_size_default)
 	l.c = make(chan bool, 1)
@@ -29,10 +28,6 @@ func NewLogger(settings map[string]string) *Logger {
 	l.layout = "060102-15:04:05"
 
 	go l.boostrapLogWriter()
-
-	l.SetLogName("log")
-	w := NewConsoleWriter()
-	l.Register(w)
 
 	isDaemon := false
 	if v, ok := settings["isdaemon"]; ok {
@@ -47,14 +42,19 @@ func NewLogger(settings map[string]string) *Logger {
 	if v, ok := settings["logpath"]; ok && len(logfilename) != 0 {
 		logfile := filepath.Join(v, logfilename)
 		if isDaemon {
-			w.SetColor(false)
 			l.AddlogFile(logfile, true)
 			l.RemoveConsoleLog()
 		} else {
-			w.SetColor(true)
 			// 默认走控制台
 			l.AddlogFile(logfile, false)
+			w := NewConsoleWriter()
+			w.SetColor(true)
+			l.Register(w)
 		}
+	} else {
+		w := NewConsoleWriter()
+		w.SetColor(true)
+		l.Register(w)
 	}
 
 	return l

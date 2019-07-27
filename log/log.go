@@ -105,10 +105,6 @@ func init() {
 		return &Record{}
 	}}
 	default_logger.SetLogName("log")
-	// 默认走控制台
-	w := NewConsoleWriter()
-	w.SetColor(false)
-	default_logger.Register(w)
 }
 
 func SetLogName(logname string) {
