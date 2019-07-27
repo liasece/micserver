@@ -35,8 +35,8 @@ type BaseModule struct {
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.Configer = &configer
 	// 初始化logger
-	if this.Configer.HasModuleSetting("logpath") {
-		this.Logger = log.NewLogger(this.Configer.Settings)
+	if this.Configer.HasSetting("logpath") {
+		this.Logger = log.NewLogger(this.Configer.GetModuleSettingMap())
 		this.SetLogName(this.ModuleID)
 	} else {
 		this.Logger = log.GetDefaultLogger()

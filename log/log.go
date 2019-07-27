@@ -89,8 +89,10 @@ func Close() {
 }
 
 func SetDefaultLogger(l *Logger) {
-	default_logger.Close()
-	default_logger = l
+	if l != default_logger {
+		default_logger.Close()
+		default_logger = l
+	}
 }
 
 func GetDefaultLogger() *Logger {
@@ -98,7 +100,6 @@ func GetDefaultLogger() *Logger {
 }
 
 func init() {
-	fmt.Printf("log init \n")
 	default_logger = NewLogger(nil)
 	recordPool = &sync.Pool{New: func() interface{} {
 		return &Record{}

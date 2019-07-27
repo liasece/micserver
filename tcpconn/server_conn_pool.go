@@ -27,6 +27,7 @@ func (this *ServerConnPool) Init(groupID uint16) {
 func (this *ServerConnPool) NewServerConn(sctype TServerSCType,
 	conn net.Conn, serverid string) *ServerConn {
 	tcptask := NewServerConn(sctype, conn)
+	tcptask.Logger = this.Logger
 	if serverid == "" {
 		this.AddServerConnAuto(tcptask)
 	} else {

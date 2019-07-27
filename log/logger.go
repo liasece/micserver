@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	syslog "log"
+	"path/filepath"
 	"reflect"
 	"time"
 )
@@ -29,19 +30,30 @@ func NewLogger(settings map[string]string) *Logger {
 
 	go l.boostrapLogWriter()
 
+	l.SetLogName("log")
+	w := NewConsoleWriter()
+	l.Register(w)
+
 	isDaemon := false
 	if v, ok := settings["isdaemon"]; ok {
 		if v == "true" {
 			isDaemon = true
 		}
 	}
-	if v, ok := settings["logpath"]; ok {
+	logfilename := ""
+	if v, ok := settings["logfilename"]; ok {
+		logfilename = v
+	}
+	if v, ok := settings["logpath"]; ok && len(logfilename) != 0 {
+		logfile := filepath.Join(v, logfilename)
 		if isDaemon {
-			l.AddlogFile(v, true)
+			w.SetColor(false)
+			l.AddlogFile(logfile, true)
 			l.RemoveConsoleLog()
-			l.Debug("Logger is start as a daemon")
 		} else {
-			l.AddlogFile(v, false)
+			w.SetColor(true)
+			// 默认走控制台
+			l.AddlogFile(logfile, false)
 		}
 	}
 
@@ -49,6 +61,10 @@ func NewLogger(settings map[string]string) *Logger {
 }
 
 func (l *Logger) AddlogFile(filename string, redirecterr bool) {
+	if l == nil && l != default_logger {
+		default_logger.AddlogFile(filename, redirecterr)
+		return
+	}
 	//	fmt.Printf("log filename,%s \n", filename)
 	filebasename := filename
 	filename += ".%Y%M%D-%H"
@@ -63,6 +79,10 @@ func (l *Logger) AddlogFile(filename string, redirecterr bool) {
 }
 
 func (l *Logger) ChangelogFile(filename string) {
+	if l == nil && l != default_logger {
+		default_logger.ChangelogFile(filename)
+		return
+	}
 	filebasename := filename
 	filename += ".%Y%M%D-%H"
 	for i := 0; i < len(l.writers); i++ {
@@ -81,7 +101,10 @@ func (l *Logger) ChangelogFile(filename string) {
 }
 
 func (l *Logger) RemoveConsoleLog() {
-	Debug("start RemoveConsoleLog")
+	if l == nil && l != default_logger {
+		default_logger.RemoveConsoleLog()
+		return
+	}
 	newlist := make([]Writer, 0, 2)
 	for i := 0; i < len(l.writers); i++ {
 		w := l.writers[i]
@@ -94,6 +117,10 @@ func (l *Logger) RemoveConsoleLog() {
 }
 
 func (l *Logger) SetLogName(logname string) {
+	if l == nil && l != default_logger {
+		default_logger.SetLogName(logname)
+		return
+	}
 	l.logname = logname
 }
 
@@ -115,10 +142,17 @@ func (l *Logger) SetLevelByStr(loglevel string) {
 }
 
 func (l *Logger) GetLevel() int32 {
+	if l == nil && l != default_logger {
+		return default_logger.GetLevel()
+	}
 	return l.level
 }
 
 func (l *Logger) Register(w Writer) {
+	if l == nil && l != default_logger {
+		default_logger.Register(w)
+		return
+	}
 	if err := w.Init(); err != nil {
 		panic(err)
 	}
@@ -126,10 +160,18 @@ func (l *Logger) Register(w Writer) {
 }
 
 func (l *Logger) SetLevel(lvl int32) {
+	if l == nil && l != default_logger {
+		default_logger.SetLevel(lvl)
+		return
+	}
 	l.level = lvl
 }
 
 func (l *Logger) SetLayout(layout string) {
+	if l == nil && l != default_logger {
+		default_logger.SetLayout(layout)
+		return
+	}
 	l.layout = layout
 }
 
@@ -154,6 +196,10 @@ func (l *Logger) Fatal(fmt string, args ...interface{}) {
 }
 
 func (l *Logger) Close() {
+	if l == nil && l != default_logger {
+		default_logger.Close()
+		return
+	}
 	close(l.tunnel)
 	<-l.c
 
@@ -168,6 +214,10 @@ func (l *Logger) Close() {
 
 func (l *Logger) deliverRecordToWriter(level int32, format string, args ...interface{}) {
 	var inf, code string
+	if l == nil && l != default_logger {
+		default_logger.deliverRecordToWriter(level, format, args...)
+		return
+	}
 
 	if level < l.level {
 		return
@@ -197,6 +247,12 @@ func (l *Logger) deliverRecordToWriter(level int32, format string, args ...inter
 }
 
 func (l *Logger) boostrapLogWriter() {
+	if l == nil {
+		if l != default_logger {
+			default_logger.Error("[Logger.boostrapLogWriter] l==nil")
+		}
+		return
+	}
 	var (
 		r  *Record
 		ok bool

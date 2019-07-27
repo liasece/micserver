@@ -51,6 +51,8 @@ func (this *AppConfig) GetModuleConfig(moduleid string) *ModuleConfig {
 			res.AppSettings[k] = v
 		}
 	}
+	// 特殊配置生成
+	res.Settings["logfilename"] = moduleid + ".log"
 	return &res
 }
 

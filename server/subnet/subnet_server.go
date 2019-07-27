@@ -145,6 +145,7 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 			newconn.RemoteAddr().String())
 		conn := this.NewServerConn(tcpconn.ServerSCTypeTask, newconn, "")
 		if conn != nil {
+			conn.Logger = this.Logger
 			this.OnCreateTCPConnect(conn)
 		}
 	}

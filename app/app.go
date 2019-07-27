@@ -24,8 +24,10 @@ type App struct {
 func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 	this.Configer = configer
 	if this.Configer.AppConfig.HasSetting("logpath") {
+		this.Configer.AppConfig.AppSettings["logfilename"] = "app.log"
 		this.Logger = log.NewLogger(this.Configer.AppConfig.AppSettings)
 		log.SetDefaultLogger(this.Logger)
+		this.Logger.SetLogName("app")
 	} else {
 		this.Logger = log.GetDefaultLogger()
 	}

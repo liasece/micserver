@@ -4,7 +4,6 @@ import (
 	//	"os"
 	// "msg/log"
 	"github.com/liasece/micserver/comm"
-	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"math/rand"
 	"net"
@@ -111,7 +110,7 @@ func (this *ServerConn) IsTerminate(curtime uint64) bool {
 
 // 强制终止该连接
 func (this *ServerConn) Terminate() {
-	log.Debug("[ServerConn.Terminate] 连接停止 Tempid[%s]", this.Tempid)
+	this.Debug("[ServerConn.Terminate] 连接停止 Tempid[%s]", this.Tempid)
 	this.terminate_force = true
 }
 

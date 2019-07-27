@@ -1,7 +1,6 @@
 package tcpconn
 
 import (
-	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	// "math/rand"
 	"net"
@@ -12,7 +11,6 @@ import (
 )
 
 type ClientConn struct {
-	*log.Logger
 	TCPConn
 	// 唯一编号
 	Tempid string

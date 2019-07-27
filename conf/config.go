@@ -24,7 +24,6 @@ type TopConfig struct {
 	// 建议命名规则为： YYYYMMDDhhmmss (年月日时分秒)
 	Version uint64 `json:"-"`
 
-	hasAutoConfig  bool       `json:"-"`
 	hasConfigPprof bool       `json:"-"`
 	loadConfigTime uint32     `json:"-"`
 	mutex          sync.Mutex `json:"-"`
@@ -37,8 +36,17 @@ func LoadConfig(filepath string) (*TopConfig, error) {
 		log.Error("loadJsonConfigFile(filepath) err:%v", err)
 		return nil, err
 	}
+	res.InitParse()
 	res.AppConfig.BuildModuleIDFromMapkey()
 	return res, nil
+}
+
+func (this *TopConfig) HasGlobalConfig(key string) bool {
+	return this.hasPropUnsafe(key)
+}
+
+func (this *TopConfig) GetGlobalConfig(key string) string {
+	return this.getPropUnsafe(key)
 }
 
 func (this *TopConfig) GetProp(propname string) string {
@@ -73,6 +81,16 @@ func (this *TopConfig) getPropUnsafe(propname string) string {
 		return propvalue
 	}
 	return ""
+}
+
+func (this *TopConfig) hasPropUnsafe(propname string) bool {
+	if _, found := this.globalProp[propname+"_s"]; found {
+		return true
+	}
+	if _, found := this.globalProp[propname]; found {
+		return true
+	}
+	return false
 }
 
 func (this *TopConfig) getPropIntUnsafe(propname string) int32 {
@@ -217,9 +235,9 @@ func (this *TopConfig) parse_token(decoder *xml.Decoder,
 }
 
 // 参数解析相关
-func (this *TopConfig) initParse() {
-	if this.hasAutoConfig {
-		return
+func (this *TopConfig) InitParse() {
+	if this.globalProp == nil {
+		this.globalProp = make(map[string]string)
 	}
 	var daemonflag string
 	flag.StringVar(&daemonflag, "d", "", "as a daemon true or false")
@@ -227,19 +245,22 @@ func (this *TopConfig) initParse() {
 	var processflag string
 	flag.StringVar(&processflag, "p", "", "process id as gate001")
 
-	var lognameflag string
-	flag.StringVar(&lognameflag, "l", "", "log name  as /log/gatewayserver.log")
+	var logpathflag string
+	flag.StringVar(&logpathflag, "l", "", "log path as /log/")
 
 	var serverversion string
-	flag.StringVar(&serverversion, "v", "", "server version  as [0-9]{14}")
+	flag.StringVar(&serverversion, "v", "", "server version as [0-9]{14}")
 
 	flag.Parse()
 
 	if len(daemonflag) > 0 {
 		if daemonflag == "true" {
-			this.globalProp["daemon_s"] = "true"
+			this.globalProp["isdaemon_s"] = "true"
 		} else {
 			this.globalProp["daemon_s"] = "false"
+		}
+		if this.AppConfig.AppSettings != nil {
+			this.AppConfig.AppSettings["isdaemon"] = daemonflag
 		}
 	}
 	if len(processflag) > 0 {
@@ -247,8 +268,11 @@ func (this *TopConfig) initParse() {
 	} else {
 		this.globalProp["processid_s"] = "development"
 	}
-	if len(lognameflag) > 0 {
-		this.globalProp["logfilename_s"] = lognameflag
+	if len(logpathflag) > 0 {
+		this.globalProp["logpath_s"] = logpathflag
+		if this.AppConfig.AppSettings != nil {
+			this.AppConfig.AppSettings["logpath"] = logpathflag
+		}
 	}
 	if len(serverversion) > 0 {
 		tint, err := strconv.ParseUint(serverversion, 10, 64)

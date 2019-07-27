@@ -97,7 +97,7 @@ func (this *SubnetManager) ConnectServer(id string,
 		return nil, err
 	}
 	conn := this.NewServerConn(tcpconn.ServerSCTypeClient, Conn, id)
-
+	conn.Logger = this.Logger
 	// 发起登录
 
 	// 构造登陆消息

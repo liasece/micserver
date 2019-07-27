@@ -26,6 +26,17 @@ func (this *ModuleConfig) GetModuleSetting(key string) string {
 	return ""
 }
 
+func (this *ModuleConfig) GetModuleSettingMap() map[string]string {
+	res := make(map[string]string)
+	for k, v := range this.AppSettings {
+		res[k] = v
+	}
+	for k, v := range this.Settings {
+		res[k] = v
+	}
+	return res
+}
+
 func (this *ModuleConfig) HasSetting(key string) bool {
 	if this.Settings != nil {
 		if _, ok := this.Settings[key]; ok {
