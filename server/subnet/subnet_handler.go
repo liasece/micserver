@@ -21,6 +21,13 @@ func (this *SubnetManager) OnRemoveTCPConnect(conn *tcpconn.ServerConn) {
 // 当收到TCP消息时调用
 func (this *SubnetManager) OnRecvTCPMsg(conn *tcpconn.ServerConn,
 	msgbinary *msg.MessageBinary) {
+	if msgbinary.CmdID == comm.SForwardToServerID {
+		layerMsg := &comm.SForwardToServer{}
+		layerMsg.ReadBinary(msgbinary.ProtoData)
+		if this.SubnetCallback.OnRecvServerMsg != nil {
+			this.SubnetCallback.OnRecvServerMsg(conn, layerMsg)
+		}
+	}
 }
 
 // 获取TCP消息的消息处理通道
@@ -122,8 +129,8 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 
 func (this *SubnetManager) msgParseTCPConn(conn *tcpconn.ServerConn,
 	msgbin *msg.MessageBinary) {
-	this.Debug("[SubnetManager.msgParseTCPConn] 收到消息 %s",
-		comm.MsgIdToString(msgbin.CmdID))
+	// this.Debug("[SubnetManager.msgParseTCPConn] 收到消息 %s",
+	// 	comm.MsgIdToString(msgbin.CmdID))
 	switch msgbin.CmdID {
 	case comm.STestCommandID:
 		recvmsg := &comm.STestCommand{}

@@ -40,6 +40,7 @@ const (
 	SMatchBroadcast2UserServerCommandID = 68
 	SRequestServerInfoID = 69
 	SNotifySafelyQuitID = 70
+	SForwardToServerID = 71
 )
 const (
 	SServerInfoName = "comm.SServerInfo"
@@ -77,6 +78,7 @@ const (
 	SMatchBroadcast2UserServerCommandName = "comm.SMatchBroadcast2UserServerCommand"
 	SRequestServerInfoName = "comm.SRequestServerInfo"
 	SNotifySafelyQuitName = "comm.SNotifySafelyQuit"
+	SForwardToServerName = "comm.SForwardToServer"
 )
 func (this *SServerInfo) WriteBinary(data []byte) int {
 	return WriteMsgSServerInfoByObj(data,this)
@@ -183,6 +185,9 @@ func (this *SRequestServerInfo) WriteBinary(data []byte) int {
 func (this *SNotifySafelyQuit) WriteBinary(data []byte) int {
 	return WriteMsgSNotifySafelyQuitByObj(data,this)
 }
+func (this *SForwardToServer) WriteBinary(data []byte) int {
+	return WriteMsgSForwardToServerByObj(data,this)
+}
 func (this *SServerInfo) ReadBinary(data []byte) int {
 	return ReadMsgSServerInfoByBytes(data, this)
 }
@@ -288,6 +293,9 @@ func (this *SRequestServerInfo) ReadBinary(data []byte) int {
 func (this *SNotifySafelyQuit) ReadBinary(data []byte) int {
 	return ReadMsgSNotifySafelyQuitByBytes(data, this)
 }
+func (this *SForwardToServer) ReadBinary(data []byte) int {
+	return ReadMsgSForwardToServerByBytes(data, this)
+}
 func MsgIdToString(id uint16) string {
 	switch(id ) {
 		case SServerInfoID: 
@@ -360,6 +368,8 @@ func MsgIdToString(id uint16) string {
 		return SRequestServerInfoName
 		case SNotifySafelyQuitID: 
 		return SNotifySafelyQuitName
+		case SForwardToServerID: 
+		return SForwardToServerName
 		default:
 		return ""
 	}
@@ -436,6 +446,8 @@ func StringToMsgId(msgname string) uint16 {
 		return SRequestServerInfoID
 		case SNotifySafelyQuitName: 
 		return SNotifySafelyQuitID
+		case SForwardToServerName: 
+		return SForwardToServerID
 		default:
 		return 0
 	}
@@ -511,6 +523,8 @@ func MsgIdToType(id uint16) rune {
 		case SRequestServerInfoID: 
 		return rune('S')
 		case SNotifySafelyQuitID: 
+		return rune('S')
+		case SForwardToServerID: 
 		return rune('S')
 		default:
 		return rune(0)
@@ -621,6 +635,9 @@ func (this *SRequestServerInfo) GetMsgId() uint16 {
 func (this *SNotifySafelyQuit) GetMsgId() uint16 {
 	return SNotifySafelyQuitID
 }
+func (this *SForwardToServer) GetMsgId() uint16 {
+	return SForwardToServerID
+}
 func (this *SServerInfo) GetMsgName() string {
 	return SServerInfoName
 }
@@ -726,6 +743,9 @@ func (this *SRequestServerInfo) GetMsgName() string {
 func (this *SNotifySafelyQuit) GetMsgName() string {
 	return SNotifySafelyQuitName
 }
+func (this *SForwardToServer) GetMsgName() string {
+	return SForwardToServerName
+}
 func (this *SServerInfo) GetSize() int {
 	return GetSizeSServerInfo(this)
 }
@@ -830,6 +850,9 @@ func (this *SRequestServerInfo) GetSize() int {
 }
 func (this *SNotifySafelyQuit) GetSize() int {
 	return GetSizeSNotifySafelyQuit(this)
+}
+func (this *SForwardToServer) GetSize() int {
+	return GetSizeSForwardToServer(this)
 }
 func (this *SServerInfo) GetJson() string {
 	json,_ := json.Marshal(this)
@@ -968,6 +991,10 @@ func (this *SRequestServerInfo) GetJson() string {
 	return string(json)
 }
 func (this *SNotifySafelyQuit) GetJson() string {
+	json,_ := json.Marshal(this)
+	return string(json)
+}
+func (this *SForwardToServer) GetJson() string {
 	json,_ := json.Marshal(this)
 	return string(json)
 }
@@ -3700,4 +3727,89 @@ func GetSizeSNotifySafelyQuit(obj *SNotifySafelyQuit) int {
 		return 2
 	}
 	return 2 + obj.TargetServerInfo.GetSize()
+}
+func ReadMsgSForwardToServerByBytes(indata []byte, obj *SForwardToServer) int {
+	offset := 0
+	if len(indata) < 2 {
+		return 0
+	}
+	objsize := int(binary.BigEndian.Uint16(indata[offset:offset+2]))
+	offset += 2
+	if objsize == 0 {
+		return 2
+	}
+	if offset + objsize > len(indata ) {
+		return 2
+	}
+	endpos := offset+objsize
+	data := indata[offset:offset+objsize]
+	offset = 0
+	data__len := len(data)
+	if offset + 2 + len(obj.FromServerID) > data__len{
+		return endpos
+	}
+	obj.FromServerID = readBinaryString(data[offset:])
+	offset += 2 + len(obj.FromServerID)
+	if offset + 2 + len(obj.ToServerID) > data__len{
+		return endpos
+	}
+	obj.ToServerID = readBinaryString(data[offset:])
+	offset += 2 + len(obj.ToServerID)
+	if offset + 2 + len(obj.MsgName) > data__len{
+		return endpos
+	}
+	obj.MsgName = readBinaryString(data[offset:])
+	offset += 2 + len(obj.MsgName)
+	Data_slent := uint16(0)
+	if offset + 2 > data__len{
+		return endpos
+	}
+	Data_slen := 0
+	Data_slent = binary.BigEndian.Uint16(data[offset:offset+2])
+	offset+=2
+	Data_slen = int(Data_slent)
+	obj.Data = make([]byte,Data_slen)
+	i4i := 0
+	for Data_slen > i4i {
+		if offset + 1 > data__len{
+			return endpos
+		}
+		tmpDatavalue := readBinaryUint8(data[offset:offset+1])
+		obj.Data[i4i] = tmpDatavalue
+		offset += 1
+		i4i++
+	}
+	return endpos
+}
+func WriteMsgSForwardToServerByObj(data []byte, obj *SForwardToServer) int {
+	if obj == nil {
+		binary.BigEndian.PutUint16(data[0:2],0)
+		return 2
+	}
+	objsize := obj.GetSize() - 2
+	offset := 0
+	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(objsize))
+	offset += 2
+	writeBinaryString(data[offset:],obj.FromServerID)
+	offset += 2 + len(obj.FromServerID)
+	writeBinaryString(data[offset:],obj.ToServerID)
+	offset += 2 + len(obj.ToServerID)
+	writeBinaryString(data[offset:],obj.MsgName)
+	offset += 2 + len(obj.MsgName)
+	binary.BigEndian.PutUint16(data[offset:offset+2],uint16(len(obj.Data)))
+	offset += 2
+	i4i := 0
+	Data_slen := len(obj.Data)
+	for Data_slen > i4i {
+		writeBinaryUint8(data[offset:offset+1],obj.Data[i4i])
+		offset += 1
+		i4i++
+	}
+	return offset
+}
+func GetSizeSForwardToServer(obj *SForwardToServer) int {
+	if obj == nil {
+		return 2
+	}
+	return 2 + 2 + len(obj.FromServerID) + 2 + len(obj.ToServerID) + 2 + len(obj.MsgName) + 2 + len(obj.Data) * 1
 }

@@ -295,3 +295,10 @@ type SNotifySafelyQuit struct {
 	// 目标服务器的信息应该是最新的信息，目标服务器会将该信息改成最新的
 	TargetServerInfo SServerInfo
 }
+
+type SForwardToServer struct {
+	FromServerID string
+	ToServerID   string
+	MsgName      string
+	Data         []byte
+}

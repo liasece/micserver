@@ -4,7 +4,6 @@ import (
 	"github.com/liasece/micserver/comm"
 	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/server/subnet/serconfs"
 	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
@@ -17,6 +16,10 @@ func CheckServerType(servertype uint32) bool {
 		return false
 	}
 	return true
+}
+
+type SubnetCallback struct {
+	OnRecvServerMsg func(conn *tcpconn.ServerConn, msg *comm.SForwardToServer)
 }
 
 // websocket连接管理器
@@ -38,6 +41,8 @@ type SubnetManager struct {
 	lastwarningtime2 uint32
 	// 我的服务器信息
 	myServerInfo comm.SServerInfo
+	// 回调注册
+	SubnetCallback SubnetCallback
 }
 
 func (this *SubnetManager) InitManager(moudleConf *conf.ModuleConfig) {
@@ -69,12 +74,6 @@ func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uin
 			return true
 		})
 	return latestVersion
-}
-
-// 像指定类型的服务器进行广播
-func (this *SubnetManager) BroadcastByType(
-	servertype string, v msg.MsgStruct) {
-	this.BroadcastByType(servertype, v)
 }
 
 //通知所有服务器列表信息

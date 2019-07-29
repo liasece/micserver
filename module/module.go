@@ -1,10 +1,13 @@
 package module
 
 import (
+	"github.com/liasece/micserver/comm"
 	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/server/gate"
 	"github.com/liasece/micserver/server/subnet"
+	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"time"
 )
@@ -73,8 +76,38 @@ func (this *BaseModule) InitSubnet(subnetAddrMap map[string]string) {
 	}
 }
 
+func (this *BaseModule) SendServerMsgByTmpID(
+	serverTmpID string, msgstr msg.MsgStruct) {
+	conn := this.subnetManager.GetServerConn(serverTmpID)
+	if conn != nil {
+		conn.SendCmd(this.getServerMsgPack(msgstr, conn))
+	}
+}
+
+func (this *BaseModule) BroadcastServerCmd(msgstr msg.MsgStruct) {
+	this.subnetManager.BroadcastCmd(this.getServerMsgPack(msgstr, nil))
+}
+
+func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
+	tarconn *tcpconn.ServerConn) msg.MsgStruct {
+	res := &comm.SForwardToServer{}
+	res.FromServerID = this.ModuleID
+	if tarconn != nil {
+		res.ToServerID = tarconn.Serverinfo.ServerID
+	}
+	res.MsgName = msgstr.GetMsgName()
+	size := msgstr.GetSize()
+	res.Data = make([]byte, size)
+	msgstr.WriteBinary(res.Data)
+	return res
+}
+
 func (this *BaseModule) GetGate() *gate.GateBase {
 	return this.gateBase
+}
+
+func (this *BaseModule) GetSubnetManager() *subnet.SubnetManager {
+	return this.subnetManager
 }
 
 func (this *BaseModule) GetModuleID() string {
