@@ -128,6 +128,7 @@ func (this *TCPConn) SendCmd(v msg.MsgStruct,
 		this.Warn("[TCPConn.SendCmd] 连接已失效，取消发送")
 		return ErrCloseed
 	}
+
 	msg := msg.MakeMessageByJson(v)
 	if encryption != 0 && msg != nil {
 		msg.Encryption(encryption)

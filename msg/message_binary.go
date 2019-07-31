@@ -1,8 +1,6 @@
 package msg
 
 import (
-	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/liasece/micserver/log"
@@ -27,8 +25,6 @@ var sizeControl []int = []int{32, 64, 128, 256, 512, 1024, 2 * 1024,
 	256 * 1024 * 1024, 512 * 1024 * 1024}
 var pools *util.FlexiblePool
 
-const MSG_HEAD_SIZE = 16
-
 func init() {
 	pools = util.NewFlexiblePool(sizeControl, NewMsgBinaryBySize)
 }
@@ -40,22 +36,15 @@ func NewMsgBinaryBySize(size int) interface{} {
 }
 
 type MessageBinary struct {
-	// LV1 头
-	CmdLen  uint32          // 4  消息长度
-	CmdMask TEncryptionType // 1  消息是否加密
-	CmdZip  byte            // 1  是否压缩
-
-	// LV2 头
-	CmdID     uint16 // 2
-	TimeStamp uint32 // 4
-	DataLen   uint32 // 4
+	MessageBinaryHeadL1
+	MessageBinaryHeadL2
+	MessageBinaryBody
+	buffers []byte
 
 	TmpData       interface{}       // 用于优化的临时数据指针请注意使用！
 	TmpData1      interface{}       // 用于优化的临时数据指针请注意使用！
 	OnSendDone    func(interface{}) // 用于优化的临时数据指针请注意使用！
 	OnSendDoneArg interface{}       // 用于优化的临时数据指针请注意使用！
-	ProtoData     []byte
-	buffers       []byte
 }
 
 func (this *MessageBinary) Free() {
@@ -71,7 +60,7 @@ func (this *MessageBinary) Free() {
 }
 
 func getMessageBinaryByProtoDataLength(protoDataSize int) *MessageBinary {
-	totalSize := protoDataSize + MSG_HEAD_SIZE // 加上协议头长度
+	totalSize := protoDataSize + MSG_HEADSIZE // 加上协议头长度
 	msg, err := pools.Get(totalSize)
 	if err != nil {
 		log.Error("[MakeMessageByBytes] "+
@@ -88,120 +77,93 @@ func getMessageBinaryByProtoDataLength(protoDataSize int) *MessageBinary {
 	return msg.(*MessageBinary)
 }
 
+var defaultHead1 MessageBinaryHeadL1
+var defaultHead2 MessageBinaryHeadL2
+var defaultBody MessageBinaryBody
+
 // 重置 Message 数据
 func (this *MessageBinary) Reset() {
-	this.CmdLen = 0
-	this.CmdMask = 0
-	this.CmdZip = 0
-	this.CmdID = 0
-	this.TimeStamp = 0
-	this.DataLen = 0
+	this.MessageBinaryHeadL1 = defaultHead1
+	this.MessageBinaryHeadL2 = defaultHead2
 	this.TmpData = nil
 	this.TmpData1 = nil
 	this.OnSendDone = nil
 	this.OnSendDoneArg = nil
-	this.ProtoData = nil
+	this.MessageBinaryBody = defaultBody
 	// 为了减轻GC压力，不应重置buffers字段
 }
 
 // 从二进制流中读取 Message 结构，带消息头
 func (this *MessageBinary) ReadBinary(cmddata []byte) error {
 	// 获取基础数据
-	maxlen := uint16(len(cmddata))
+	offset, err := this.MessageBinaryHeadL1.ReadFromBuffer(cmddata)
 	// 过小的长度
-	if maxlen < 6 {
-		log.Error("[MakeMessageByBytes] "+
-			"[ReadBinary] 错误的二进制数据,过小的[]byte DataLen[%d] Data[%s]",
-			maxlen, hex.EncodeToString(cmddata))
-		return errors.New("消息头接收不完整")
-	}
-	// 用于消息读取完毕之后的校验
-	checklen := binary.BigEndian.Uint32(cmddata[0:4])
-	this.CmdMask = TEncryptionType(cmddata[4])
-	this.CmdZip = cmddata[3]
-	// 读取消息
-	err := this.ReadBinaryNoHead(cmddata[6:])
 	if err != nil {
 		log.Error("[MakeMessageByBytes] "+
-			"[ReadBinary] ReadBinaryNoHead错误 Err[%s]",
+			"[ReadBinary] 错误的消息头L1 Err[%s]", err.Error())
+		return errors.New("错误的消息头L1")
+	}
+	// 用于消息读取完毕之后的校验
+	// 读取消息
+	err = this.ReadBinaryNoMessageBinaryHeadL1(cmddata[offset:])
+	if err != nil {
+		log.Error("[MakeMessageByBytes] "+
+			"[ReadBinary] ReadBinaryNoMessageBinaryHeadL1错误 Err[%s]",
 			err.Error())
 		return nil
-	}
-	// 长度检查
-	if this.CmdLen != checklen {
-		log.Error("[MakeMessageByBytes] "+
-			"[ReadBinary] 错误的头部大小[%d] [%d]",
-			checklen, this.CmdLen)
-		return errors.New("消息头标注大小与实际大小不匹配")
 	}
 	return nil
 }
 
 // 从二进制流中读取 Message 结构，无消息头
-func (this *MessageBinary) ReadBinaryNoHead(cmddata []byte) error {
-	tmask := this.CmdMask
-	tzip := this.CmdZip
-	// 重置先前的消息
-	this.Reset()
-	maxlen := uint32(len(cmddata))
-	if maxlen < 10 {
-		log.Error("[ReadBinaryNoHead] "+
-			"[ReadBinary] 错误的二进制数据,过小的[]byte NoHeadDataLen[%d]",
-			maxlen)
-		return errors.New("消息头接收不完整")
+func (this *MessageBinary) ReadBinaryNoMessageBinaryHeadL1(cmddata []byte) error {
+	offset, err := this.MessageBinaryHeadL2.ReadFromBuffer(cmddata)
+	contentBufSize := len(cmddata) - offset
+	if err != nil {
+		log.Error("[ReadBinaryNoMessageBinaryHeadL1] "+
+			"[ReadBinary] 错误的消息头L2 Err[%s]", err.Error())
+		return errors.New("错误的消息头L2")
 	}
-	// 读消息名
-	this.CmdID = binary.BigEndian.Uint16(cmddata[0:2])
-	// 消息构造时间戳
-	this.TimeStamp = binary.BigEndian.Uint32(cmddata[2:6])
-	// 消息数据长度
-	this.DataLen = binary.BigEndian.Uint32(cmddata[6:10])
 	// 消息结构错误
-	if this.DataLen+10 > maxlen {
-		log.Error("[ReadBinaryNoHead] "+
-			"[缓冲区溢出] 接收消息格式错误 CmdID[%d] CmdLen[%d] "+
-			"DataLen[%d] RecvLen[%d]",
-			this.CmdID, this.CmdLen, this.DataLen, maxlen)
+	if this.MessageBinaryHeadL2.LowerSize() > contentBufSize {
+		log.Error("[ReadBinaryNoMessageBinaryHeadL1] "+
+			"[缓冲区溢出] 接收消息格式错误 MessageBinaryHeadL1[%+v] MessageBinaryHeadL2[%+v] "+
+			"ContentBufSize[%d]",
+			this.MessageBinaryHeadL1, this.MessageBinaryHeadL2, contentBufSize)
 		// 清空本消息信息
 		this.Reset()
 		return errors.New("消息头标注大小小于整体大小，消息体不完整")
 	}
-	// 总协议体长度
-	this.CmdLen = MSG_HEAD_SIZE + this.DataLen
 	// 检查 buffer
-	if this.buffers == nil || len(this.buffers) < int(this.CmdLen) {
-		tmpmsg := getMessageBinaryByProtoDataLength(int(this.DataLen))
+	if this.buffers == nil || len(this.buffers) < int(this.MessageBinaryHeadL1.CmdLen) {
+		tmpmsg := getMessageBinaryByProtoDataLength(int(this.MessageBinaryHeadL2.DataLen))
 		if tmpmsg == nil {
-			log.Error("[ReadBinaryNoHead] "+
-				"无法分配MsgBinary的内存！！！ Len[%d]", this.DataLen)
+			log.Error("[ReadBinaryNoMessageBinaryHeadL1] "+
+				"无法分配MsgBinary的内存！！！ Len[%d]", this.MessageBinaryHeadL2.DataLen)
 			return nil
 		}
 		// 重新构建合理的 buffer
 		this.buffers = tmpmsg.buffers
 	}
-	// 复制 buffer 数据域
-	copy(this.buffers[MSG_HEAD_SIZE:this.CmdLen], cmddata[10:10+this.DataLen])
+	offset = 0
+	offset += this.MessageBinaryHeadL1.WriteToBuffer(this.buffers[offset:])
+	// 复制 MessageBinaryHeadL2+protodata 数据域
+	copy(this.buffers[offset:this.MessageBinaryHeadL1.CmdLen],
+		cmddata[:int(this.MessageBinaryHeadL1.CmdLen)-offset])
 	// 将数据指针字段指向buffer数据域
-	this.ProtoData = this.buffers[MSG_HEAD_SIZE:this.CmdLen]
-
-	this.CmdMask = tmask
-	this.CmdZip = tzip
-	// 将结构数据填入 buffer
-	this.MakeMessageHead()
+	this.MessageBinaryBody.ProtoData = this.buffers[MSG_HEADSIZE:this.MessageBinaryHeadL1.CmdLen]
 
 	// 解密消息
 	this.Decrypt()
 	return nil
 }
 
-func (this *MessageBinary) MakeMessageHead() {
+func (this *MessageBinary) writeHeadBuffer() int {
 	// 将结构数据填入 buffer
-	binary.BigEndian.PutUint32(this.buffers[0:], this.CmdLen) // 4
-	this.buffers[4] = byte(this.CmdMask)
-	this.buffers[5] = this.CmdZip
-	binary.BigEndian.PutUint16(this.buffers[6:], this.CmdID)     // 2
-	binary.BigEndian.PutUint32(this.buffers[8:], this.TimeStamp) // 4
-	binary.BigEndian.PutUint32(this.buffers[12:], this.DataLen)  // 4
+	offset := 0
+	offset += this.MessageBinaryHeadL1.WriteToBuffer(this.buffers[offset:])
+	offset += this.MessageBinaryHeadL2.WriteToBuffer(this.buffers[offset:])
+	return offset
 }
 
 // 将数据构造成为 Message 结构
@@ -209,37 +171,37 @@ func (this *MessageBinary) MakeMessageHead() {
 func (this *MessageBinary) WriteBinary() ([]byte, int) {
 	// 如果缓冲区大小不合适，说明数据被篡改
 	if this.buffers == nil ||
-		len(this.buffers) < int(MSG_HEAD_SIZE+this.DataLen) {
+		len(this.buffers) < int(this.MessageBinaryHeadL1.CmdLen) {
 		log.Error("[MakeMessageByBytes] "+
 			"[WriteBinary] 错误的缓冲区大小，数据被篡改！ "+
 			"BufferLen[%d] CmdLen[%d]",
-			len(this.buffers), int(MSG_HEAD_SIZE+this.DataLen))
+			len(this.buffers), this.MessageBinaryHeadL1.CmdLen)
 		return make([]byte, 1), 0
 	}
-	return this.buffers[:this.CmdLen], int(this.CmdLen)
+	return this.buffers[:this.MessageBinaryHeadL1.CmdLen], int(this.MessageBinaryHeadL1.CmdLen)
 }
 
 func (this *MessageBinary) Encryption(t TEncryptionType) error {
-	if this.CmdMask != 0 || t == 0x00 {
-		return fmt.Errorf("[加密] 无效 %d -> %d ", this.CmdMask, t)
+	if this.MessageBinaryHeadL1.CmdMask != 0 || t == 0x00 {
+		return fmt.Errorf("[加密] 无效 %d -> %d ", this.MessageBinaryHeadL1.CmdMask, t)
 	}
 
 	if t == EncryptionTypeXORSimple {
 		// 异或加密
 
 		// 第3个字节 加密标志字节
-		this.CmdMask = t
-		this.buffers[4] = byte(this.CmdMask)
+		this.MessageBinaryHeadL1.CmdMask = t
+		this.buffers[4] = byte(this.MessageBinaryHeadL1.CmdMask)
 
 		// 计算加密组长度
-		modn := byte(this.TimeStamp&0x0FF)%5 + 5
+		modn := byte(this.MessageBinaryHeadL2.TimeStamp&0x0FF)%5 + 5
 		// 异或值
-		xor := byte(this.DataLen & 0x0FF)
-		for i, b := range this.ProtoData {
+		xor := byte(this.MessageBinaryHeadL2.DataLen & 0x0FF)
+		for i, b := range this.MessageBinaryBody.ProtoData {
 			// 异或
-			this.ProtoData[i] = b ^ xor
+			this.MessageBinaryBody.ProtoData[i] = b ^ xor
 			// 加上加密组长度
-			this.ProtoData[i] += 10 - (byte(i&0x0FF) % modn)
+			this.MessageBinaryBody.ProtoData[i] += 10 - (byte(i&0x0FF) % modn)
 		}
 		return nil
 	}
@@ -247,32 +209,32 @@ func (this *MessageBinary) Encryption(t TEncryptionType) error {
 }
 
 func (this *MessageBinary) Decrypt() error {
-	if this.CmdMask == 0 {
-		return fmt.Errorf("[解密] 无效 %d", this.CmdMask)
+	if this.MessageBinaryHeadL1.CmdMask == 0 {
+		return fmt.Errorf("[解密] 无效 %d", this.MessageBinaryHeadL1.CmdMask)
 	}
-	if this.CmdMask == 0x01 {
+	if this.MessageBinaryHeadL1.CmdMask == 0x01 {
 		// 计算加密组长度
-		modn := byte(this.TimeStamp&0x0FF)%5 + 5
+		modn := byte(this.MessageBinaryHeadL2.TimeStamp&0x0FF)%5 + 5
 		// 异或值
-		xor := byte(this.DataLen & 0x0FF)
-		for i, b := range this.ProtoData {
+		xor := byte(this.MessageBinaryHeadL2.DataLen & 0x0FF)
+		for i, b := range this.MessageBinaryBody.ProtoData {
 			// 先减去加密组长度
 			b -= 10 - (byte(i&0x0FF) % modn)
 			// 异或
-			this.ProtoData[i] = b ^ xor
+			this.MessageBinaryBody.ProtoData[i] = b ^ xor
 		}
 		return nil
 	}
-	return fmt.Errorf("[解密] 未知的消息加密类型 %d ", this.CmdMask)
+	return fmt.Errorf("[解密] 未知的消息加密类型 %d ", this.MessageBinaryHeadL1.CmdMask)
 }
 
 // 通过二进制流创建 Message
 func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	// 获取基础数据
 	datalen := uint32(len(protodata))
-	totalLength := uint32(MSG_HEAD_SIZE + datalen)
+	totalLength := uint32(MSG_HEADSIZE + datalen)
 	// 判断数据合法性
-	if totalLength >= 64*1024 {
+	if totalLength >= 512*1024*1024 {
 		log.Error("[MakeMessageByBytes] "+
 			"[缓冲区溢出] 发送消息数据过大 CmdID[%d] CmdLen[%d]",
 			cmdid, totalLength)
@@ -290,20 +252,25 @@ func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 		return nil
 	}
 
-	totallen := uint32(totalLength)
-	// 将 protodata 拷贝至 buffer 的数据域
-	copy(msgbinary.buffers[MSG_HEAD_SIZE:totallen], protodata)
-	// 消息数据字段指针指向 buffer 数据域
-	msgbinary.ProtoData = msgbinary.buffers[MSG_HEAD_SIZE:totallen]
-
 	// 初始化消息信息
-	msgbinary.DataLen = uint32(datalen)
-	msgbinary.CmdLen = totallen
-	msgbinary.TimeStamp = uint32(time.Now().Unix())
-	msgbinary.CmdID = cmdid
+
+	// MessageBinaryBody
+	// 将 protodata 拷贝至 buffer 的数据域
+	copy(msgbinary.buffers[MSG_HEADSIZE:totalLength], protodata)
+	// 消息数据字段指针指向 buffer 数据域
+	msgbinary.MessageBinaryBody.ProtoData =
+		msgbinary.buffers[MSG_HEADSIZE:msgbinary.MessageBinaryHeadL1.CmdLen]
+
+	// MessageBinaryHeadL2
+	msgbinary.MessageBinaryHeadL2.DataLen = datalen
+	msgbinary.MessageBinaryHeadL2.TimeStamp = uint32(time.Now().Unix())
+	msgbinary.MessageBinaryHeadL2.CmdID = cmdid
+
+	// MessageBinaryHeadL1
+	msgbinary.MessageBinaryHeadL1.CmdLen = totalLength
 
 	// 将结构数据填入 buffer
-	msgbinary.MakeMessageHead()
+	msgbinary.writeHeadBuffer()
 
 	return msgbinary
 }
@@ -322,9 +289,9 @@ func MakeMessageByJson(v MsgStruct) *MessageBinary {
 	cmdid := v.GetMsgId()
 	// 获取基础数据
 	datalen := v.GetSize()
-	totalLength := uint32(MSG_HEAD_SIZE + datalen)
+	totalLength := uint32(MSG_HEADSIZE + datalen)
 	// 判断数据合法性
-	if totalLength >= 64*1024 {
+	if totalLength >= 512*1024*1024 {
 		log.Error("[MakeMessageByBytes] "+
 			"[缓冲区溢出] 发送消息数据过大 MsgID[%d] CmdLen[%d]",
 			cmdid, totalLength)
@@ -342,35 +309,42 @@ func MakeMessageByJson(v MsgStruct) *MessageBinary {
 		return nil
 	}
 
-	totallen := uint32(totalLength)
-	// 将 protodata 拷贝至 buffer 的数据域
-	v.WriteBinary(msgbinary.buffers[MSG_HEAD_SIZE:totallen])
-	// 消息数据字段指针指向 buffer 数据域
-	msgbinary.ProtoData = msgbinary.buffers[MSG_HEAD_SIZE:totallen]
-
 	// 初始化消息信息
-	msgbinary.DataLen = uint32(datalen)
-	msgbinary.CmdLen = totallen
-	msgbinary.TimeStamp = uint32(time.Now().Unix())
-	msgbinary.CmdID = cmdid
+
+	// MessageBinaryBody
+	// 将 protodata 拷贝至 buffer 的数据域
+
+	v.WriteBinary(msgbinary.buffers[MSG_HEADSIZE:totalLength])
+
+	// 消息数据字段指针指向 buffer 数据域
+	msgbinary.MessageBinaryBody.ProtoData = msgbinary.buffers[MSG_HEADSIZE:totalLength]
+
+	// MessageBinaryHeadL2
+	// 初始化消息信息
+	msgbinary.MessageBinaryHeadL2.DataLen = uint32(datalen)
+	msgbinary.MessageBinaryHeadL2.TimeStamp = uint32(time.Now().Unix())
+	msgbinary.MessageBinaryHeadL2.CmdID = cmdid
+	// MessageBinaryHeadL1
+	msgbinary.MessageBinaryHeadL1.CmdLen = totalLength
 
 	// 将结构数据填入 buffer
-	msgbinary.MakeMessageHead()
+	msgbinary.writeHeadBuffer()
+
 	return msgbinary
 }
 
 type MessageBinaryReader struct {
-	inMsg     bool
-	msglength int
-
-	mask TEncryptionType
-	zip  byte
+	inMsg  bool
+	HeadL1 MessageBinaryHeadL1
+	HeadL2 MessageBinaryHeadL2
 
 	netbuffer *util.IOBuffer
 }
 
 func NewMessageBinaryReader(netbuffer *util.IOBuffer) *MessageBinaryReader {
-	return &MessageBinaryReader{false, 0, 0x00, 0x00, netbuffer}
+	return &MessageBinaryReader{
+		netbuffer: netbuffer,
+	}
 }
 
 func (this *MessageBinaryReader) RangeMsgBinary(
@@ -383,60 +357,60 @@ func (this *MessageBinaryReader) RangeMsgBinary(
 			reerr = err
 		}
 	}()
+
 	// 遍历数据流中的消息体
 	for {
 		// 读消息头
 		// 当前不在消息体中，且当前缓冲区长度已大于消息头长度
 		if !this.inMsg && this.netbuffer.Len() >= 6 {
+
 			// 读头部4个字节
-			headbuf, err := this.netbuffer.Read(0, 6)
+			MessageBinaryHeadL1buf, err := this.netbuffer.Read(0, 6)
 			if err != nil {
 				return err
 			}
-			// 消息总长度
-			ulength := binary.BigEndian.Uint32(headbuf[0:4])
-			if ulength < 6 {
-				// 一个消息至少有头部6字节大小，如果小于6，说明数据已经不正确
-				return fmt.Errorf("CmdLen too small. CmdLen:%d headdata:%#v",
-					ulength, headbuf[0:6])
+			_, err = this.HeadL1.ReadFromBuffer(MessageBinaryHeadL1buf)
+			if err != nil {
+				return fmt.Errorf("Head layer 1 dec err:%s. headdata:%#v",
+					err.Error(), MessageBinaryHeadL1buf)
 			}
-			// 把头的6个字节去掉
-			this.msglength = int(ulength) - 6
-			if this.msglength < 0 {
-				// 说明数据已经不正确
-				return fmt.Errorf("msglength too small. "+
-					"msglength:%d headdata:%#v",
-					ulength, headbuf[0:6])
-			}
-			this.mask = TEncryptionType(headbuf[4])
-			this.zip = headbuf[5]
-			// 检查超长消息
-			// 不会出现超长消息，最大长度即包头长度字段所能表示的最大长度
 
 			// 进入消息处理逻辑
 			this.inMsg = true
+
 		}
 
 		// 读消息体
-		if this.inMsg && this.netbuffer.Len() >= this.msglength {
-			// 取出消息体（无4个字节的头）
-			cmdbuff, err := this.netbuffer.Read(0, this.msglength)
+		if this.inMsg && this.netbuffer.Len() >= this.HeadL1.LowerSize() {
+
+			cmdbuff, err := this.netbuffer.Read(0, this.HeadL1.LowerSize())
+
 			if err != nil {
 				return err
 			}
-			dataLength := len(cmdbuff) - (MSG_HEAD_SIZE - 6)
+			_, err = this.HeadL2.ReadFromBuffer(cmdbuff)
+
+			if err != nil {
+				return fmt.Errorf("Head layer 2 dec err:%s.",
+					err.Error())
+			}
+
+			// 解密解压
+			// TODO
+
 			// 获取合适大小的消息体
-			msgbinary := getMessageBinaryByProtoDataLength(dataLength)
+			msgbinary := getMessageBinaryByProtoDataLength(
+				this.HeadL2.LowerSize())
 			if msgbinary != nil {
-				msgbinary.CmdMask = this.mask
-				msgbinary.CmdZip = this.zip
+				msgbinary.MessageBinaryHeadL1 = this.HeadL1
+				msgbinary.MessageBinaryHeadL2 = this.HeadL2
 				// 解析消息（无6个字节的头）
-				err := msgbinary.ReadBinaryNoHead(cmdbuff)
+				err := msgbinary.ReadBinaryNoMessageBinaryHeadL1(cmdbuff)
 				if err != nil {
 					log.Error("[MessageBinaryReader.RangeMsgBinary] "+
-						"解析消息错误 Err[%s] RecvLen[%d] NoHeadLen[%d] "+
-						"DataLen[%d]",
-						err.Error(), len(cmdbuff), this.msglength, dataLength)
+						"解析消息错误 Err[%s] RecvLen[%d] HeadL1[%+v] "+
+						"HeadL2[%+v]",
+						err.Error(), len(cmdbuff), this.HeadL1, this.HeadL2)
 					return err
 				} else {
 					// 调用回调函数处理消息
@@ -444,9 +418,8 @@ func (this *MessageBinaryReader) RangeMsgBinary(
 				}
 			} else {
 				log.Error("[MessageBinaryReader.RangeMsgBinary] "+
-					"无法分配MsgBinary的内存！！！ RecvLen[%d] NoHeadLen[%d] "+
-					"DataLen[%d]",
-					len(cmdbuff), this.msglength, dataLength)
+					"无法分配MsgBinary的内存！！！ RecvLen[%d] HeadL1[%+v] "+
+					"HeadL2[%+v]", len(cmdbuff), this.HeadL1, this.HeadL2)
 			}
 			// 退出消息处理状态
 			this.inMsg = false

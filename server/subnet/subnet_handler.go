@@ -50,7 +50,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 		}
 	}()
 	// 消息缓冲
-	netbuffer := util.NewIOBuffer(conn.Conn, 6400*1024)
+	netbuffer := util.NewIOBuffer(conn.Conn, 64*1024*1024)
 	msgReader := msg.NewMessageBinaryReader(netbuffer)
 
 	for true {
@@ -102,6 +102,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 		functiontime.Start("handleClientConnection")
 
 		err = msgReader.RangeMsgBinary(func(msgbinary *msg.MessageBinary) {
+
 			// 判断消息是否阻塞严重
 			curtime := uint32(time.Now().Unix())
 			if curtime > msgbinary.TimeStamp+1 &&

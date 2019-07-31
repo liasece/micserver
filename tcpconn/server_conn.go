@@ -23,7 +23,7 @@ const (
 const ServerConnSendMsgBufferSize = 500000
 
 // 发送等待缓冲区大小
-const ServerConnMaxWaitSendMsgBufferSize = 512 * 1024 * 1024
+const ServerConnMaxWaitSendMsgBufferSize = 1 * 1024 * 1024 * 1024
 
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
 const ServerConnSendBufferSize = 64 * 1024 * 1024
