@@ -299,17 +299,17 @@ def getgodouble(jsonname):
 def getgostringfunc():
     jsonname = "strfunc"
     read = 'func readBinaryString(data []byte) string {\
-    '+jsonname+'len := binary.BigEndian.Uint16(data[:2])\n\
-    if int('+jsonname+'len) + 2 > len(data) {\n\
+    '+jsonname+'len := binary.BigEndian.Uint32(data[:4])\n\
+    if int('+jsonname+'len) + 4 > len(data) {\n\
         return ""\n\
     }\n\
-    return string(data[2:2+'+jsonname+'len])\n\
+    return string(data[4:4+'+jsonname+'len])\n\
 }\n'
     send = 'func writeBinaryString(data []byte,obj string) int {\
     objlen := len(obj)\n\
-    binary.BigEndian.PutUint16(data[:2],uint16(objlen))\n\
-    copy(data[2:2+objlen], obj)\n\
-    return 2+objlen\n\
+    binary.BigEndian.PutUint32(data[:4],uint32(objlen))\n\
+    copy(data[4:4+objlen], obj)\n\
+    return 4+objlen\n\
 }\n'
     return read,send
 
@@ -429,10 +429,10 @@ return math.Float64frombits(bits)\n\
 
 def getgostring(jsonname):
     read = jsonname+' = readBinaryString(data[offset:])\n\
-    '+'offset += 2 + len(obj.'+jsonname+')\n'
+    '+'offset += 4 + len(obj.'+jsonname+')\n'
     send = 'writeBinaryString(data[offset:],obj.'+jsonname+')\n\
-    '+'offset += 2 + len(obj.'+jsonname+')\n'
-    size = '2 + len(obj.'+jsonname+')'
+    '+'offset += 4 + len(obj.'+jsonname+')\n'
+    size = '4 + len(obj.'+jsonname+')'
     return read,send,size
 
 def getgobool(jsonname):
@@ -611,7 +611,7 @@ def getgoslice(typestr,jsonname,fieldnum):
         if subtype[0] == '*' :
             subtype = subtype[1:]
         subtypecode,subtypecodesend,subleng = getgobybasetypesub(subtype)
-        readint,sendint,size = getgouint16(jsonname+"_slent")
+        readint,sendint,size = getgouint32(jsonname+"_slent")
         if subtypecode == "":
             reg = re.compile("""\[\]([\w*_]+)""")
             ty = re.fullmatch(reg, typestr)
@@ -620,14 +620,14 @@ def getgoslice(typestr,jsonname,fieldnum):
         if subtypecode == "":
             print("Error Unknow subtype in go:"+subtype)
             return "","","",""
-        read = jsonname+"_slent := uint16(0)\n"
+        read = jsonname+"_slent := uint32(0)\n"
         # 越界判断
         read += 'if offset + '+size+' > data__len{\n\
                     return endpos\n\
                     }\n'
         read += jsonname+"_slen := 0\n" + readint + jsonname+"_slen = int("+jsonname+"_slent)\n"
-        send = 'binary.BigEndian.PutUint16(data[offset:offset+2],uint16(len(obj.'+jsonname+')))\n\
-                offset += 2\n'
+        send = 'binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
+                offset += 4\n'
         if isbasetype(subtype) :
             read += '\
                 obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
@@ -730,13 +730,13 @@ def getgomap(typestr,jsonname,fieldnum):
         if keytypecode == "" or valuetypecode == "":
             print("Error Unknow in go keytypecode:"+keytypecode+";valuetypecode:"+valuetypecode)
             return "","","",""
-        readint,sendint,size = getgouint16(jsonname+"_slent")
-        read = jsonname+"_slent := uint16(0)\n"
+        readint,sendint,size = getgouint32(jsonname+"_slent")
+        read = jsonname+"_slent := uint32(0)\n"
         read += 'if offset + '+size+' > data__len{\n\
                     return endpos\n\
                 }\n'
         read +=  readint + "\n"
-        send = 'binary.BigEndian.PutUint16(data[offset:offset+2],uint16(len(obj.'+jsonname+')))\n\
+        send = 'binary.BigEndian.PutUint32(data[offset:offset+2],uint32(len(obj.'+jsonname+')))\n\
                 offset += 2\n'
         sizerely = ''
 
@@ -763,7 +763,7 @@ def getgomap(typestr,jsonname,fieldnum):
         if isbasetype(valuetype) :
             read += '\
                 obj.'+jsonname+' = make('+typestr+')\n\
-                i'+str(fieldnum)+'i := uint16(0)\n\
+                i'+str(fieldnum)+'i := uint32(0)\n\
                 for '+jsonname+'_slent > i'+str(fieldnum)+'i {\n\
                 if offset + '+str(keyleng)+' > data__len{\n\
                     return endpos\n\
@@ -822,7 +822,7 @@ def getgomap(typestr,jsonname,fieldnum):
             # 值 不是基础类型
             read += '\
                 obj.'+jsonname+' = make('+typestr+')\n\
-                i'+str(fieldnum)+'i := uint16(0)\n\
+                i'+str(fieldnum)+'i := uint32(0)\n\
                 for '+jsonname+'_slent > i'+str(fieldnum)+'i {\n\
                 if offset + '+str(keyleng)+' > data__len{\n\
                     return endpos\n\
@@ -947,16 +947,16 @@ def getgomsg(msgdef):
         size = '0'
     res = 'func ReadMsg'+name+'ByBytes(indata []byte, obj *'+name+') int {\n\
         offset := 0\n\
-        if len(indata) < 2 {\n\
+        if len(indata) < 4 {\n\
         return 0\n\
         }\n\
-        objsize := int(binary.BigEndian.Uint16(indata[offset:offset+2]))\n\
-        offset += 2\n\
+        objsize := int(binary.BigEndian.Uint32(indata[offset:offset+4]))\n\
+        offset += 4\n\
         if objsize == 0 {\n\
-        return 2\n\
+        return 4\n\
         }\n\
         if offset + objsize > len(indata){\n\
-        return 2\n\
+        return offset\n\
         }\n\
         endpos := offset+objsize\n\
         '+getdatalencode+'\n\
@@ -964,21 +964,21 @@ def getgomsg(msgdef):
         }'
     ressend = 'func WriteMsg'+name+'ByObj(data []byte, obj *'+name+') int {\n\
         if obj == nil {\n\
-            binary.BigEndian.PutUint16(data[0:2],0)\n\
-            return 2\n\
+            binary.BigEndian.PutUint32(data[0:4],0)\n\
+            return 4\n\
         }\n\
-        objsize := obj.GetSize() - 2\n\
+        objsize := obj.GetSize() - 4\n\
         offset := 0\n\
-        binary.BigEndian.PutUint16(data[offset:offset+2],uint16(objsize))\n\
-        offset += 2\n\
+        binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))\n\
+        offset += 4\n\
         '+fieldcodesend+'\nreturn offset\n\
         }'
     ressize = 'func GetSize'+name+'(obj *'+name+') int {\n\
         if obj == nil {\n\
-            return 2\n\
+            return 4\n\
         }\n\
         '+sizerely+'\n\
-        return 2 + '+size+'\n\
+        return 4 + '+size+'\n\
         }\n'
     return name,res,ressend,ressize
 
