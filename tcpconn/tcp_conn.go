@@ -10,17 +10,11 @@
 package tcpconn
 
 import (
-	"github.com/liasece/micserver/util"
-	// "github.com/liasece/micserver/functime"
-	// "bytes"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
-	// "encoding/hex"
-	// "fmt"
-	"net"
-	// "runtime"
-	// "errors"
+	"github.com/liasece/micserver/util"
 	"io/ioutil"
+	"net"
 	"sync/atomic"
 	"time"
 )
