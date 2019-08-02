@@ -42,7 +42,7 @@ type ServerConn struct {
 	// 建立连接优先级
 	ConnectPriority int64
 	// 该连接对方服务器信息
-	Serverinfo servercomm.SServerInfo
+	Serverinfo *servercomm.SServerInfo
 	// 用于区分该连接是服务器 client task 连接
 	serverSCType TServerSCType
 }
@@ -52,6 +52,7 @@ type ServerConn struct {
 // conn: 连接的net.Conn对象
 func NewServerConn(sctype TServerSCType, conn net.Conn) *ServerConn {
 	tcpconn := new(ServerConn)
+	tcpconn.Serverinfo = &servercomm.SServerInfo{}
 	tcpconn.SetSC(sctype)
 	tcpconn.Init(conn, ServerConnSendChanSize, ServerConnSendBufferSize)
 	tcpconn.ConnectPriority = rand.Int63()

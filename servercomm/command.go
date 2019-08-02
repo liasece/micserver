@@ -53,30 +53,30 @@ const (
 
 // 登录服务器返回
 type SLoginRetCommand struct {
-	Loginfailed uint32      // 是否连接成功,0成功
-	Destination SServerInfo //	tcptask 所在服务器信息
+	Loginfailed uint32       // 是否连接成功,0成功
+	Destination *SServerInfo //	tcptask 所在服务器信息
 }
 
 // super通知其它服务器启动成功
 type SStartRelyNotifyCommand struct {
-	Serverinfos []SServerInfo // 启动成功服务器信息
+	Serverinfos []*SServerInfo // 启动成功服务器信息
 }
 
 // 启动验证通过通知其它服务器我的新
 type SStartMyNotifyCommand struct {
-	Serverinfo SServerInfo // 启动成功服务器信息
+	Serverinfo *SServerInfo // 启动成功服务器信息
 }
 
 // super 通知所有服务器配置信息
 type SNotifyAllInfo struct {
-	Serverinfos []SServerInfo // 成功服务器信息
+	Serverinfos []*SServerInfo // 成功服务器信息
 }
 
 // 通知说明的目标服务器安全退出
 // 此消息发送的前提是当前存在可以替代目标服务器的服务器
 type SNotifySafelyQuit struct {
 	// 目标服务器的信息应该是最新的信息，目标服务器会将该信息改成最新的
-	TargetServerInfo SServerInfo
+	TargetServerInfo *SServerInfo
 }
 
 type SForwardToServer struct {

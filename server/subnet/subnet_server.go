@@ -39,7 +39,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 			return
 		}
 	}
-	var serverInfo servercomm.SServerInfo
+	serverInfo := &servercomm.SServerInfo{}
 
 	// 来源服务器地址
 	remoteaddr := conn.RemoteAddr().String()

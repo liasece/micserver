@@ -40,12 +40,13 @@ type SubnetManager struct {
 	lastwarningtime1 uint32
 	lastwarningtime2 uint32
 	// 我的服务器信息
-	myServerInfo servercomm.SServerInfo
+	myServerInfo *servercomm.SServerInfo
 	// 回调注册
 	SubnetCallback SubnetCallback
 }
 
 func (this *SubnetManager) InitManager(moudleConf *conf.ModuleConfig) {
+	this.myServerInfo = &servercomm.SServerInfo{}
 	this.moudleConf = moudleConf
 	this.ServerConnPool.Logger = this.Logger
 	// 初始化连接
@@ -66,7 +67,7 @@ func (this *SubnetManager) InitManager(moudleConf *conf.ModuleConfig) {
 func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uint64 {
 	latestVersion := uint64(0)
 	this.connInfos.RangeConnInfo(
-		func(value servercomm.SServerInfo) bool {
+		func(value *servercomm.SServerInfo) bool {
 			if util.GetServerIDType(value.ServerID) == servertype &&
 				value.Version > latestVersion {
 				latestVersion = value.Version
@@ -80,9 +81,9 @@ func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uin
 func (this *SubnetManager) NotifyAllServerInfo(
 	tcptask *tcpconn.ServerConn) {
 	retmsg := &servercomm.SNotifyAllInfo{}
-	retmsg.Serverinfos = make([]servercomm.SServerInfo, 0)
+	retmsg.Serverinfos = make([]*servercomm.SServerInfo, 0)
 	this.connInfos.RangeConnInfo(func(
-		value servercomm.SServerInfo) bool {
+		value *servercomm.SServerInfo) bool {
 		retmsg.Serverinfos = append(retmsg.Serverinfos, value)
 		return true
 	})

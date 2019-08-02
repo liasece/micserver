@@ -13,17 +13,16 @@ type ConnInfosManager struct {
 }
 
 func (this *ConnInfosManager) GetConnInfoByID(
-	serverid string) servercomm.SServerInfo {
+	serverid string) *servercomm.SServerInfo {
 	if value, found := this.ConnInfos.Load(serverid); found {
-		return value.(servercomm.SServerInfo)
+		return value.(*servercomm.SServerInfo)
 	}
-	var temp servercomm.SServerInfo
-	return temp
+	return &servercomm.SServerInfo{}
 }
 
 func (this *ConnInfosManager) GetConnInfoByInfo(
-	tarinfo *servercomm.SLoginCommand) servercomm.SServerInfo {
-	var res servercomm.SServerInfo
+	tarinfo *servercomm.SLoginCommand) *servercomm.SServerInfo {
+	var res *servercomm.SServerInfo
 	if tarinfo.ServerID != "" {
 		// 如果已经指定了ID，直接返回
 		info := this.GetConnInfoByID(tarinfo.ServerID)
@@ -36,7 +35,7 @@ func (this *ConnInfosManager) GetConnInfoByInfo(
 }
 
 func (this *ConnInfosManager) AddConnInfo(
-	newinfo servercomm.SServerInfo) {
+	newinfo *servercomm.SServerInfo) {
 	if newinfo.ServerID == "" {
 		log.Error("[ConnInfosManager.AddConnInfo] "+
 			"尝试添加一个ID为空的服务器 拒绝 Info[%s]", newinfo.GetJson())
@@ -55,18 +54,18 @@ func (this *ConnInfosManager) RemoveConnInfo(serverid string) {
 }
 
 func (this *ConnInfosManager) RangeConnInfo(
-	callback func(servercomm.SServerInfo) bool) {
+	callback func(*servercomm.SServerInfo) bool) {
 	this.ConnInfos.Range(func(tkey interface{},
 		tvalue interface{}) bool {
-		value := tvalue.(servercomm.SServerInfo)
+		value := tvalue.(*servercomm.SServerInfo)
 		return callback(value)
 	})
 }
 
 func (this *ConnInfosManager) ExistConnInfo(
-	info servercomm.SServerInfo) bool {
+	info *servercomm.SServerInfo) bool {
 	tconfig, finded := this.ConnInfos.Load(info.ServerID)
-	config := tconfig.(servercomm.SServerInfo)
+	config := tconfig.(*servercomm.SServerInfo)
 	if !finded {
 		return false
 	}

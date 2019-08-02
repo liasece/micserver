@@ -266,6 +266,13 @@ def getgouint32(jsonname):
             offset+=4\n'
     size = '4'
     return read,send,size
+def getgouint(jsonname):
+    read = jsonname+' = uint(binary.BigEndian.Uint32(data[offset:offset+4]))\n\
+            offset+=4\n'
+    send = 'binary.BigEndian.PutUint32(data[offset:offset+4], uint32(obj.'+jsonname+'))\n\
+            offset+=4\n'
+    size = '4'
+    return read,send,size
 def getgouint16(jsonname):
     read = jsonname+' = binary.BigEndian.Uint16(data[offset:offset+2])\n\
             offset+=2\n'
@@ -409,6 +416,12 @@ return uint8(data[0])\n\
 func writeBinaryUint8(data []byte, num uint8) {\n\
 data[0] = byte(num)\n\
 }\n\
+func readBinaryUint(data []byte) uint {\n\
+return uint(binary.BigEndian.Uint32(data))\n\
+}\n\
+func writeBinaryUint(data []byte, num uint) {\n\
+    binary.BigEndian.PutUint32(data,uint32(num))\n\
+}\n\
 func writeBinaryFloat32(data []byte, num float32) {\n\
 bits := math.Float32bits(num)\n\
 binary.BigEndian.PutUint32(data,bits)\n\
@@ -452,8 +465,11 @@ def getgobybasetype(typestr,jsonname,ispoint,fieldnum):
     if typestr == 'uint64' :
         ret,se,size = getgouint64(jsonname)
         return 'obj.'+ret,se,size
-    elif typestr == 'uint32' or typestr == 'uint':
+    elif typestr == 'uint32':
         ret,se,size =  getgouint32(jsonname)
+        return 'obj.'+ret,se,size
+    elif typestr == 'uint':
+        ret,se,size =  getgouint(jsonname)
         return 'obj.'+ret,se,size
     elif typestr == 'uint16':
         ret,se,size =  getgouint16(jsonname)
@@ -495,9 +511,14 @@ def getgobybasetype(typestr,jsonname,ispoint,fieldnum):
             # print(typestr)
             read = ""
             if ispoint:
-                read += "offset += ReadMsg"+typestr+"ByBytes(data[offset:], obj."+jsonname+")\n"
+                read += '\
+                    rsize_'+jsonname+' := 0\n\
+                    rsize_'+jsonname+',obj.'+jsonname+' = ReadMsg'+typestr+'ByBytes(data[offset:], nil)\n\
+                    offset += rsize_'+jsonname+'\n'
             else :
-                read += "offset += ReadMsg"+typestr+"ByBytes(data[offset:], &obj."+jsonname+")\n"
+                read += '\
+                    rsize_'+jsonname+',_ := ReadMsg'+typestr+'ByBytes(data[offset:], &obj.'+jsonname+')\n\
+                    offset += rsize_'+jsonname+'\n'
             send = ''
             if ispoint:
                 send = "offset += WriteMsg"+typestr+"ByObj(data[offset:], obj."+jsonname+")\n"
@@ -510,12 +531,16 @@ def getgobybasetype(typestr,jsonname,ispoint,fieldnum):
             ty = re.fullmatch(reg, typestr)
             if ty :
                 needpack = '"'+ty.group(1)+'"'
-                # print(typestr)
                 read = ""
                 if ispoint:
-                    read += "offset += "+ty.group(1)+".ReadMsg"+ty.group(2)+'ByBytes(data[offset:], obj.'+jsonname+')\n'
+                    read += '\
+                        rsize_'+jsonname+' := 0\n\
+                        rsize_'+jsonname+',obj.'+jsonname+' = '+ty.group(1)+'.ReadMsg'+ty.group(2)+'ByBytes(data[offset:], nil)\n\
+                        offset += rsize_'+jsonname+'\n'
                 else :
-                    read += "offset += "+ty.group(1)+".ReadMsg"+ty.group(2)+'ByBytes(data[offset:], &obj.'+jsonname+')\n'
+                    read += '\
+                        rsize_'+jsonname+',_ := '+ty.group(1)+'.ReadMsg'+ty.group(2)+'ByBytes(data[offset:], &obj.'+jsonname+')\n\
+                        offset += rsize_'+jsonname+'\n'
                 send = ''
                 if ispoint:
                     send = "offset += "+ty.group(1)+".WriteMsg"+ty.group(2)+"ByObj(data[offset:], obj."+jsonname+")\n"
@@ -564,8 +589,10 @@ def getgobybasetypesub(typestr):
         return 'readBinaryInt8(data[offset:offset+1])','writeBinaryInt8',1
     elif typestr == 'uint64' :
         return 'binary.BigEndian.Uint64(data[offset:offset+8])','binary.BigEndian.PutUint64',8
-    elif typestr == 'uint32' or typestr == 'uint':
+    elif typestr == 'uint32':
         return 'binary.BigEndian.Uint32(data[offset:offset+4])','binary.BigEndian.PutUint32',4
+    elif typestr == 'uint':
+        return 'readBinaryUint(data[offset:offset+4])','writeBinaryUint',4
     elif typestr == 'uint16':
         return 'binary.BigEndian.Uint16(data[offset:offset+2])','binary.BigEndian.PutUint16',2
     elif typestr == 'uint8' or typestr == 'byte':
@@ -611,7 +638,7 @@ def getgoslice(typestr,jsonname,fieldnum):
         if subtype[0] == '*' :
             subtype = subtype[1:]
         subtypecode,subtypecodesend,subleng = getgobybasetypesub(subtype)
-        readint,sendint,size = getgouint32(jsonname+"_slent")
+        size=''
         if subtypecode == "":
             reg = re.compile("""\[\]([\w*_]+)""")
             ty = re.fullmatch(reg, typestr)
@@ -620,41 +647,62 @@ def getgoslice(typestr,jsonname,fieldnum):
         if subtypecode == "":
             print("Error Unknow subtype in go:"+subtype)
             return "","","",""
-        read = jsonname+"_slent := uint32(0)\n"
-        # 越界判断
-        read += 'if offset + '+size+' > data__len{\n\
-                    return endpos\n\
-                    }\n'
-        read += readint + jsonname+"_slen := int("+jsonname+"_slent)\n"
+        read = '\
+            if offset + 4 > data__len{\n\
+                return endpos,obj\n\
+            }\n\
+            '+jsonname+'_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))\n\
+            offset += 4\n'
         send = 'binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
                 offset += 4\n'
         if isbasetype(subtype) :
-            read += '\
-                obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
-                if offset+('+jsonname+'_slen*'+str(subleng)+') > data__len {\n\
-                    return endpos\n\
-                }\n\
-                copy(obj.'+jsonname+', data[offset:offset+'+jsonname+'_slen])\n\
-                '
-            send += '\
-                '+jsonname+'_slen := len(obj.'+jsonname+')\n\
-                copy(data[offset:offset+'+jsonname+'_slen], obj.'+jsonname+')\n\
-                offset += '+jsonname+'_slen\n\
-                '
+            # 值类型是基础类型
+            if subtype == 'byte':
+                read += '\
+                    if offset + '+jsonname+'_slen > data__len {\n\
+                        return endpos,obj\n\
+                    }\n\
+                    obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
+                    copy(obj.'+jsonname+', data[offset:offset+'+jsonname+'_slen])\n\
+                    offset += '+jsonname+'_slen\n\
+                    '
+                send += '\
+                    '+jsonname+'_slen := len(obj.'+jsonname+')\n\
+                    copy(data[offset:offset+'+jsonname+'_slen], obj.'+jsonname+')\n\
+                    offset += '+jsonname+'_slen\n\
+                    '
+            else:
+                read += '\
+                    if offset+('+jsonname+'_slen*'+str(subleng)+') > data__len {\n\
+                        return endpos,obj\n\
+                    }\n\
+                    obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
+                    for i'+str(fieldnum)+'i := 0; '+jsonname+'_slen > i'+str(fieldnum)+'i; i'+str(fieldnum)+'i++ {\n\
+                        obj.'+jsonname+'[i'+str(fieldnum)+'i] = '+subtype+'('+subtypecode+')\n\
+                        offset += '+str(subleng)+'\n\
+                    }\n\
+                    '
+                send += '\
+                    '+jsonname+'_slen := len(obj.'+jsonname+')\n\
+                    for i'+str(fieldnum)+'i := 0; '+jsonname+'_slen > i'+str(fieldnum)+'i; i'+str(fieldnum)+'i++ {\n\
+                        '+subtypecodesend+'(data[offset:offset+'+str(subleng)+'],obj.'+jsonname+'[i'+str(fieldnum)+'i])\n\
+                        offset += '+str(subleng)+'\n\
+                    }\n\
+                    '
             if subtype == 'string' :
                 sizerely += 'sizerely'+subtype+''+str(fieldnum)+' := func()int{\n\
                         resnum := 0\n\
                         i'+str(fieldnum)+'i := 0\n\
                         '+jsonname+'_slen := len(obj.'+jsonname+')\n\
                         for '+jsonname+'_slen > i'+str(fieldnum)+'i {\n\
-                            resnum += len(obj.'+jsonname+'[i'+str(fieldnum)+'i]) + 2\n\
+                            resnum += len(obj.'+jsonname+'[i'+str(fieldnum)+'i]) + 4\n\
                             i'+str(fieldnum)+'i++\n\
                         }\n\
                         return resnum\n\
                     }\n'
                 size += ' + sizerely'+subtype+''+str(fieldnum)+'()'
             else :
-                size += ' + len(obj.'+jsonname+') * '+str(subleng)
+                size += ' 4 + len(obj.'+jsonname+') * '+str(subleng)
         else :
             read += '\
                 obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
@@ -662,20 +710,23 @@ def getgoslice(typestr,jsonname,fieldnum):
                 for '+jsonname+'_slen > i'+str(fieldnum)+'i {\n'
             if subtype != 'string':
                 if ispoint :
-                    read += 'tmpvalue'+subtype+' := &'+subtype+'{}\n\
-                            offset += '+subtypecode+'(data[offset:],tmpvalue'+subtype+')\n\
-                            obj.'+jsonname+'[i'+str(fieldnum)+'i] = tmpvalue'+subtype+'\n'
+                    read += 'rsize_'+jsonname+' := 0\n\
+                            rsize_'+jsonname+',obj.'+jsonname+'[i'+str(fieldnum)+'i] = '+subtypecode+'(data[offset:],nil)\n\
+                            offset += rsize_'+jsonname+'\n'
                 else :
-                    read += 'offset += '+subtypecode+'(data[offset:],&obj.'+jsonname+'[i'+str(fieldnum)+'i])\n'
+                    read += '\
+                        rsize_'+jsonname+',_ := '+subtypecode+'(data[offset:],&obj.'+jsonname+'[i'+str(fieldnum)+'i])\n\
+                        offset += rsize_'+jsonname+'\n\
+                        '
                 read += 'i'+str(fieldnum)+'i++\n\
                     }\n\
                     '
             else :
                 read += 'obj.'+jsonname+'[i'+str(fieldnum)+'i] += '+subtypecode+'\n\
-                        if offset + 2 > data__len{\n\
-                            return endpos\n\
+                        if offset + 4 > data__len{\n\
+                            return endpos,obj\n\
                         }\n\
-                        offset += 2 + len(obj.'+jsonname+'[i'+str(fieldnum)+'i])\n\
+                        offset += 4 + len(obj.'+jsonname+'[i'+str(fieldnum)+'i])\n\
                         i'+str(fieldnum)+'i++\n\
                     }\n\
                     '
@@ -696,7 +747,7 @@ def getgoslice(typestr,jsonname,fieldnum):
                     }\n\
                     return resnum\n\
                 }\n'
-            size += ' + sizerely'+subtype+''+str(fieldnum)+'()'
+            size += ' 4 + sizerely'+subtype+''+str(fieldnum)+'()'
         return read,send,size,sizerely
     # print("not's slice in go:"+typestr)
     return "","","",""
@@ -710,12 +761,14 @@ def getgomap(typestr,jsonname,fieldnum):
         getvaluest = ''
         getpointerst = ''
         getpointerfa = ''
+        getpointerfaref = ''
         if valuetype[0] == '*':
             valuetype = valuetype[1:]
             getvaluest = '*'
             getpointerst = '&'
         else :
             getpointerfa = '&'
+            getpointerfaref = '*'
         keytypecode,keytypecodesend,keyleng = getgobybasetypesub(keytype)
         valuetypecode,valuetypecodesend,valueleng = getgobybasetypesub(valuetype)
         if keytypecode == "" or valuetypecode == "":
@@ -724,11 +777,11 @@ def getgomap(typestr,jsonname,fieldnum):
         readint,sendint,size = getgouint32(jsonname+"_slent")
         read = jsonname+"_slent := uint32(0)\n"
         read += 'if offset + '+size+' > data__len{\n\
-                    return endpos\n\
+                    return endpos,obj\n\
                 }\n'
         read +=  readint + "\n"
-        send = 'binary.BigEndian.PutUint32(data[offset:offset+2],uint32(len(obj.'+jsonname+')))\n\
-                offset += 2\n'
+        send = 'binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
+                offset += 4\n'
         sizerely = ''
 
         catkeyv = ''
@@ -739,7 +792,7 @@ def getgomap(typestr,jsonname,fieldnum):
             catkeyv = ''+jsonname+'_kcatlen := '
             catkeyvread = ''+jsonname+'_kcatlen := len(key'+jsonname+')'
             keyoffset = 'offset += '+jsonname+'_kcatlen'
-            keyoffsetread = 'offset += '+jsonname+'_kcatlen + 2'
+            keyoffsetread = 'offset += '+jsonname+'_kcatlen + 4'
         catvaluev = ''
         catvaluevread = ''
         valueoffset = 'offset += '+str(valueleng)
@@ -749,34 +802,35 @@ def getgomap(typestr,jsonname,fieldnum):
             catvaluev = ''+jsonname+'_vcatlen := '
             catvaluevread = ''+jsonname+'_vcatlen := len(value'+jsonname+')'
             valueoffset = 'offset += '+jsonname+'_vcatlen'
-            valueoffsetread = 'offset += '+jsonname+'_vcatlen + 2'
+            valueoffsetread = 'offset += '+jsonname+'_vcatlen + 4'
 
         if isbasetype(valuetype) :
             read += '\
                 obj.'+jsonname+' = make('+typestr+')\n\
                 i'+str(fieldnum)+'i := uint32(0)\n\
                 for '+jsonname+'_slent > i'+str(fieldnum)+'i {\n\
-                if offset + '+str(keyleng)+' > data__len{\n\
-                    return endpos\n\
-                }\n\
-                key'+jsonname+' := '+keytypecode+'\n\
-                '+catkeyvread+'\n\
-                '+keyoffsetread+'\n\
-                if offset + '+str(valueleng)+' > data__len{\n\
-                    return endpos\n\
-                }\n\
-                value'+jsonname+' := '+valuetypecode+'\n\
-                '+catvaluevread+'\n\
-                '+valueoffsetread+'\n\
-                obj.'+jsonname+'[key'+jsonname+'] = '+getpointerst+'value'+jsonname+'\n\
-                i'+str(fieldnum)+'i++\n\
+                    if offset + '+str(keyleng)+' > data__len{\n\
+                        return endpos,obj\n\
+                    }\n\
+                    key'+jsonname+' := '+keytypecode+'\n\
+                    '+catkeyvread+'\n\
+                    '+keyoffsetread+'\n\
+                    if offset + '+str(valueleng)+' > data__len{\n\
+                        return endpos,obj\n\
+                    }\n\
+                    value'+jsonname+' := '+valuetypecode+'\n\
+                    '+catvaluevread+'\n\
+                    '+valueoffsetread+'\n\
+                    obj.'+jsonname+'[key'+jsonname+'] = '+getpointerst+'value'+jsonname+'\n\
+                    i'+str(fieldnum)+'i++\n\
                 }\n\
                 '
-            send += 'for '+jsonname+'key,'+jsonname+'value := range obj.'+jsonname+' {\n\
-                '+catkeyv+keytypecodesend+'(data[offset:],'+jsonname+'key)\n\
-                '+keyoffset+'\n\
-                '+catvaluev+valuetypecodesend+'(data[offset:],'+jsonname+'value);\
-                '+valueoffset+'\n\
+            send += '\
+                for '+jsonname+'key,'+jsonname+'value := range obj.'+jsonname+' {\n\
+                    '+catkeyv+keytypecodesend+'(data[offset:],'+jsonname+'key)\n\
+                    '+keyoffset+'\n\
+                    '+catvaluev+valuetypecodesend+'(data[offset:],'+jsonname+'value);\
+                    '+valueoffset+'\n\
                 }\n\
                 '
             if valuetype == 'string' and keytype != 'string' :
@@ -784,7 +838,7 @@ def getgomap(typestr,jsonname,fieldnum):
                 sizerely += 'sizerely'+valuetype+''+str(fieldnum)+' := func()int{\n\
                         resnum := 0\n\
                         for _,'+jsonname+'value := range obj.'+jsonname+' {\n\
-                            resnum += len('+jsonname+'value) + 2\n\
+                            resnum += len('+jsonname+'value) + 4\n\
                         }\n\
                         resnum += len(obj.'+jsonname+') * ('+str(keyleng)+')\n\
                         return resnum\n\
@@ -794,7 +848,7 @@ def getgomap(typestr,jsonname,fieldnum):
                 sizerely += 'sizerely'+valuetype+''+str(fieldnum)+' := func()int{\n\
                         resnum := 0\n\
                         for '+jsonname+'key,_ := range obj.'+jsonname+' {\n\
-                            resnum += len('+jsonname+'key) + 2\n\
+                            resnum += len('+jsonname+'key) + 4\n\
                         }\n\
                         resnum += len(obj.'+jsonname+') * ('+str(valueleng)+')\n\
                         return resnum\n\
@@ -804,8 +858,8 @@ def getgomap(typestr,jsonname,fieldnum):
                 sizerely += 'sizerely'+valuetype+''+str(fieldnum)+' := func()int{\n\
                         resnum := 0\n\
                         for '+jsonname+'value,'+jsonname+'key := range obj.'+jsonname+' {\n\
-                            resnum += len('+jsonname+'value) + 2\n\
-                            resnum += len('+jsonname+'key) + 2\n\
+                            resnum += len('+jsonname+'value) + 4\n\
+                            resnum += len('+jsonname+'key) + 4\n\
                         }\n\
                         return resnum\n\
                     }\n'
@@ -815,17 +869,16 @@ def getgomap(typestr,jsonname,fieldnum):
                 obj.'+jsonname+' = make('+typestr+')\n\
                 i'+str(fieldnum)+'i := uint32(0)\n\
                 for '+jsonname+'_slent > i'+str(fieldnum)+'i {\n\
-                if offset + '+str(keyleng)+' > data__len{\n\
-                    return endpos\n\
-                }\n\
-                key'+jsonname+' := '+keytypecode+'\n\
-                '+catkeyvread+'\n\
-                '+keyoffsetread+'\n\
-                tmpvalue'+valuetype+' := '+valuetype+'{}\n\
-                leng := '+valuetypecode+'(data[offset:],&tmpvalue'+valuetype+')\n\
-                obj.'+jsonname+'[key'+jsonname+'] = '+getpointerst+'tmpvalue'+valuetype+'\n\
-                offset += leng\n\
-                i'+str(fieldnum)+'i++\n\
+                    if offset + '+str(keyleng)+' > data__len{\n\
+                        return endpos,obj\n\
+                    }\n\
+                    key'+jsonname+' := '+keytypecode+'\n\
+                    '+catkeyvread+'\n\
+                    '+keyoffsetread+'\n\
+                    leng,tmpvalue'+valuetype+' := '+valuetypecode+'(data[offset:],nil)\n\
+                    obj.'+jsonname+'[key'+jsonname+'] = '+getpointerfaref+'tmpvalue'+valuetype+'\n\
+                    offset += leng\n\
+                    i'+str(fieldnum)+'i++\n\
                 }\n\
                 '
             send += 'for '+jsonname+'key,'+jsonname+'value := range obj.'+jsonname+' {\n\
@@ -840,7 +893,7 @@ def getgomap(typestr,jsonname,fieldnum):
                         resnum := 0\n\
                         for '+jsonname+'key,'+jsonname+'value := range obj.'+jsonname+' {\n\
                             resnum += '+jsonname+'value.GetSize()\n\
-                            resnum += len('+jsonname+'key) + 2\n\
+                            resnum += len('+jsonname+'key) + 4\n\
                         }\n\
                         return resnum\n\
                     }\n'
@@ -878,7 +931,7 @@ def getgofield(field,fieldnum):
     codestr,codestrsend,size = getgobybasetype(typestr,jsonname,ispoint,fieldnum)
     if codestr != "":
         codestr = 'if offset + '+size+' > data__len{\n\
-                    return endpos\n\
+                    return endpos,obj\n\
                     }\n' + codestr
         return jsonname,codestr,codestrsend,size,""
     codestr,codestrsend,size,sizerely = getgoslice(typestr,jsonname,fieldnum)
@@ -936,22 +989,26 @@ def getgomsg(msgdef):
         data__len := len(data)'
     if size == '' :
         size = '0'
-    res = 'func ReadMsg'+name+'ByBytes(indata []byte, obj *'+name+') int {\n\
-        offset := 0\n\
-        if len(indata) < 4 {\n\
-        return 0\n\
-        }\n\
-        objsize := int(binary.BigEndian.Uint32(indata[offset:offset+4]))\n\
-        offset += 4\n\
-        if objsize == 0 {\n\
-        return 4\n\
-        }\n\
-        if offset + objsize > len(indata){\n\
-        return offset\n\
-        }\n\
-        endpos := offset+objsize\n\
-        '+getdatalencode+'\n\
-        '+fieldcode+'\nreturn endpos\n\
+    res = '\
+        func ReadMsg'+name+'ByBytes(indata []byte, obj *'+name+') (int,*'+name+') {\n\
+            offset := 0\n\
+            if len(indata) < 4 {\n\
+                return 0,nil\n\
+            }\n\
+            objsize := int(binary.BigEndian.Uint32(indata))\n\
+            offset += 4\n\
+            if objsize == 0 {\n\
+                return 4,nil\n\
+            }\n\
+            if obj == nil{\n\
+                obj=&'+name+'{}\n\
+            }\n\
+            if offset + objsize > len(indata){\n\
+                return offset,obj\n\
+            }\n\
+            endpos := offset+objsize\n\
+            '+getdatalencode+'\n\
+            '+fieldcode+'\nreturn endpos,obj\n\
         }'
     ressend = 'func WriteMsg'+name+'ByObj(data []byte, obj *'+name+') int {\n\
         if obj == nil {\n\
@@ -1011,9 +1068,12 @@ return offset\n}\n\n'
         }\n'
         else :
             resinterface += 'func (this *'+i+') WriteBinary(data []byte) int {\n\
-    return WriteMsg'+ i +'ByObj(data,this)\n}\n\n'
-            resinterfaceread += 'func (this *'+i+') ReadBinary(data []byte) int {\n\
-return ReadMsg'+ i +'ByBytes(data, this)\n}\n\n'
+                return WriteMsg'+ i +'ByObj(data,this)\n}\n\n'
+            resinterfaceread += '\
+                func (this *'+i+') ReadBinary(data []byte) int {\n\
+                    size,_ := ReadMsg'+ i +'ByBytes(data, this)\n\
+                    return size\n\
+                }\n\n'
             resinterfacegetsize += 'func (this *'+i+') GetSize() int {\n\
             return GetSize'+i+'(this)\n\
         }\n'
