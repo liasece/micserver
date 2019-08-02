@@ -148,8 +148,8 @@ def fmtcodesub(content) :
 
 # 格式化输出代码
 def fmtcodeout(content) :
-    reg = re.compile(";\s+")
-    content = re.sub(reg, ";\n", content)
+    # reg = re.compile(";\s+")
+    # content = re.sub(reg, ";\n", content)
 
     reg = re.compile("{\s+")
     content = re.sub(reg, "{\n", content)
@@ -638,7 +638,7 @@ def getgoslice(typestr,jsonname,fieldnum):
         if subtype[0] == '*' :
             subtype = subtype[1:]
         subtypecode,subtypecodesend,subleng = getgobybasetypesub(subtype)
-        size=''
+        size='4'
         if subtypecode == "":
             reg = re.compile("""\[\]([\w*_]+)""")
             ty = re.fullmatch(reg, typestr)
@@ -653,18 +653,25 @@ def getgoslice(typestr,jsonname,fieldnum):
             }\n\
             '+jsonname+'_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))\n\
             offset += 4\n'
-        send = 'binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
-                offset += 4\n'
+        send = '\
+            if obj.'+jsonname+' == nil {\n\
+                binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)\n\
+            } else {\n\
+                binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
+            }\n\
+            offset += 4\n'
         if isbasetype(subtype) :
             # 值类型是基础类型
             if subtype == 'byte':
                 read += '\
-                    if offset + '+jsonname+'_slen > data__len {\n\
-                        return endpos,obj\n\
+                    if '+jsonname+'_slen != 0xffffffff {\n\
+                        if offset + '+jsonname+'_slen > data__len {\n\
+                            return endpos,obj\n\
+                        }\n\
+                        obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
+                        copy(obj.'+jsonname+', data[offset:offset+'+jsonname+'_slen])\n\
+                        offset += '+jsonname+'_slen\n\
                     }\n\
-                    obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
-                    copy(obj.'+jsonname+', data[offset:offset+'+jsonname+'_slen])\n\
-                    offset += '+jsonname+'_slen\n\
                     '
                 send += '\
                     '+jsonname+'_slen := len(obj.'+jsonname+')\n\
@@ -673,13 +680,15 @@ def getgoslice(typestr,jsonname,fieldnum):
                     '
             else:
                 read += '\
-                    if offset+('+jsonname+'_slen*'+str(subleng)+') > data__len {\n\
-                        return endpos,obj\n\
-                    }\n\
-                    obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
-                    for i'+str(fieldnum)+'i := 0; '+jsonname+'_slen > i'+str(fieldnum)+'i; i'+str(fieldnum)+'i++ {\n\
-                        obj.'+jsonname+'[i'+str(fieldnum)+'i] = '+subtype+'('+subtypecode+')\n\
-                        offset += '+str(subleng)+'\n\
+                    if '+jsonname+'_slen != 0xffffffff {\n\
+                        if offset+('+jsonname+'_slen*'+str(subleng)+') > data__len {\n\
+                            return endpos,obj\n\
+                        }\n\
+                        obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
+                        for i'+str(fieldnum)+'i := 0; '+jsonname+'_slen > i'+str(fieldnum)+'i; i'+str(fieldnum)+'i++ {\n\
+                            obj.'+jsonname+'[i'+str(fieldnum)+'i] = '+subtype+'('+subtypecode+')\n\
+                            offset += '+str(subleng)+'\n\
+                        }\n\
                     }\n\
                     '
                 send += '\
@@ -690,24 +699,24 @@ def getgoslice(typestr,jsonname,fieldnum):
                     }\n\
                     '
             if subtype == 'string' :
-                sizerely += 'sizerely'+subtype+''+str(fieldnum)+' := func()int{\n\
-                        resnum := 0\n\
-                        i'+str(fieldnum)+'i := 0\n\
-                        '+jsonname+'_slen := len(obj.'+jsonname+')\n\
-                        for '+jsonname+'_slen > i'+str(fieldnum)+'i {\n\
-                            resnum += len(obj.'+jsonname+'[i'+str(fieldnum)+'i]) + 4\n\
-                            i'+str(fieldnum)+'i++\n\
-                        }\n\
-                        return resnum\n\
-                    }\n'
-                size += ' + sizerely'+subtype+''+str(fieldnum)+'()'
+                sizerely += '\
+                    sizerely'+subtype+''+str(fieldnum)+' := 0\n\
+                    i'+str(fieldnum)+'i := 0\n\
+                    '+jsonname+'_slen := len(obj.'+jsonname+')\n\
+                    for '+jsonname+'_slen > i'+str(fieldnum)+'i {\n\
+                        sizerely'+subtype+''+str(fieldnum)+' += len(obj.'+jsonname+'[i'+str(fieldnum)+'i]) + 4\n\
+                        i'+str(fieldnum)+'i++\n\
+                    }\n\
+                    '
+                size += ' + sizerely'+subtype+''+str(fieldnum)+''
             else :
-                size += ' 4 + len(obj.'+jsonname+') * '+str(subleng)
+                size += ' + len(obj.'+jsonname+') * '+str(subleng)
         else :
             read += '\
-                obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
-                i'+str(fieldnum)+'i := 0\n\
-                for '+jsonname+'_slen > i'+str(fieldnum)+'i {\n'
+                if '+jsonname+'_slen != 0xffffffff {\n\
+                    obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
+                    \n\
+                    for i'+str(fieldnum)+'i := 0; '+jsonname+'_slen > i'+str(fieldnum)+'i; i'+str(fieldnum)+'i++ {\n'
             if subtype != 'string':
                 if ispoint :
                     read += 'rsize_'+jsonname+' := 0\n\
@@ -718,8 +727,9 @@ def getgoslice(typestr,jsonname,fieldnum):
                         rsize_'+jsonname+',_ := '+subtypecode+'(data[offset:],&obj.'+jsonname+'[i'+str(fieldnum)+'i])\n\
                         offset += rsize_'+jsonname+'\n\
                         '
-                read += 'i'+str(fieldnum)+'i++\n\
+                read += '\
                     }\n\
+                }\n\
                     '
             else :
                 read += 'obj.'+jsonname+'[i'+str(fieldnum)+'i] += '+subtypecode+'\n\
@@ -727,8 +737,8 @@ def getgoslice(typestr,jsonname,fieldnum):
                             return endpos,obj\n\
                         }\n\
                         offset += 4 + len(obj.'+jsonname+'[i'+str(fieldnum)+'i])\n\
-                        i'+str(fieldnum)+'i++\n\
                     }\n\
+                }\n\
                     '
             send += 'i'+str(fieldnum)+'i := 0\n\
                 '+jsonname+'_slen := len(obj.'+jsonname+')\n\
@@ -737,17 +747,16 @@ def getgoslice(typestr,jsonname,fieldnum):
                 i'+str(fieldnum)+'i++\n\
                 }\n\
                 '
-            sizerely += 'sizerely'+subtype+''+str(fieldnum)+' := func()int{\n\
-                    resnum := 0\n\
-                    i'+str(fieldnum)+'i := 0\n\
-                    '+jsonname+'_slen := len(obj.'+jsonname+')\n\
-                    for '+jsonname+'_slen > i'+str(fieldnum)+'i {\n\
-                        resnum += obj.'+jsonname+'[i'+str(fieldnum)+'i].GetSize()\n\
-                        i'+str(fieldnum)+'i++\n\
-                    }\n\
-                    return resnum\n\
-                }\n'
-            size += ' 4 + sizerely'+subtype+''+str(fieldnum)+'()'
+            sizerely += '\
+                sizerely'+subtype+''+str(fieldnum)+' := 0\n\
+                i'+str(fieldnum)+'i := 0\n\
+                '+jsonname+'_slen := len(obj.'+jsonname+')\n\
+                for '+jsonname+'_slen > i'+str(fieldnum)+'i {\n\
+                    sizerely'+subtype+''+str(fieldnum)+' += obj.'+jsonname+'[i'+str(fieldnum)+'i].GetSize()\n\
+                    i'+str(fieldnum)+'i++\n\
+                }\n\
+                '
+            size += ' + sizerely'+subtype+''+str(fieldnum)+''
         return read,send,size,sizerely
     # print("not's slice in go:"+typestr)
     return "","","",""
@@ -774,14 +783,21 @@ def getgomap(typestr,jsonname,fieldnum):
         if keytypecode == "" or valuetypecode == "":
             print("Error Unknow in go keytypecode:"+keytypecode+";valuetypecode:"+valuetypecode)
             return "","","",""
-        readint,sendint,size = getgouint32(jsonname+"_slent")
-        read = jsonname+"_slent := uint32(0)\n"
-        read += 'if offset + '+size+' > data__len{\n\
-                    return endpos,obj\n\
-                }\n'
-        read +=  readint + "\n"
-        send = 'binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
-                offset += 4\n'
+        size = '4'
+        read = '\
+            if offset + 4 > data__len{\n\
+                return endpos,obj\n\
+            }\n\
+            '+jsonname+'_slen := binary.BigEndian.Uint32(data[offset:offset+4])\n\
+            offset += 4\n\
+            '
+        send = '\
+            if obj.'+jsonname+' == nil {\n\
+                binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)\n\
+            } else {\n\
+                binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
+            }\n\
+            offset += 4\n'
         sizerely = ''
 
         catkeyv = ''
@@ -806,113 +822,110 @@ def getgomap(typestr,jsonname,fieldnum):
 
         if isbasetype(valuetype) :
             read += '\
-                obj.'+jsonname+' = make('+typestr+')\n\
-                i'+str(fieldnum)+'i := uint32(0)\n\
-                for '+jsonname+'_slent > i'+str(fieldnum)+'i {\n\
-                    if offset + '+str(keyleng)+' > data__len{\n\
-                        return endpos,obj\n\
+                if '+jsonname+'_slen != 0xffffffff {\n\
+                    obj.'+jsonname+' = make('+typestr+')\n\
+                    for i'+str(fieldnum)+'i := uint32(0); i'+str(fieldnum)+'i < '+jsonname+'_slen; i'+str(fieldnum)+'i++ {\n\
+                        if offset + '+str(keyleng)+' > data__len{\n\
+                            return endpos,obj\n\
+                        }\n\
+                        key'+jsonname+' := '+keytypecode+'\n\
+                        '+catkeyvread+'\n\
+                        '+keyoffsetread+'\n\
+                        if offset + '+str(valueleng)+' > data__len{\n\
+                            return endpos,obj\n\
+                        }\n\
+                        value'+jsonname+' := '+valuetypecode+'\n\
+                        '+catvaluevread+'\n\
+                        '+valueoffsetread+'\n\
+                        obj.'+jsonname+'[key'+jsonname+'] = '+getpointerst+'value'+jsonname+'\n\
                     }\n\
-                    key'+jsonname+' := '+keytypecode+'\n\
-                    '+catkeyvread+'\n\
-                    '+keyoffsetread+'\n\
-                    if offset + '+str(valueleng)+' > data__len{\n\
-                        return endpos,obj\n\
-                    }\n\
-                    value'+jsonname+' := '+valuetypecode+'\n\
-                    '+catvaluevread+'\n\
-                    '+valueoffsetread+'\n\
-                    obj.'+jsonname+'[key'+jsonname+'] = '+getpointerst+'value'+jsonname+'\n\
-                    i'+str(fieldnum)+'i++\n\
                 }\n\
                 '
             send += '\
                 for '+jsonname+'key,'+jsonname+'value := range obj.'+jsonname+' {\n\
                     '+catkeyv+keytypecodesend+'(data[offset:],'+jsonname+'key)\n\
                     '+keyoffset+'\n\
-                    '+catvaluev+valuetypecodesend+'(data[offset:],'+jsonname+'value);\
+                    '+catvaluev+valuetypecodesend+'(data[offset:],'+jsonname+'value)\n\
                     '+valueoffset+'\n\
                 }\n\
                 '
             if valuetype == 'string' and keytype != 'string' :
                 # 值是string 键 是基础类型
-                sizerely += 'sizerely'+valuetype+''+str(fieldnum)+' := func()int{\n\
-                        resnum := 0\n\
-                        for _,'+jsonname+'value := range obj.'+jsonname+' {\n\
-                            resnum += len('+jsonname+'value) + 4\n\
-                        }\n\
-                        resnum += len(obj.'+jsonname+') * ('+str(keyleng)+')\n\
-                        return resnum\n\
-                    }\n'
+                sizerely += '\
+                    sizerely'+valuetype+''+str(fieldnum)+' := 0\n\
+                    for _,'+jsonname+'value := range obj.'+jsonname+' {\n\
+                        sizerely'+valuetype+''+str(fieldnum)+' += len('+jsonname+'value) + 4\n\
+                    }\n\
+                    sizerely'+valuetype+''+str(fieldnum)+' += len(obj.'+jsonname+') * ('+str(keyleng)+')\n\
+                    '
             elif valuetype != 'string' and keytype == 'string' :
                 # 值是基础类型 键是string
-                sizerely += 'sizerely'+valuetype+''+str(fieldnum)+' := func()int{\n\
-                        resnum := 0\n\
-                        for '+jsonname+'key,_ := range obj.'+jsonname+' {\n\
-                            resnum += len('+jsonname+'key) + 4\n\
-                        }\n\
-                        resnum += len(obj.'+jsonname+') * ('+str(valueleng)+')\n\
-                        return resnum\n\
-                    }\n'
+                sizerely += '\
+                    sizerely'+valuetype+''+str(fieldnum)+' := 0\n\
+                    for '+jsonname+'key,_ := range obj.'+jsonname+' {\n\
+                        sizerely'+valuetype+''+str(fieldnum)+' += len('+jsonname+'key) + 4\n\
+                    }\n\
+                    sizerely'+valuetype+''+str(fieldnum)+' += len(obj.'+jsonname+') * ('+str(valueleng)+')\n\
+                    '
             elif valuetype == 'string' and keytype == 'string' :
                 # 值是string 键是string
-                sizerely += 'sizerely'+valuetype+''+str(fieldnum)+' := func()int{\n\
-                        resnum := 0\n\
-                        for '+jsonname+'value,'+jsonname+'key := range obj.'+jsonname+' {\n\
-                            resnum += len('+jsonname+'value) + 4\n\
-                            resnum += len('+jsonname+'key) + 4\n\
-                        }\n\
-                        return resnum\n\
-                    }\n'
+                sizerely += '\
+                    sizerely'+valuetype+''+str(fieldnum)+' := 0\n\
+                    for '+jsonname+'value,'+jsonname+'key := range obj.'+jsonname+' {\n\
+                        sizerely'+valuetype+''+str(fieldnum)+' += len('+jsonname+'value) + 4\n\
+                        sizerely'+valuetype+''+str(fieldnum)+' += len('+jsonname+'key) + 4\n\
+                    }\n\
+                    '
         else :
             # 值 不是基础类型
             read += '\
-                obj.'+jsonname+' = make('+typestr+')\n\
-                i'+str(fieldnum)+'i := uint32(0)\n\
-                for '+jsonname+'_slent > i'+str(fieldnum)+'i {\n\
-                    if offset + '+str(keyleng)+' > data__len{\n\
-                        return endpos,obj\n\
+                if '+jsonname+'_slen != 0xffffffff {\n\
+                    obj.'+jsonname+' = make('+typestr+')\n\
+                    i'+str(fieldnum)+'i := uint32(0)\n\
+                    for '+jsonname+'_slen > i'+str(fieldnum)+'i {\n\
+                        if offset + '+str(keyleng)+' > data__len{\n\
+                            return endpos,obj\n\
+                        }\n\
+                        key'+jsonname+' := '+keytypecode+'\n\
+                        '+catkeyvread+'\n\
+                        '+keyoffsetread+'\n\
+                        leng,tmpvalue'+valuetype+' := '+valuetypecode+'(data[offset:],nil)\n\
+                        obj.'+jsonname+'[key'+jsonname+'] = '+getpointerfaref+'tmpvalue'+valuetype+'\n\
+                        offset += leng\n\
+                        i'+str(fieldnum)+'i++\n\
                     }\n\
-                    key'+jsonname+' := '+keytypecode+'\n\
-                    '+catkeyvread+'\n\
-                    '+keyoffsetread+'\n\
-                    leng,tmpvalue'+valuetype+' := '+valuetypecode+'(data[offset:],nil)\n\
-                    obj.'+jsonname+'[key'+jsonname+'] = '+getpointerfaref+'tmpvalue'+valuetype+'\n\
-                    offset += leng\n\
-                    i'+str(fieldnum)+'i++\n\
                 }\n\
                 '
             send += 'for '+jsonname+'key,'+jsonname+'value := range obj.'+jsonname+' {\n\
                 '+catkeyv+keytypecodesend+'(data[offset:],'+jsonname+'key)\n\
                 '+keyoffset+'\n\
-                offset += '+valuetypecodesend+'(data[offset:],'+getpointerfa+''+jsonname+'value);\
+                offset += '+valuetypecodesend+'(data[offset:],'+getpointerfa+''+jsonname+'value)\n\
                 }\n\
                 '
             if keytype == 'string' :
                 # 键是string
-                sizerely += 'sizerely'+valuetype+''+str(fieldnum)+' := func()int{\n\
-                        resnum := 0\n\
-                        for '+jsonname+'key,'+jsonname+'value := range obj.'+jsonname+' {\n\
-                            resnum += '+jsonname+'value.GetSize()\n\
-                            resnum += len('+jsonname+'key) + 4\n\
-                        }\n\
-                        return resnum\n\
-                    }\n'
+                sizerely += '\
+                    sizerely'+valuetype+''+str(fieldnum)+' := 0\n\
+                    for '+jsonname+'key,'+jsonname+'value := range obj.'+jsonname+' {\n\
+                        sizerely'+valuetype+''+str(fieldnum)+' += '+jsonname+'value.GetSize()\n\
+                        sizerely'+valuetype+''+str(fieldnum)+' += len('+jsonname+'key) + 4\n\
+                    }\n\
+                    '
             else :
                 # 键是基础类型
-                sizerely += 'sizerely'+valuetype+''+str(fieldnum)+' := func()int{\n\
-                        resnum := 0\n\
-                        for _,'+jsonname+'value := range obj.'+jsonname+' {\n\
-                            resnum += '+jsonname+'value.GetSize()\n\
-                        }\n\
-                        resnum += len(obj.'+jsonname+') * '+str(keyleng)+'\n\
-                        return resnum\n\
-                    }\n'
+                sizerely += '\
+                    sizerely'+valuetype+''+str(fieldnum)+' := 0\n\
+                    for _,'+jsonname+'value := range obj.'+jsonname+' {\n\
+                        sizerely'+valuetype+''+str(fieldnum)+' += '+jsonname+'value.GetSize()\n\
+                    }\n\
+                    sizerely'+valuetype+''+str(fieldnum)+' += len(obj.'+jsonname+') * '+str(keyleng)+'\n\
+                    '
         if isbasetype(valuetype) and isbasetype(keytype) and valuetype!='string' and keytype != 'string' :
             # 键值都是可定量大小的类型
             size += ' + len(obj.'+jsonname+') * ('+str(keyleng)+' + '+str(valueleng)+')'
         else :
             # 需要依赖
-            size += ' + sizerely'+valuetype+''+str(fieldnum)+'()'
+            size += ' + sizerely'+valuetype+''+str(fieldnum)+''
         return read,send,size,sizerely
     # print("not's map in go:"+typestr)
     return "","","",""
