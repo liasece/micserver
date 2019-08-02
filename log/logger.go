@@ -42,27 +42,27 @@ func NewLogger(settings map[string]string) *Logger {
 	if v, ok := settings["logpath"]; ok && len(logfilename) != 0 {
 		logfile := filepath.Join(v, logfilename)
 		if isDaemon {
-			l.AddlogFile(logfile, true)
+			l.AddLogFile(logfile, true)
 			l.RemoveConsoleLog()
 		} else {
 			// 默认走控制台
-			l.AddlogFile(logfile, false)
+			l.AddLogFile(logfile, false)
 			w := NewConsoleWriter()
 			w.SetColor(true)
-			l.Register(w)
+			l.RegisterLogWriter(w)
 		}
 	} else {
 		w := NewConsoleWriter()
 		w.SetColor(true)
-		l.Register(w)
+		l.RegisterLogWriter(w)
 	}
 
 	return l
 }
 
-func (l *Logger) AddlogFile(filename string, redirecterr bool) {
+func (l *Logger) AddLogFile(filename string, redirecterr bool) {
 	if l == nil && l != default_logger {
-		default_logger.AddlogFile(filename, redirecterr)
+		default_logger.AddLogFile(filename, redirecterr)
 		return
 	}
 	//	fmt.Printf("log filename,%s \n", filename)
@@ -75,12 +75,12 @@ func (l *Logger) AddlogFile(filename string, redirecterr bool) {
 	err := w.SetPathPattern(filebasename, filename)
 	if err != nil {
 	}
-	l.Register(w)
+	l.RegisterLogWriter(w)
 }
 
-func (l *Logger) ChangelogFile(filename string) {
+func (l *Logger) ChangeLogFile(filename string) {
 	if l == nil && l != default_logger {
-		default_logger.ChangelogFile(filename)
+		default_logger.ChangeLogFile(filename)
 		return
 	}
 	filebasename := filename
@@ -124,33 +124,33 @@ func (l *Logger) SetLogName(logname string) {
 	l.logname = logname
 }
 
-func (l *Logger) SetLevelByStr(loglevel string) {
+func (l *Logger) SetLogLevelByStr(loglevel string) {
 	switch loglevel {
 	case "debug":
-		l.SetLevel(DEBUG)
+		l.SetLogLevel(DEBUG)
 	case "info":
-		l.SetLevel(INFO)
+		l.SetLogLevel(INFO)
 	case "warning":
-		l.SetLevel(WARNING)
+		l.SetLogLevel(WARNING)
 	case "error":
-		l.SetLevel(ERROR)
+		l.SetLogLevel(ERROR)
 	case "fatal":
-		l.SetLevel(FATAL)
+		l.SetLogLevel(FATAL)
 	default:
 		//errors.New("Invalid log level")
 	}
 }
 
-func (l *Logger) GetLevel() int32 {
+func (l *Logger) GetLogLevel() int32 {
 	if l == nil && l != default_logger {
-		return default_logger.GetLevel()
+		return default_logger.GetLogLevel()
 	}
 	return l.level
 }
 
-func (l *Logger) Register(w Writer) {
+func (l *Logger) RegisterLogWriter(w Writer) {
 	if l == nil && l != default_logger {
-		default_logger.Register(w)
+		default_logger.RegisterLogWriter(w)
 		return
 	}
 	if err := w.Init(); err != nil {
@@ -159,17 +159,17 @@ func (l *Logger) Register(w Writer) {
 	l.writers = append(l.writers, w)
 }
 
-func (l *Logger) SetLevel(lvl int32) {
+func (l *Logger) SetLogLevel(lvl int32) {
 	if l == nil && l != default_logger {
-		default_logger.SetLevel(lvl)
+		default_logger.SetLogLevel(lvl)
 		return
 	}
 	l.level = lvl
 }
 
-func (l *Logger) SetLayout(layout string) {
+func (l *Logger) SetLogLayout(layout string) {
 	if l == nil && l != default_logger {
-		default_logger.SetLayout(layout)
+		default_logger.SetLogLayout(layout)
 		return
 	}
 	l.layout = layout
@@ -195,9 +195,9 @@ func (l *Logger) Fatal(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(FATAL, fmt, args...)
 }
 
-func (l *Logger) Close() {
+func (l *Logger) CloseLogger() {
 	if l == nil && l != default_logger {
-		default_logger.Close()
+		default_logger.CloseLogger()
 		return
 	}
 	close(l.tunnel)

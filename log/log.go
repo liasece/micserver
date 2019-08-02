@@ -84,13 +84,13 @@ func Fatal(fmt string, args ...interface{}) {
 	default_logger.deliverRecordToWriter(FATAL, fmt, args...)
 }
 
-func Close() {
-	default_logger.Close()
+func CloseLogger() {
+	default_logger.CloseLogger()
 }
 
 func SetDefaultLogger(l *Logger) {
 	if l != default_logger {
-		default_logger.Close()
+		default_logger.CloseLogger()
 		default_logger = l
 	}
 }
@@ -112,15 +112,15 @@ func SetLogName(logname string) {
 }
 
 func SetLogLevel(loglevel string) {
-	default_logger.SetLevelByStr(loglevel)
+	default_logger.SetLogLevelByStr(loglevel)
 }
 
-func AddlogFile(filename string, redirecterr bool) {
-	default_logger.AddlogFile(filename, redirecterr)
+func AddLogFile(filename string, redirecterr bool) {
+	default_logger.AddLogFile(filename, redirecterr)
 }
 
-func ChangelogFile(filename string) {
-	default_logger.ChangelogFile(filename)
+func ChangeLogFile(filename string) {
+	default_logger.ChangeLogFile(filename)
 }
 
 func RemoveConsoleLog() {
