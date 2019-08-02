@@ -12,7 +12,7 @@ package subnet
 import (
 	"errors"
 	"fmt"
-	"github.com/liasece/micserver/comm"
+	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"net"
@@ -101,7 +101,7 @@ func (this *SubnetManager) ConnectServer(id string,
 	// 发起登录
 
 	// 构造登陆消息
-	sendmsg := &comm.SLoginCommand{}
+	sendmsg := &servercomm.SLoginCommand{}
 	sendmsg.ServerID = this.moudleConf.ID
 	sendmsg.ServerAddr = this.moudleConf.GetModuleSetting("subnettcpaddr")
 	sendmsg.ConnectPriority = conn.ConnectPriority

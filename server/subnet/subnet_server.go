@@ -2,14 +2,14 @@ package subnet
 
 import (
 	"fmt"
-	"github.com/liasece/micserver/comm"
+	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"net"
 )
 
 func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
-	tarinfo *comm.SLoginCommand) {
+	tarinfo *servercomm.SLoginCommand) {
 	this.connectMutex.Lock()
 	defer this.connectMutex.Unlock()
 
@@ -32,14 +32,14 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 				"收到了重复的Server连接请求 Msg[%s]",
 				tarinfo.GetJson())
 			conn.IsNormalDisconnect = true
-			retmsg := &comm.SLoginRetCommand{}
-			retmsg.Loginfailed = comm.LOGINRETCODE_IDENTICAL
+			retmsg := &servercomm.SLoginRetCommand{}
+			retmsg.Loginfailed = servercomm.LOGINRETCODE_IDENTICAL
 			conn.SendCmd(retmsg)
 			conn.Terminate()
 			return
 		}
 	}
-	var serverInfo comm.SServerInfo
+	var serverInfo servercomm.SServerInfo
 
 	// 来源服务器地址
 	remoteaddr := conn.RemoteAddr().String()
@@ -53,8 +53,8 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 			"连接分配异常 未知服务器连接 "+
 			"Addr[%s] Msg[%s]",
 			remoteaddr, tarinfo.GetJson())
-		retmsg := &comm.SLoginRetCommand{}
-		retmsg.Loginfailed = comm.LOGINRETCODE_IDENTITY
+		retmsg := &servercomm.SLoginRetCommand{}
+		retmsg.Loginfailed = servercomm.LOGINRETCODE_IDENTITY
 		conn.SendCmd(retmsg)
 		conn.Terminate()
 		return
@@ -73,7 +73,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 		" SerID[%s] IP[%s]",
 		serverInfo.ServerID, serverInfo.ServerAddr)
 	// 向来源服务器回复登陆成功消息
-	retmsg := &comm.SLoginRetCommand{}
+	retmsg := &servercomm.SLoginRetCommand{}
 	retmsg.Loginfailed = 0
 	retmsg.Destination = this.myServerInfo
 	conn.SendCmd(retmsg)
@@ -83,7 +83,7 @@ func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
 	// 向来源服务器发送本地已有的所有服务器信息
 	this.NotifyAllServerInfo(conn)
 	// 把来源服务器信息广播给其它所有服务器
-	notifymsg := &comm.SStartMyNotifyCommand{}
+	notifymsg := &servercomm.SStartMyNotifyCommand{}
 	notifymsg.Serverinfo = serverInfo
 	this.BroadcastCmd(notifymsg)
 }

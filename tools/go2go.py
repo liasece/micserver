@@ -625,30 +625,21 @@ def getgoslice(typestr,jsonname,fieldnum):
         read += 'if offset + '+size+' > data__len{\n\
                     return endpos\n\
                     }\n'
-        read += jsonname+"_slen := 0\n" + readint + jsonname+"_slen = int("+jsonname+"_slent)\n"
+        read += readint + jsonname+"_slen := int("+jsonname+"_slent)\n"
         send = 'binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
                 offset += 4\n'
         if isbasetype(subtype) :
             read += '\
                 obj.'+jsonname+' = make('+typestr+','+jsonname+'_slen)\n\
-                i'+str(fieldnum)+'i := 0\n\
-                for '+jsonname+'_slen > i'+str(fieldnum)+'i {\n\
-                if offset + '+str(subleng)+' > data__len{\n\
+                if offset+('+jsonname+'_slen*'+str(subleng)+') > data__len {\n\
                     return endpos\n\
                 }\n\
-                tmp'+jsonname+'value := '+subtypecode+'\n\
-                obj.'+jsonname+'[i'+str(fieldnum)+'i] = tmp'+jsonname+'value\n\
-                offset += '+str(subleng)+'\n\
-                i'+str(fieldnum)+'i++\n\
-                }\n\
+                copy(obj.'+jsonname+', data[offset:offset+'+jsonname+'_slen])\n\
                 '
-            send += 'i'+str(fieldnum)+'i := 0\n\
+            send += '\
                 '+jsonname+'_slen := len(obj.'+jsonname+')\n\
-                for '+jsonname+'_slen > i'+str(fieldnum)+'i {\n\
-                '+subtypecodesend+'(data[offset:offset+'+str(subleng)+'],obj.'+jsonname+'[i'+str(fieldnum)+'i])\n\
-                offset += '+str(subleng)+'\n\
-                i'+str(fieldnum)+'i++\n\
-                }\n\
+                copy(data[offset:offset+'+jsonname+'_slen], obj.'+jsonname+')\n\
+                offset += '+jsonname+'_slen\n\
                 '
             if subtype == 'string' :
                 sizerely += 'sizerely'+subtype+''+str(fieldnum)+' := func()int{\n\

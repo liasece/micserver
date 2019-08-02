@@ -3,8 +3,8 @@ package tcpconn
 import (
 	//	"os"
 	// "msg/log"
-	"github.com/liasece/micserver/comm"
 	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/servercomm"
 	"math/rand"
 	"net"
 	// "sync"
@@ -45,7 +45,7 @@ type ServerConn struct {
 	// 建立连接优先级
 	ConnectPriority int64
 	// 该连接对方服务器信息
-	Serverinfo comm.SServerInfo
+	Serverinfo servercomm.SServerInfo
 	// 用于区分该连接是服务器 client task 连接
 	serverSCType TServerSCType
 }

@@ -1,4 +1,4 @@
-package comm
+package servercomm
 
 type SServerInfo struct {
 	ServerID   string

@@ -1,12 +1,12 @@
 package module
 
 import (
-	"github.com/liasece/micserver/comm"
 	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/server/gate"
 	"github.com/liasece/micserver/server/subnet"
+	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"time"
@@ -90,7 +90,7 @@ func (this *BaseModule) BroadcastServerCmd(msgstr msg.MsgStruct) {
 
 func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
 	tarconn *tcpconn.ServerConn) msg.MsgStruct {
-	res := &comm.SForwardToServer{}
+	res := &servercomm.SForwardToServer{}
 	res.FromServerID = this.ModuleID
 	if tarconn != nil {
 		res.ToServerID = tarconn.Serverinfo.ServerID

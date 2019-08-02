@@ -1,8 +1,8 @@
 package subnet
 
 import (
-	"github.com/liasece/micserver/comm"
 	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"io"
@@ -21,8 +21,8 @@ func (this *SubnetManager) OnRemoveTCPConnect(conn *tcpconn.ServerConn) {
 // 当收到TCP消息时调用
 func (this *SubnetManager) OnRecvTCPMsg(conn *tcpconn.ServerConn,
 	msgbinary *msg.MessageBinary) {
-	if msgbinary.CmdID == comm.SForwardToServerID {
-		layerMsg := &comm.SForwardToServer{}
+	if msgbinary.CmdID == servercomm.SForwardToServerID {
+		layerMsg := &servercomm.SForwardToServer{}
 		layerMsg.ReadBinary(msgbinary.ProtoData)
 		if this.SubnetCallback.OnRecvServerMsg != nil {
 			this.SubnetCallback.OnRecvServerMsg(conn, layerMsg)
@@ -131,28 +131,28 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 func (this *SubnetManager) msgParseTCPConn(conn *tcpconn.ServerConn,
 	msgbin *msg.MessageBinary) {
 	// this.Debug("[SubnetManager.msgParseTCPConn] 收到消息 %s",
-	// 	comm.MsgIdToString(msgbin.CmdID))
+	// 	servercomm.MsgIdToString(msgbin.CmdID))
 	switch msgbin.CmdID {
-	case comm.STestCommandID:
-		recvmsg := &comm.STestCommand{}
+	case servercomm.STestCommandID:
+		recvmsg := &servercomm.STestCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		this.Debug("[SubnetManager.msgParseTCPConn] "+
 			"Server 收到测试消息 CmdLen[%d] No.[%d]",
 			msgbin.CmdLen, recvmsg.Testno)
 		return
-	case comm.STimeTickCommandID:
-		recvmsg := &comm.STimeTickCommand{}
+	case servercomm.STimeTickCommandID:
+		recvmsg := &servercomm.STimeTickCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		return
-	case comm.SLoginRetCommandID:
+	case servercomm.SLoginRetCommandID:
 		this.connectMutex.Lock()
 		defer this.connectMutex.Unlock()
 		// 收到登陆服务器返回的消息
-		recvmsg := &comm.SLoginRetCommand{}
+		recvmsg := &servercomm.SLoginRetCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		if recvmsg.Loginfailed > 0 {
 			conn.Terminate()
-			if recvmsg.Loginfailed == comm.LOGINRETCODE_IDENTICAL {
+			if recvmsg.Loginfailed == servercomm.LOGINRETCODE_IDENTICAL {
 				conn.IsNormalDisconnect = true
 				this.Debug("[SubnetManager.msgParseTCPConn] " +
 					"重复连接,不必连接")
@@ -167,12 +167,12 @@ func (this *SubnetManager) msgParseTCPConn(conn *tcpconn.ServerConn,
 			"连接服务器验证成功,id:%s,ipport:%s",
 			conn.Serverinfo.ServerID, conn.Serverinfo.ServerAddr)
 		return
-	case comm.SLoginCommandID:
-		recvmsg := &comm.SLoginCommand{}
+	case servercomm.SLoginCommandID:
+		recvmsg := &servercomm.SLoginCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		this.OnServerLogin(conn, recvmsg)
 		return
-	case comm.SLogoutCommandID:
+	case servercomm.SLogoutCommandID:
 		// 服务器已主动关闭，不再尝试连接它了
 		conn.IsNormalDisconnect = true
 		this.connectMutex.Lock()
@@ -181,9 +181,9 @@ func (this *SubnetManager) msgParseTCPConn(conn *tcpconn.ServerConn,
 		this.Debug("[msgParseTCPConn] 服务器已主动关闭，不再尝试连接它了 "+
 			"ServerInfo[%s]", conn.Serverinfo.GetJson())
 		return
-	case comm.SNotifyAllInfoID:
+	case servercomm.SNotifyAllInfoID:
 		// 收到所有服务器的配置信息
-		recvmsg := &comm.SNotifyAllInfo{}
+		recvmsg := &servercomm.SNotifyAllInfo{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		this.connectMutex.Lock()
 		defer this.connectMutex.Unlock()

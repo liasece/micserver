@@ -1,4 +1,4 @@
-package comm
+package servercomm
 import (
 	"encoding/binary"
 	"math"
@@ -19,18 +19,18 @@ const (
 	SForwardToServerID = 47
 )
 const (
-	SServerInfoName = "comm.SServerInfo"
-	STimeTickCommandName = "comm.STimeTickCommand"
-	STestCommandName = "comm.STestCommand"
-	SLoginCommandName = "comm.SLoginCommand"
-	SLogoutCommandName = "comm.SLogoutCommand"
-	SSeverStartOKCommandName = "comm.SSeverStartOKCommand"
-	SLoginRetCommandName = "comm.SLoginRetCommand"
-	SStartRelyNotifyCommandName = "comm.SStartRelyNotifyCommand"
-	SStartMyNotifyCommandName = "comm.SStartMyNotifyCommand"
-	SNotifyAllInfoName = "comm.SNotifyAllInfo"
-	SNotifySafelyQuitName = "comm.SNotifySafelyQuit"
-	SForwardToServerName = "comm.SForwardToServer"
+	SServerInfoName = "servercomm.SServerInfo"
+	STimeTickCommandName = "servercomm.STimeTickCommand"
+	STestCommandName = "servercomm.STestCommand"
+	SLoginCommandName = "servercomm.SLoginCommand"
+	SLogoutCommandName = "servercomm.SLogoutCommand"
+	SSeverStartOKCommandName = "servercomm.SSeverStartOKCommand"
+	SLoginRetCommandName = "servercomm.SLoginRetCommand"
+	SStartRelyNotifyCommandName = "servercomm.SStartRelyNotifyCommand"
+	SStartMyNotifyCommandName = "servercomm.SStartMyNotifyCommand"
+	SNotifyAllInfoName = "servercomm.SNotifyAllInfo"
+	SNotifySafelyQuitName = "servercomm.SNotifySafelyQuit"
+	SForwardToServerName = "servercomm.SForwardToServer"
 )
 func (this *SServerInfo) WriteBinary(data []byte) int {
 	return WriteMsgSServerInfoByObj(data,this)
@@ -847,10 +847,9 @@ func ReadMsgSStartRelyNotifyCommandByBytes(indata []byte, obj *SStartRelyNotifyC
 	if offset + 4 > data__len{
 		return endpos
 	}
-	Serverinfos_slen := 0
 	Serverinfos_slent = binary.BigEndian.Uint32(data[offset:offset+4])
 	offset+=4
-	Serverinfos_slen = int(Serverinfos_slent)
+	Serverinfos_slen := int(Serverinfos_slent)
 	obj.Serverinfos = make([]SServerInfo,Serverinfos_slen)
 	i1i := 0
 	for Serverinfos_slen > i1i {
@@ -956,10 +955,9 @@ func ReadMsgSNotifyAllInfoByBytes(indata []byte, obj *SNotifyAllInfo) int {
 	if offset + 4 > data__len{
 		return endpos
 	}
-	Serverinfos_slen := 0
 	Serverinfos_slent = binary.BigEndian.Uint32(data[offset:offset+4])
 	offset+=4
-	Serverinfos_slen = int(Serverinfos_slent)
+	Serverinfos_slen := int(Serverinfos_slent)
 	obj.Serverinfos = make([]SServerInfo,Serverinfos_slen)
 	i1i := 0
 	for Serverinfos_slen > i1i {
@@ -1080,21 +1078,14 @@ func ReadMsgSForwardToServerByBytes(indata []byte, obj *SForwardToServer) int {
 	if offset + 4 > data__len{
 		return endpos
 	}
-	Data_slen := 0
 	Data_slent = binary.BigEndian.Uint32(data[offset:offset+4])
 	offset+=4
-	Data_slen = int(Data_slent)
+	Data_slen := int(Data_slent)
 	obj.Data = make([]byte,Data_slen)
-	i4i := 0
-	for Data_slen > i4i {
-		if offset + 1 > data__len{
-			return endpos
-		}
-		tmpDatavalue := readBinaryUint8(data[offset:offset+1])
-		obj.Data[i4i] = tmpDatavalue
-		offset += 1
-		i4i++
+	if offset+(Data_slen*1) > data__len {
+		return endpos
 	}
+	copy(obj.Data, data[offset:offset+Data_slen])
 	return endpos
 }
 func WriteMsgSForwardToServerByObj(data []byte, obj *SForwardToServer) int {
@@ -1114,13 +1105,9 @@ func WriteMsgSForwardToServerByObj(data []byte, obj *SForwardToServer) int {
 	offset += 4 + len(obj.MsgName)
 	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.Data)))
 	offset += 4
-	i4i := 0
 	Data_slen := len(obj.Data)
-	for Data_slen > i4i {
-		writeBinaryUint8(data[offset:offset+1],obj.Data[i4i])
-		offset += 1
-		i4i++
-	}
+	copy(data[offset:offset+Data_slen], obj.Data)
+	offset += Data_slen
 	return offset
 }
 func GetSizeSForwardToServer(obj *SForwardToServer) int {

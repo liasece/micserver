@@ -1,9 +1,9 @@
 package handle
 
 import (
-	"github.com/liasece/micserver/comm"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/tcpconn"
 	"time"
 )
@@ -24,7 +24,7 @@ func (this *ClientTcpHandler) RegHandleSocketPackage(
 
 func (this *ClientTcpHandler) OnRecvSocketPackage(task *tcpconn.ClientConn,
 	msgbin *msg.MessageBinary) {
-	cmdname := comm.MsgIdToString(msgbin.CmdID)
+	cmdname := servercomm.MsgIdToString(msgbin.CmdID)
 	this.Analysiswsmsgcount++
 	defer msgbin.Free()
 

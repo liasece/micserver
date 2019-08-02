@@ -1,10 +1,10 @@
 package subnet
 
 import (
-	"github.com/liasece/micserver/comm"
 	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/server/subnet/serconfs"
+	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"strconv"
@@ -19,7 +19,7 @@ func CheckServerType(servertype uint32) bool {
 }
 
 type SubnetCallback struct {
-	OnRecvServerMsg func(conn *tcpconn.ServerConn, msg *comm.SForwardToServer)
+	OnRecvServerMsg func(conn *tcpconn.ServerConn, msg *servercomm.SForwardToServer)
 }
 
 // websocket连接管理器
@@ -40,7 +40,7 @@ type SubnetManager struct {
 	lastwarningtime1 uint32
 	lastwarningtime2 uint32
 	// 我的服务器信息
-	myServerInfo comm.SServerInfo
+	myServerInfo servercomm.SServerInfo
 	// 回调注册
 	SubnetCallback SubnetCallback
 }
@@ -66,7 +66,7 @@ func (this *SubnetManager) InitManager(moudleConf *conf.ModuleConfig) {
 func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uint64 {
 	latestVersion := uint64(0)
 	this.connInfos.RangeConnInfo(
-		func(value comm.SServerInfo) bool {
+		func(value servercomm.SServerInfo) bool {
 			if util.GetServerIDType(value.ServerID) == servertype &&
 				value.Version > latestVersion {
 				latestVersion = value.Version
@@ -79,10 +79,10 @@ func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uin
 //通知所有服务器列表信息
 func (this *SubnetManager) NotifyAllServerInfo(
 	tcptask *tcpconn.ServerConn) {
-	retmsg := &comm.SNotifyAllInfo{}
-	retmsg.Serverinfos = make([]comm.SServerInfo, 0)
+	retmsg := &servercomm.SNotifyAllInfo{}
+	retmsg.Serverinfos = make([]servercomm.SServerInfo, 0)
 	this.connInfos.RangeConnInfo(func(
-		value comm.SServerInfo) bool {
+		value servercomm.SServerInfo) bool {
 		retmsg.Serverinfos = append(retmsg.Serverinfos, value)
 		return true
 	})

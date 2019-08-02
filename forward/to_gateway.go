@@ -9,7 +9,7 @@ import (
 	// "jsonmsg"
 	// "reflect"
 	// "encoding/hex"
-	"comm"
+	"servercomm"
 	// "strconv"
 	// "sync"
 	// "time"
@@ -36,7 +36,7 @@ func GatewayToWebSocket(task TargetTask, towsid uint64, v base.MsgStruct) error 
 
 	submsg := base.MakeMessageByJson(v)
 
-	sendmsg := &comm.SGatewayForwardCommand{}
+	sendmsg := &servercomm.SGatewayForwardCommand{}
 	sendmsg.ClientConnID = towsid
 	sendmsg.Cmdid = v.GetMsgId()
 	sendmsg.Cmdlen = submsg.DataLen
@@ -51,7 +51,7 @@ func GatewayBroadcastToClient(task TargetTask, touuid []uint64,
 
 	submsg := base.MakeMessageByJson(v)
 
-	sendmsg := &comm.SGatewayForwardBroadcastCommand{}
+	sendmsg := &servercomm.SGatewayForwardBroadcastCommand{}
 	sendmsg.UUIDList = touuid
 	sendmsg.Cmdid = v.GetMsgId()
 	sendmsg.Cmdlen = submsg.DataLen
@@ -67,7 +67,7 @@ func GatewayBroadcastBytesToClient(task TargetTask, touuid []uint64,
 
 	submsg := base.MakeMessageByBytes(msgid, data)
 
-	sendmsg := &comm.SGatewayForwardBroadcastCommand{}
+	sendmsg := &servercomm.SGatewayForwardBroadcastCommand{}
 	sendmsg.UUIDList = touuid
 	sendmsg.Cmdid = submsg.CmdID
 	sendmsg.Cmdlen = submsg.DataLen
