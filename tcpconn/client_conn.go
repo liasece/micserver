@@ -30,25 +30,18 @@ type ClientConn struct {
 	loghead string
 }
 
-const MaxMsgSize = 64 * 1024
-const JoinSendMsgSize = 32 * 1024
-
 // 客户端连接发送消息缓冲不宜过大， 10*64KiB*100000连接=64GiB
-const ClientConnSendMsgBufferSize = 256
-
-// 发送等待缓冲区大小
-const ClientConnMaxWaitSendMsgBufferSize = 2 * 1024 * 1024
+const ClientConnSendChanSize = 256
 
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
-const ClientConnSendBufferSize = MaxMsgSize + JoinSendMsgSize
+const ClientConnSendBufferSize = msg.MessageMaxSize * 2
 
 // 获取一个新的服务器连接
 // sctype: 连接的 客户端/服务器 类型
 // conn: 连接的net.Conn对象
 func NewClientConn(conn net.Conn) *ClientConn {
 	tcpconn := new(ClientConn)
-	tcpconn.Init(conn, ClientConnSendMsgBufferSize,
-		ClientConnSendBufferSize, ClientConnMaxWaitSendMsgBufferSize)
+	tcpconn.Init(conn, ClientConnSendChanSize, ClientConnSendBufferSize)
 	tcpconn.CreateTime = int64(time.Now().Unix())
 	return tcpconn
 }

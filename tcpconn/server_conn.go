@@ -20,13 +20,10 @@ const (
 )
 
 // 服务器连接发送消息缓冲要考虑到服务器处理消息的能力
-const ServerConnSendMsgBufferSize = 500000
-
-// 发送等待缓冲区大小
-const ServerConnMaxWaitSendMsgBufferSize = 1 * 1024 * 1024 * 1024
+const ServerConnSendChanSize = 10000
 
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
-const ServerConnSendBufferSize = 64 * 1024 * 1024
+const ServerConnSendBufferSize = msg.MessageMaxSize * 10
 
 type ServerConn struct {
 	TCPConn
@@ -56,8 +53,7 @@ type ServerConn struct {
 func NewServerConn(sctype TServerSCType, conn net.Conn) *ServerConn {
 	tcpconn := new(ServerConn)
 	tcpconn.SetSC(sctype)
-	tcpconn.Init(conn, ServerConnSendMsgBufferSize,
-		ServerConnSendBufferSize, ServerConnMaxWaitSendMsgBufferSize)
+	tcpconn.Init(conn, ServerConnSendChanSize, ServerConnSendBufferSize)
 	tcpconn.ConnectPriority = rand.Int63()
 	return tcpconn
 }

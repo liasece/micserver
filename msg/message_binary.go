@@ -15,14 +15,16 @@ const (
 	EncryptionTypeXORSimple TEncryptionType = 0x01
 )
 
+const (
+	MessageMaxSize = 8 * 1024 * 1024
+)
+
 // 粒度控制 单位：字节
 var sizeControl []int = []int{32, 64, 128, 256, 512, 1024, 2 * 1024,
 	4 * 1024, 6 * 1024, 8 * 1024, 10 * 1024, 15 * 1024, 20 * 1024,
 	25 * 1024, 30 * 1024, 35 * 1024, 40 * 1024, 45 * 1024, 50 * 1024,
 	55 * 1024, 60 * 1024, 64 * 1024, 128 * 1024, 256 * 1024, 512 * 1024,
-	1024 * 1024, 2 * 1024 * 1024, 4 * 1024 * 1024, 8 * 1024 * 1024,
-	16 * 1024 * 1024, 32 * 1024 * 1024, 64 * 1024 * 1024, 128 * 1024 * 1024,
-	256 * 1024 * 1024, 512 * 1024 * 1024}
+	1024 * 1024, 2 * 1024 * 1024, 4 * 1024 * 1024, 8 * 1024 * 1024}
 var pools *util.FlexiblePool
 
 func init() {
@@ -291,10 +293,10 @@ func MakeMessageByJson(v MsgStruct) *MessageBinary {
 	datalen := v.GetSize()
 	totalLength := uint32(MSG_HEADSIZE + datalen)
 	// 判断数据合法性
-	if totalLength >= 512*1024*1024 {
+	if totalLength >= MessageMaxSize {
 		log.Error("[MakeMessageByBytes] "+
-			"[缓冲区溢出] 发送消息数据过大 MsgID[%d] CmdLen[%d]",
-			cmdid, totalLength)
+			"[缓冲区溢出] 发送消息数据过大 MsgID[%d] CmdLen[%d] MaxSize[%d]",
+			cmdid, totalLength, MessageMaxSize)
 		// 返回一个没有内容的消息
 		msgbinary := getMessageBinaryByProtoDataLength(0)
 		msgbinary.Reset()

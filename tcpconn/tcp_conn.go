@@ -12,7 +12,7 @@ package tcpconn
 import (
 	"github.com/liasece/micserver/util"
 	// "github.com/liasece/micserver/functime"
-	"bytes"
+	// "bytes"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	// "encoding/hex"
@@ -25,8 +25,10 @@ import (
 	"time"
 )
 
-const MsgMaxSize = 64 * 1024
-const MaxMsgPackSum = 5000
+// 消息合批时，合并的最大消息数量
+const (
+	MaxMsgPackSum = 5000
+)
 
 // TCPConn 的连接状态枚举
 const (
@@ -50,29 +52,27 @@ type TCPConn struct {
 	stopChan     chan struct{}
 	state        int32
 
-	// 发送缓冲区大小
-	sendBufferSize           int
-	maxWaitSendMsgBufferSize int
-
-	// 当前已发送数据长度
-	nowSendBufferLength int64
+	// 发送缓冲区
+	sendBuffer *util.IOBuffer
+	// 当前等待发送出去的数据总大小
+	waitingSendBufferLength int64
+	// 等待发送数据的总大小
+	maxWaitingSendBufferLength int
 }
 
 // 初始化一个TCPConn对象
 // 	conn: net.Conn对象
-// 	msgBufferSize: 消息Channel缓冲区数量，不宜过大
 // 	sendBufferSize: 拼包发送缓冲区大小
-// 	maxWaitSendMsgBufferSize: 等待队列中的消息缓冲区大小
+// 	maxWaitingSendBufferLength: 等待队列中的消息缓冲区大小
 func (this *TCPConn) Init(conn net.Conn,
-	msgBufferSize uint32, sendBufferSize int,
-	maxWaitSendMsgBufferSize int) {
-	this.sendmsgchan = make(chan *msg.MessageBinary, msgBufferSize)
+	msgChanSize int, sendBufferSize int) {
+	this.sendmsgchan = make(chan *msg.MessageBinary, msgChanSize)
 	this.shutdownChan = make(chan struct{})
 	this.stopChan = make(chan struct{})
 	this.Conn = conn
-	this.sendBufferSize = sendBufferSize
-	this.maxWaitSendMsgBufferSize = maxWaitSendMsgBufferSize
+	this.maxWaitingSendBufferLength = msg.MessageMaxSize * msgChanSize
 	this.state = TCPCONNSTATE_LINKED
+	this.sendBuffer = util.NewIOBuffer(nil, sendBufferSize)
 
 	go this.sendThread()
 }
@@ -199,8 +199,8 @@ func (this *TCPConn) SendMessageBinary(
 	}
 
 	// 检查等待缓冲区数据是否已满
-	if this.nowSendBufferLength > int64(this.maxWaitSendMsgBufferSize) {
-		this.Warn("[TCPConn.SendMessageBinary] 等待发送缓冲区满")
+	if this.waitingSendBufferLength > int64(this.maxWaitingSendBufferLength) {
+		this.Error("[TCPConn.SendMessageBinary] 等待发送缓冲区满")
 		return ErrBufferFull
 	}
 
@@ -210,7 +210,7 @@ func (this *TCPConn) SendMessageBinary(
 		this.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
 		return ErrCloseed
 	case this.sendmsgchan <- msgbinary:
-		atomic.AddInt64(&this.nowSendBufferLength, int64(msgbinary.CmdLen))
+		atomic.AddInt64(&this.waitingSendBufferLength, int64(msgbinary.CmdLen))
 	default:
 		this.Warn("[TCPConn.SendMessageBinary] 发送Channel缓冲区满，阻塞超时")
 		return ErrBufferFull
@@ -285,7 +285,7 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 // 	tmsg 首消息，如果没有需要加入的第一个消息，直接给Nil即可
 func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 	// 开始拼包
-	msglist, buflist, nowpkglen, maxlow := this.joinMsgByFunc(
+	msglist, nowpkglen, maxlow := this.joinMsgByFunc(
 		func(nowpkgsum uint32, nowpkglen int) *msg.MessageBinary {
 			if nowpkgsum == 0 && tmsg != nil {
 				// 如果这是第一个包，且包含首包
@@ -296,8 +296,8 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 				return nil
 			}
 			// 单次最大发送长度
-			if this.sendBufferSize < MsgMaxSize ||
-				nowpkglen > this.sendBufferSize-MsgMaxSize {
+			if this.sendBuffer.TotalSize() < msg.MessageMaxSize ||
+				nowpkglen > this.sendBuffer.TotalSize()-msg.MessageMaxSize {
 				// 超过最大限制长度，停止拼包
 				return nil
 			}
@@ -307,7 +307,7 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 				// 取到了数据
 				if msg == nil || !ok {
 					// 通道中的数据不合法
-					this.Warn("[TCPConn.asyncSendCmd] " +
+					this.Warn("[TCPConn.sendMsgList] " +
 						"Channle已关闭，发送行为终止")
 					return nil
 				}
@@ -326,30 +326,39 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 		return
 	}
 
-	// 拼包完成
-	// 发送缓冲区长度减少
-	atomic.AddInt64(&this.nowSendBufferLength, int64(-nowpkglen))
-
 	// 检查消息包的超时时间
 	if maxlow > 2 {
 		// 发送时间超时
 		// 由于可能时客户端网络原因，只需要Info等级log
-		log.Info("[TCPConn.asyncSendCmd] "+
+		log.Info("[TCPConn.sendMsgList] "+
 			"发送消息延迟[%d]s PkgSum[%d] AllSize[%d]",
 			maxlow, nowpkgsum, nowpkglen)
 	}
 
-	msgbuf := bytes.NewBuffer(make([]byte, 0, nowpkglen))
-	// 此处存在大量拷贝，待优化
-	for _, buf := range buflist {
-		msgbuf.Write(buf)
-	}
+	// msgbuf := bytes.NewBuffer(make([]byte, 0, nowpkglen))
+	// // 此处存在大量拷贝，待优化
+	// for _, buf := range buflist {
+	// 	msgbuf.Write(buf)
+	// }
 
-	_, err := this.Conn.Write(msgbuf.Bytes())
+	bs, err := this.sendBuffer.SeekAll()
 	if err != nil {
-		this.Warn("[TCPConn.asyncSendCmd] "+
-			"缓冲区发送消息异常 Err[%s]",
+		this.Error("[TCPConn.sendMsgList] "+
+			"this.sendBuffer.SeekAll() Err[%s]",
 			err.Error())
+	} else {
+		secn, err := this.Conn.Write(bs)
+		if err != nil {
+			this.Warn("[TCPConn.sendMsgList] "+
+				"缓冲区发送消息异常 Err[%s]",
+				err.Error())
+		} else {
+			this.sendBuffer.MoveStart(secn)
+			// 发送
+			// 发送缓冲区长度减少
+			atomic.AddInt64(&this.waitingSendBufferLength, int64(-secn))
+
+		}
 	}
 
 	// 遍历已经发送的消息
@@ -373,10 +382,9 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 //  	总长度
 //  	最大延迟
 func (this *TCPConn) joinMsgByFunc(getMsg func(uint32, int) *msg.MessageBinary) (
-	[]*msg.MessageBinary, [][]byte, int, uint32) {
+	[]*msg.MessageBinary, int, uint32) {
 	// 初始化变量
 	var (
-		buflist   = make([][]byte, 0)
 		msglist   = make([]*msg.MessageBinary, 0)
 		nowpkgsum = uint32(0)
 		nowpkglen = int(0)
@@ -397,13 +405,16 @@ func (this *TCPConn) joinMsgByFunc(getMsg func(uint32, int) *msg.MessageBinary) 
 		}
 
 		sendata, sendlen := msg.WriteBinary()
-
-		buflist = append(buflist, sendata)
+		err := this.sendBuffer.Write(sendata)
+		if err != nil {
+			this.Error("[TCPConn.joinMsgByFunc] "+
+				"this.sendBuffer.Write(sendata) Err:%s", err.Error())
+		}
 		msglist = append(msglist, msg)
 
 		nowpkgsum++
 		nowpkglen += sendlen
 	}
 
-	return msglist, buflist, nowpkglen, maxlow
+	return msglist, nowpkglen, maxlow
 }

@@ -13,11 +13,11 @@ var MaskWord MaskWordString
 
 func init() {
 	MaskWord = make(MaskWordString)
-	MaskWord.loadMaskWord()
+	MaskWord.loadMaskWord("")
 }
 
-func (m MaskWordString) loadMaskWord() {
-	fp, err := os.Open("Config/forbidwords.txt")
+func (m MaskWordString) loadMaskWord(filename string) {
+	fp, err := os.Open(filename)
 	if err != nil {
 		return
 	}
