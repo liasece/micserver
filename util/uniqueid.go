@@ -21,8 +21,8 @@ var s_unique uniqueIDBuilder
 func (this *uniqueIDBuilder) NewUniqueID(heightlevelID uint16) (string, error) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
-	nowtime := time.Now().Unix()
-	if nowtime < 1514736000 {
+	nowtime := time.Now().Unix() - 1514736000
+	if nowtime <= 0 {
 		return "",
 			errors.New("Server time error!!! Must late than 2018/1/1 00:00:00")
 	}
