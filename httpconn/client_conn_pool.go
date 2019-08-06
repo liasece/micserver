@@ -61,6 +61,7 @@ func HttpDecode(writer http.ResponseWriter, request *http.Request) {
 	request.ContentLength = newlen
 }
 
+// 获取请求中指定键值的字符串值
 func ParseFromHttp(request *http.Request, keyname string) string {
 	keyvalues := request.PostFormValue(keyname)
 	if len(keyvalues) > 0 {
@@ -72,18 +73,22 @@ func ParseFromHttp(request *http.Request, keyname string) string {
 	}
 	return ""
 }
+
+// 获取请求中指定键值的整数值
 func ParseIntFromHttp(request *http.Request, keyname string) int {
 	valuestr := ParseFromHttp(request, keyname)
 	valuenum, _ := strconv.Atoi(valuestr)
 	return valuenum
 }
+
+// 获取请求中指定键值的uint64值
 func ParseUInt64FromHttp(request *http.Request, keyname string) uint64 {
 	valuestr := ParseFromHttp(request, keyname)
 	valuenum, _ := strconv.ParseUint(valuestr, 10, 64)
 	return valuenum
 }
 
-// httptask连接管理器
+// http客户端连接管理器
 type ClientConnPool struct {
 	alllink     map[uint64]*HttpConn // 所有连接
 	mutex       sync.Mutex
