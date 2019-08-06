@@ -139,5 +139,6 @@ func (this *App) Run() {
 
 	this.Debug("[App.Run] ----- Main has stopped ----- ")
 	// 等日志打完
-	time.Sleep(1 * time.Second)
+	// time.Sleep(1 * time.Second)
+	this.Logger.CloseLogger()
 }

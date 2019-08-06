@@ -17,12 +17,14 @@ type Logger struct {
 	lastTimeStr string
 	c           chan bool
 	layout      string
+	stopchan    chan struct{}
 }
 
 func NewLogger(settings map[string]string) *Logger {
 	l := new(Logger)
 	l.writers = make([]Writer, 0, 2)
 	l.tunnel = make(chan *Record, tunnel_size_default)
+	l.stopchan = make(chan struct{})
 	l.c = make(chan bool, 1)
 	l.level = DEBUG
 	l.layout = "060102-15:04:05"
@@ -200,8 +202,18 @@ func (l *Logger) CloseLogger() {
 		default_logger.CloseLogger()
 		return
 	}
-	close(l.tunnel)
-	<-l.c
+	select {
+	case <-l.stopchan:
+		return
+	default:
+		close(l.stopchan)
+		close(l.tunnel)
+		break
+	}
+	select {
+	case <-l.c:
+		break
+	}
 
 	for _, w := range l.writers {
 		if f, ok := w.(Flusher); ok {
@@ -243,7 +255,17 @@ func (l *Logger) deliverRecordToWriter(level int32, format string, args ...inter
 	r.level = level
 	r.name = l.logname
 
-	l.tunnel <- r
+	select {
+	case <-l.stopchan:
+		return
+	default:
+	}
+	select {
+	case <-l.stopchan:
+		break
+	case l.tunnel <- r:
+		break
+	}
 }
 
 func (l *Logger) boostrapLogWriter() {
