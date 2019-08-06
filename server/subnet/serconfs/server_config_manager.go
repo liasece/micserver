@@ -12,26 +12,12 @@ type ConnInfosManager struct {
 	ConnInfoSum uint32
 }
 
-func (this *ConnInfosManager) GetConnInfoByID(
+func (this *ConnInfosManager) GetConnInfo(
 	serverid string) *servercomm.SServerInfo {
 	if value, found := this.ConnInfos.Load(serverid); found {
 		return value.(*servercomm.SServerInfo)
 	}
 	return &servercomm.SServerInfo{}
-}
-
-func (this *ConnInfosManager) GetConnInfoByInfo(
-	tarinfo *servercomm.SLoginCommand) *servercomm.SServerInfo {
-	var res *servercomm.SServerInfo
-	if tarinfo.ServerID != "" {
-		// 如果已经指定了ID，直接返回
-		info := this.GetConnInfoByID(tarinfo.ServerID)
-		if info.ServerID == tarinfo.ServerID {
-			// 信息正确
-			return info
-		}
-	}
-	return res
 }
 
 func (this *ConnInfosManager) AddConnInfo(

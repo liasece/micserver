@@ -5,9 +5,9 @@ import (
 	"sync"
 	//	"compress/gzip"
 	"encoding/base64"
+	"github.com/liasece/micserver/httpconn"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/util"
-	"io"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -16,85 +16,6 @@ import (
 	"strings"
 	"time"
 )
-
-type GBHttpTask struct {
-	writer http.ResponseWriter
-	Tempid uint64 // 唯一编号
-	Openid string
-	BufStr []string
-	Holder chan int
-}
-
-func WriterReturnHttpStrs(writer http.ResponseWriter, strs []string) {
-	str := ""
-	for _, v := range strs {
-		str += v
-	}
-	WriterReturnHttpStr(writer, str)
-}
-
-func WriterReturnHttpStr(writer http.ResponseWriter, str string) {
-	writer.Header().Set("Access-Control-Allow-Origin", "*")
-	writer.Header().Set("content-type", "application/json")
-	writer.Header().Add("cache-control", "no-cache")
-	writer.Header().Add("Accept-Encoding", "gzip, deflate")
-	writer.Header().Add("Pragma", "no-cache")
-	writer.Header().Set("connection", "keep-alive")
-	writer.WriteHeader(http.StatusOK)
-	log.Debug("%s", str)
-
-	if writer.Header().Get("Use-Encrypt") == "Yes" {
-		aesstr, _ := util.AesEncrypt([]byte(str))
-		encodeString := base64.StdEncoding.EncodeToString(aesstr)
-		n, err := io.WriteString(writer, encodeString)
-		if err != nil {
-			log.Error("[WriterReturnHttpStr] io.WriteString Err[%s] N[%d]",
-				err.Error(), n)
-		}
-	} else {
-		n, err := io.WriteString(writer, str)
-		if err != nil {
-			log.Error("[WriterReturnHttpStr] io.WriteString Err[%s] N[%d]",
-				err.Error(), n)
-		}
-	}
-}
-
-func (this *GBHttpTask) AppendBufStr(str string) {
-	if this.BufStr == nil {
-		this.BufStr = make([]string, 0)
-	}
-	this.BufStr = append(this.BufStr, str)
-}
-
-func (this *GBHttpTask) ReturnHttpStr(str string) {
-	WriterReturnHttpStr(this.writer, str)
-}
-
-func (this *GBHttpTask) Hold() {
-	if this.Holder == nil {
-		this.Holder = make(chan int)
-	}
-}
-func (this *GBHttpTask) Wait() int {
-	if this.Holder == nil {
-		return -1
-	}
-
-	// 超时时间为3秒
-	select {
-	case <-this.Holder:
-		return 0
-	case <-time.After(time.Second * 3):
-		return 1
-	}
-}
-func (this *GBHttpTask) Release() {
-	if this.Holder == nil {
-		return
-	}
-	this.Holder <- 1
-}
 
 func HttpDecode(writer http.ResponseWriter, request *http.Request) {
 	if request.Header.Get("Use-Encrypt") != "Yes" {
@@ -165,7 +86,7 @@ func ParseUInt64FromHttp(request *http.Request, keyname string) uint64 {
 
 // httptask连接管理器
 type GBHttpTaskManger struct {
-	allsockets  map[uint64]*GBHttpTask // 所有连接
+	allsockets  map[uint64]*httpconn.HttpConn // 所有连接
 	mutex       sync.Mutex
 	starttempid uint64
 }
@@ -174,7 +95,7 @@ var httptaskmanager_s *GBHttpTaskManger
 
 func init() {
 	httptaskmanager_s = &GBHttpTaskManger{}
-	httptaskmanager_s.allsockets = make(map[uint64]*GBHttpTask)
+	httptaskmanager_s.allsockets = make(map[uint64]*httpconn.HttpConn)
 	httptaskmanager_s.starttempid = 1000000000
 }
 
@@ -183,16 +104,17 @@ func GetHttpTaskManger() *GBHttpTaskManger {
 }
 
 func (this *GBHttpTaskManger) AddHttpTask(
-	writer http.ResponseWriter) *GBHttpTask {
+	writer http.ResponseWriter) *httpconn.HttpConn {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	this.starttempid++
-	wstask := new(GBHttpTask)
-	wstask.writer = writer
+	wstask := new(httpconn.HttpConn)
+	wstask.SetWriter(writer)
 	curtime := uint64(time.Now().Unix())
 	wstask.Tempid = (curtime << 32) + this.starttempid
 	this.allsockets[wstask.Tempid] = wstask
-	log.Debug("添加新的HTTP连接,%d,%d", wstask.Tempid,
+	log.Debug("[GBHttpTaskManger.AddHttpTask] 添加新的HTTP连接,%d,%d",
+		wstask.Tempid,
 		len(this.allsockets))
 
 	notify := writer.(http.CloseNotifier).CloseNotify()
@@ -201,8 +123,8 @@ func (this *GBHttpTaskManger) AddHttpTask(
 		this.mutex.Lock()
 		defer this.mutex.Unlock()
 		delete(this.allsockets, wstask.Tempid) // 这里应该需要加锁
-		log.Debug("删除关闭的的HTTP连接,%d,%d", wstask.Tempid,
-			len(this.allsockets))
+		log.Debug("[GBHttpTaskManger.AddHttpTask] 删除关闭的的HTTP连接,%d,%d",
+			wstask.Tempid, len(this.allsockets))
 	}()
 	return wstask
 }
@@ -212,18 +134,14 @@ func (this *GBHttpTaskManger) RemoveHttpTask(tempid uint64) {
 	defer this.mutex.Unlock()
 	if _, found := this.allsockets[tempid]; found {
 		delete(this.allsockets, tempid) // 这里应该需要加锁
-		log.Debug("删除HTTP连接,%d,%d", tempid, len(this.allsockets))
+		log.Debug("[GBHttpTaskManger.RemoveHttpTask] 删除HTTP连接,%d,%d",
+			tempid, len(this.allsockets))
 	}
 }
 
-func (this *GBHttpTaskManger) GetHttpTask(tempid uint64) *GBHttpTask {
+func (this *GBHttpTaskManger) GetHttpTask(tempid uint64) *httpconn.HttpConn {
 	if value, found := this.allsockets[tempid]; found {
 		return value
 	}
-	return nil
-}
-
-func HttpRpcStart(serverinfo string, serviceMethod string,
-	args interface{}, reply interface{}) error {
 	return nil
 }
