@@ -20,6 +20,7 @@ type IModule interface {
 	TopRunner()
 	KillModule()
 	IsStopped() bool
+	GetConfiger() *conf.ModuleConfig
 }
 
 type BaseModule struct {
@@ -66,6 +67,10 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 func (this *BaseModule) AfterInitModule() {
 	this.Debug("[BaseModule.AfterInitModule] 模块 [%s] 初始化完成",
 		this.GetModuleID())
+}
+
+func (this *BaseModule) GetConfiger() *conf.ModuleConfig {
+	return this.Configer
 }
 
 func (this *BaseModule) InitSubnet(subnetAddrMap map[string]string) {
