@@ -18,15 +18,13 @@ func CheckServerType(servertype uint32) bool {
 	return true
 }
 
-type SubnetCallback struct {
-	OnRecvServerMsg func(conn *tcpconn.ServerConn, msg *servercomm.SForwardToServer)
-}
-
 // websocket连接管理器
 type SubnetManager struct {
 	*log.Logger
 	// 服务器连接池
 	tcpconn.ServerConnPool
+	// 回调注册
+	SubnetCallback
 	// 配置信息
 	connInfos    serconfs.ConnInfosManager // 所有服务器信息
 	moudleConf   *conf.ModuleConfig
@@ -41,8 +39,6 @@ type SubnetManager struct {
 	lastwarningtime2 uint32
 	// 我的服务器信息
 	myServerInfo *servercomm.SServerInfo
-	// 回调注册
-	SubnetCallback SubnetCallback
 }
 
 func (this *SubnetManager) InitManager(moudleConf *conf.ModuleConfig) {
