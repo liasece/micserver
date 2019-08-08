@@ -25,7 +25,7 @@ type ClientConn struct {
 	// 目标服务器
 	// 	键为服务器类型
 	// 	值为服务器ID
-	BindServerID map[string]string
+	Session map[string]string
 
 	Encryption msg.TEncryptionType
 
@@ -47,7 +47,7 @@ func NewClientConn(conn net.Conn) *ClientConn {
 	tcpconn := new(ClientConn)
 	tcpconn.Init(conn, ClientConnSendChanSize, ClientConnSendBufferSize)
 	tcpconn.CreateTime = int64(time.Now().Unix())
-	tcpconn.BindServerID = make(map[string]string)
+	tcpconn.Session = make(map[string]string)
 	return tcpconn
 }
 
