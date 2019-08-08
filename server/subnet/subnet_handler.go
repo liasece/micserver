@@ -25,7 +25,7 @@ func (this *SubnetManager) OnRecvTCPMsg(conn *tcpconn.ServerConn,
 		layerMsg := &servercomm.SForwardToServer{}
 		layerMsg.ReadBinary(msgbinary.ProtoData)
 		if this.SubnetCallback.regHandleServerMsg != nil {
-			this.SubnetCallback.regHandleServerMsg(conn, layerMsg)
+			this.SubnetCallback.regHandleServerMsg(layerMsg)
 		}
 	}
 }

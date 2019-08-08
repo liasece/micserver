@@ -46,6 +46,14 @@ func NewClientConn(conn net.Conn) *ClientConn {
 	return tcpconn
 }
 
+func ClientDial(addr string) (*ClientConn, error) {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	return NewClientConn(conn), err
+}
+
 // 返回连接是否仍可用
 func (this *ClientConn) Check() bool {
 	curtime := int64(time.Now().Unix())
@@ -143,7 +151,7 @@ func (this *ClientConn) SendBytes(
 }
 
 func (this *ClientConn) GetLogHead() string {
-	this.loghead = fmt.Sprintf("[ClientConn] TmpID[%d] IPPort[%s] ",
+	this.loghead = fmt.Sprintf("[ClientConn] TmpID[%s] IPPort[%s] ",
 		this.Tempid, this.Conn.RemoteAddr().String())
 	return this.loghead
 }
