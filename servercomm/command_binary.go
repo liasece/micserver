@@ -17,6 +17,7 @@ const (
 	SNotifyAllInfoID = 45
 	SNotifySafelyQuitID = 46
 	SForwardToServerID = 47
+	SForwardFromGateID = 48
 )
 const (
 	SServerInfoName = "servercomm.SServerInfo"
@@ -31,6 +32,7 @@ const (
 	SNotifyAllInfoName = "servercomm.SNotifyAllInfo"
 	SNotifySafelyQuitName = "servercomm.SNotifySafelyQuit"
 	SForwardToServerName = "servercomm.SForwardToServer"
+	SForwardFromGateName = "servercomm.SForwardFromGate"
 )
 func (this *SServerInfo) WriteBinary(data []byte) int {
 	return WriteMsgSServerInfoByObj(data,this)
@@ -67,6 +69,9 @@ func (this *SNotifySafelyQuit) WriteBinary(data []byte) int {
 }
 func (this *SForwardToServer) WriteBinary(data []byte) int {
 	return WriteMsgSForwardToServerByObj(data,this)
+}
+func (this *SForwardFromGate) WriteBinary(data []byte) int {
+	return WriteMsgSForwardFromGateByObj(data,this)
 }
 func (this *SServerInfo) ReadBinary(data []byte) int {
 	size,_ := ReadMsgSServerInfoByBytes(data, this)
@@ -116,6 +121,10 @@ func (this *SForwardToServer) ReadBinary(data []byte) int {
 	size,_ := ReadMsgSForwardToServerByBytes(data, this)
 	return size
 }
+func (this *SForwardFromGate) ReadBinary(data []byte) int {
+	size,_ := ReadMsgSForwardFromGateByBytes(data, this)
+	return size
+}
 func MsgIdToString(id uint16) string {
 	switch(id ) {
 		case SServerInfoID: 
@@ -142,6 +151,8 @@ func MsgIdToString(id uint16) string {
 		return SNotifySafelyQuitName
 		case SForwardToServerID: 
 		return SForwardToServerName
+		case SForwardFromGateID: 
+		return SForwardFromGateName
 		default:
 		return ""
 	}
@@ -172,6 +183,8 @@ func StringToMsgId(msgname string) uint16 {
 		return SNotifySafelyQuitID
 		case SForwardToServerName: 
 		return SForwardToServerID
+		case SForwardFromGateName: 
+		return SForwardFromGateID
 		default:
 		return 0
 	}
@@ -201,6 +214,8 @@ func MsgIdToType(id uint16) rune {
 		case SNotifySafelyQuitID: 
 		return rune('S')
 		case SForwardToServerID: 
+		return rune('S')
+		case SForwardFromGateID: 
 		return rune('S')
 		default:
 		return rune(0)
@@ -242,6 +257,9 @@ func (this *SNotifySafelyQuit) GetMsgId() uint16 {
 func (this *SForwardToServer) GetMsgId() uint16 {
 	return SForwardToServerID
 }
+func (this *SForwardFromGate) GetMsgId() uint16 {
+	return SForwardFromGateID
+}
 func (this *SServerInfo) GetMsgName() string {
 	return SServerInfoName
 }
@@ -278,6 +296,9 @@ func (this *SNotifySafelyQuit) GetMsgName() string {
 func (this *SForwardToServer) GetMsgName() string {
 	return SForwardToServerName
 }
+func (this *SForwardFromGate) GetMsgName() string {
+	return SForwardFromGateName
+}
 func (this *SServerInfo) GetSize() int {
 	return GetSizeSServerInfo(this)
 }
@@ -313,6 +334,9 @@ func (this *SNotifySafelyQuit) GetSize() int {
 }
 func (this *SForwardToServer) GetSize() int {
 	return GetSizeSForwardToServer(this)
+}
+func (this *SForwardFromGate) GetSize() int {
+	return GetSizeSForwardFromGate(this)
 }
 func (this *SServerInfo) GetJson() string {
 	json,_ := json.Marshal(this)
@@ -359,6 +383,10 @@ func (this *SNotifySafelyQuit) GetJson() string {
 	return string(json)
 }
 func (this *SForwardToServer) GetJson() string {
+	json,_ := json.Marshal(this)
+	return string(json)
+}
+func (this *SForwardFromGate) GetJson() string {
 	json,_ := json.Marshal(this)
 	return string(json)
 }
@@ -1182,4 +1210,94 @@ func GetSizeSForwardToServer(obj *SForwardToServer) int {
 		return 4
 	}
 	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 4 + len(obj.MsgName) + 4 + len(obj.Data) * 1
+}
+func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int,*SForwardFromGate ) {
+	offset := 0
+	if len(indata) < 4 {
+		return 0,nil
+	}
+	objsize := int(binary.BigEndian.Uint32(indata))
+	offset += 4
+	if objsize == 0 {
+		return 4,nil
+	}
+	if obj == nil{
+		obj=&SForwardFromGate{}
+	}
+	if offset + objsize > len(indata ) {
+		return offset,obj
+	}
+	endpos := offset+objsize
+	data := indata[offset:offset+objsize]
+	offset = 0
+	data__len := len(data)
+	if offset + 4 + len(obj.FromServerID) > data__len{
+		return endpos,obj
+	}
+	obj.FromServerID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.FromServerID)
+	if offset + 4 + len(obj.ToServerID) > data__len{
+		return endpos,obj
+	}
+	obj.ToServerID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.ToServerID)
+	if offset + 4 + len(obj.ClientConnID) > data__len{
+		return endpos,obj
+	}
+	obj.ClientConnID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.ClientConnID)
+	if offset + 4 + len(obj.MsgName) > data__len{
+		return endpos,obj
+	}
+	obj.MsgName = readBinaryString(data[offset:])
+	offset += 4 + len(obj.MsgName)
+	if offset + 4 > data__len{
+		return endpos,obj
+	}
+	Data_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	offset += 4
+	if Data_slen != 0xffffffff {
+		if offset + Data_slen > data__len {
+			return endpos,obj
+		}
+		obj.Data = make([]byte,Data_slen)
+		copy(obj.Data, data[offset:offset+Data_slen])
+		offset += Data_slen
+	}
+	return endpos,obj
+}
+func WriteMsgSForwardFromGateByObj(data []byte, obj *SForwardFromGate) int {
+	if obj == nil {
+		binary.BigEndian.PutUint32(data[0:4],0)
+		return 4
+	}
+	objsize := obj.GetSize() - 4
+	offset := 0
+	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	offset += 4
+	writeBinaryString(data[offset:],obj.FromServerID)
+	offset += 4 + len(obj.FromServerID)
+	writeBinaryString(data[offset:],obj.ToServerID)
+	offset += 4 + len(obj.ToServerID)
+	writeBinaryString(data[offset:],obj.ClientConnID)
+	offset += 4 + len(obj.ClientConnID)
+	writeBinaryString(data[offset:],obj.MsgName)
+	offset += 4 + len(obj.MsgName)
+	if obj.Data == nil {
+		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+	} else {
+		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.Data)))
+	}
+	offset += 4
+	Data_slen := len(obj.Data)
+	copy(data[offset:offset+Data_slen], obj.Data)
+	offset += Data_slen
+	return offset
+}
+func GetSizeSForwardFromGate(obj *SForwardFromGate) int {
+	if obj == nil {
+		return 4
+	}
+	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 4 + len(obj.ClientConnID) + 4 + len(obj.MsgName) + 
+	4 + len(obj.Data) * 1
 }

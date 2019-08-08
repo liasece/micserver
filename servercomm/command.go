@@ -85,3 +85,11 @@ type SForwardToServer struct {
 	MsgName      string
 	Data         []byte
 }
+
+type SForwardFromGate struct {
+	FromServerID string
+	ToServerID   string
+	ClientConnID string
+	MsgName      string
+	Data         []byte
+}

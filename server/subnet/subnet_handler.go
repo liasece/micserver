@@ -21,11 +21,30 @@ func (this *SubnetManager) OnRemoveTCPConnect(conn *tcpconn.ServerConn) {
 // 当收到TCP消息时调用
 func (this *SubnetManager) OnRecvTCPMsg(conn *tcpconn.ServerConn,
 	msgbinary *msg.MessageBinary) {
-	if msgbinary.CmdID == servercomm.SForwardToServerID {
-		layerMsg := &servercomm.SForwardToServer{}
-		layerMsg.ReadBinary(msgbinary.ProtoData)
-		if this.SubnetCallback.regHandleServerMsg != nil {
-			this.SubnetCallback.regHandleServerMsg(layerMsg)
+	switch msgbinary.CmdID {
+	case servercomm.SForwardToServerID:
+		{
+			layerMsg := &servercomm.SForwardToServer{}
+			layerMsg.ReadBinary(msgbinary.ProtoData)
+			if this.SubnetCallback.regHandleServerMsg != nil {
+				this.SubnetCallback.regHandleServerMsg(layerMsg)
+			}
+		}
+	case servercomm.SForwardFromGateID:
+		{
+			layerMsg := &servercomm.SForwardFromGate{}
+			layerMsg.ReadBinary(msgbinary.ProtoData)
+			if this.SubnetCallback.regHandleGateMsg != nil {
+				this.SubnetCallback.regHandleGateMsg(layerMsg)
+			}
+		}
+	case servercomm.SStartMyNotifyCommandID:
+	default:
+		{
+			msgid := msgbinary.CmdID
+			msgname := servercomm.MsgIdToString(msgid)
+			this.Error("[SubnetManager.OnRecvTCPMsg] 未知消息 %d:%s",
+				msgid, msgname)
 		}
 	}
 }

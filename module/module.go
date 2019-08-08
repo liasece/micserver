@@ -89,8 +89,20 @@ func (this *BaseModule) SendServerMsgByTmpID(
 	}
 }
 
+func (this *BaseModule) SendGateMsgByTmpID(fromconn *tcpconn.ClientConn,
+	serverTmpID string, msgname string, data []byte) {
+	conn := this.subnetManager.GetServerConn(serverTmpID)
+	if conn != nil {
+		conn.SendCmd(this.getGateServerMsgPack(msgname, data, fromconn, conn))
+	}
+}
+
 func (this *BaseModule) BroadcastServerCmd(msgstr msg.MsgStruct) {
 	this.subnetManager.BroadcastCmd(this.getServerMsgPack(msgstr, nil))
+}
+
+func (this *BaseModule) GetBalanceServerID(servertype string) string {
+	return this.subnetManager.GetRandomServerConn(servertype).Tempid
 }
 
 func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
@@ -104,6 +116,23 @@ func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
 	size := msgstr.GetSize()
 	res.Data = make([]byte, size)
 	msgstr.WriteBinary(res.Data)
+	return res
+}
+
+func (this *BaseModule) getGateServerMsgPack(msgname string, data []byte,
+	fromconn *tcpconn.ClientConn, tarconn *tcpconn.ServerConn) msg.MsgStruct {
+	res := &servercomm.SForwardFromGate{}
+	res.FromServerID = this.ModuleID
+	if tarconn != nil {
+		res.ToServerID = tarconn.Serverinfo.ServerID
+	}
+	if fromconn != nil {
+		res.ClientConnID = fromconn.Tempid
+	}
+	res.MsgName = msgname
+	size := len(data)
+	res.Data = make([]byte, size)
+	copy(res.Data, data)
 	return res
 }
 

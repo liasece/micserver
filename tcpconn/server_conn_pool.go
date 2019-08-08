@@ -133,11 +133,11 @@ func (this *ServerConnPool) GetMinServerConnLatestVersion(
 // 随机获取指定类型的一个连接
 func (this *ServerConnPool) GetRandomServerConn(
 	servertype string) *ServerConn {
-	tasklist := make([]uint64, 0)
+	tasklist := make([]string, 0)
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*ServerConn)
-		key := tkey.(uint64)
+		key := tkey.(string)
 		if util.GetServerIDType(value.Serverinfo.ServerID) == servertype {
 			tasklist = append(tasklist, key)
 		}
