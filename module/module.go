@@ -44,7 +44,8 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 		this.Logger = log.NewLogger(this.Configer.GetModuleSettingMap())
 		this.SetLogName(this.ModuleID)
 	} else {
-		this.Logger = log.GetDefaultLogger()
+		this.Logger = log.GetDefaultLogger().Clone()
+		this.Logger.SetLogName(this.ModuleID)
 	}
 	// 申请内存
 	if this.subnetManager == nil {
