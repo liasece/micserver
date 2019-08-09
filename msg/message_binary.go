@@ -261,7 +261,7 @@ func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	copy(msgbinary.buffers[MSG_HEADSIZE:totalLength], protodata)
 	// 消息数据字段指针指向 buffer 数据域
 	msgbinary.MessageBinaryBody.ProtoData =
-		msgbinary.buffers[MSG_HEADSIZE:msgbinary.MessageBinaryHeadL1.CmdLen]
+		msgbinary.buffers[MSG_HEADSIZE:totalLength]
 
 	// MessageBinaryHeadL2
 	msgbinary.MessageBinaryHeadL2.DataLen = datalen

@@ -219,7 +219,11 @@ func (this *BaseModule) BroadcastServerCmd(msgstr msg.MsgStruct) {
 
 // 获取一个均衡的负载服务器
 func (this *BaseModule) GetBalanceServerID(servertype string) string {
-	return this.subnetManager.GetRandomServerConn(servertype).Tempid
+	server := this.subnetManager.GetRandomServerConn(servertype)
+	if server != nil {
+		return server.Tempid
+	}
+	return ""
 }
 
 // 获取一个服务器消息的服务器间转发协议

@@ -38,6 +38,14 @@ func (this *SubnetManager) OnRecvTCPMsg(conn *tcpconn.ServerConn,
 				this.SubnetCallback.regHandleGateMsg(layerMsg)
 			}
 		}
+	case servercomm.SForwardToClientID:
+		{
+			layerMsg := &servercomm.SForwardToClient{}
+			layerMsg.ReadBinary(msgbinary.ProtoData)
+			if this.SubnetCallback.regHandleToClientMsg != nil {
+				this.SubnetCallback.regHandleToClientMsg(layerMsg)
+			}
+		}
 	case servercomm.SStartMyNotifyCommandID:
 	default:
 		{
