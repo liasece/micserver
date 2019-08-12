@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/url"
 	// "os"
+	"encoding/hex"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,6 +19,7 @@ import (
 
 	"crypto/hmac"
 	"crypto/sha1"
+	"crypto/sha256"
 )
 
 func StringToBytes(s string) []byte {
@@ -82,6 +84,20 @@ func GetHash(data []byte) uint32 {
 	return (h1 << 24) | (((h1 >> 8) << 16) & 0xFF0000) | (((h1 >> 16) << 8) & 0xFF00) | (h1 >> 24)
 }
 
+func HmacSha256(content []byte, key []byte) string {
+	mac := hmac.New(sha256.New, key)
+	_, err := mac.Write(content)
+	if err != nil {
+	}
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+func HmacSha256ByString(contentstr string, keystr string) string {
+	content := StringToBytes(contentstr)
+	key := StringToBytes(keystr)
+	return HmacSha256(content, key)
+}
+
 func HmacSha1(content []byte, key []byte) string {
 	//hmac ,use sha1
 	mac := hmac.New(sha1.New, key)
@@ -115,28 +131,6 @@ func UrlEncodeSortByKeys(v url.Values) string {
 	}
 	return buf.String()
 }
-
-// func GetIPv4Addrs() {
-// 	ifaces, _ := net.Interfaces()
-// 	for _, ifi := range ifaces {
-// 		fmt.Print("\nip addrs key,ifname:%s,\n", ifi.Name)
-// 	}
-
-// 	addrs, err := net.InterfaceAddrs()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		os.Exit(1)
-// 	}
-// 	for _, address := range addrs {
-// 		// 检查ip地址判断是否回环地址
-// 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-// 			if ipnet.IP.To4() != nil {
-// 				fmt.Println(ipnet.IP.String())
-// 			}
-
-// 		}
-// 	}
-// }
 
 // GetIPv4ByInterface return IPv4 address from a specific interface IPv4 addresses
 func GetIPv4ByInterface(name string) string {
