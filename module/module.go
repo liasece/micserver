@@ -296,6 +296,9 @@ func (this *BaseModule) TopRunner() {
 
 // 处理经过本服务器发送到客户端的消息
 func (this *BaseModule) handleToClientMsg(smsg *servercomm.SForwardToClient) {
-	this.doSendBytesToClient(smsg.FromServerID, smsg.ToGateID, smsg.ToClientID,
-		smsg.MsgID, smsg.MsgName, smsg.Data)
+	err := this.doSendBytesToClient(smsg.FromServerID, smsg.ToGateID,
+		smsg.ToClientID, smsg.MsgID, smsg.MsgName, smsg.Data)
+	if err != nil {
+		this.Error("this.doSendBytesToClient Err:%s", err.Error())
+	}
 }
