@@ -94,11 +94,11 @@ func (this *ClientConnPool) Remove(tempid string) {
 	if value, found := this.allSockets.Load(tempid); found {
 		// 关闭消息发送协程
 		value.Shutdown()
+		// 删除连接
+		this.remove(tempid)
 		value.Debug("[ClientConnPool.Remove] 删除连接 当前连接数量"+
 			" Len[%d]",
 			this.Len())
-		// 删除连接
-		this.remove(tempid)
 		return
 	}
 }
