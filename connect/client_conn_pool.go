@@ -1,15 +1,11 @@
-package tcpconn
+package connect
 
 import (
-	//	"os"
-	// "base"
+	"errors"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/util"
 	"math/rand"
 	"net"
-	// "servercomm"
-	"errors"
-	// "sync"
 	"time"
 )
 

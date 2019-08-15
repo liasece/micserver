@@ -2,13 +2,13 @@ package subnet
 
 import (
 	"fmt"
+	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"net"
 )
 
-func (this *SubnetManager) OnServerLogin(conn *tcpconn.ServerConn,
+func (this *SubnetManager) OnServerLogin(conn *connect.ServerConn,
 	tarinfo *servercomm.SLoginCommand) {
 	this.connectMutex.Lock()
 	defer this.connectMutex.Unlock()
@@ -143,7 +143,7 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 		this.Debug("[SubNetManager.BindTCPServer] "+
 			"收到新的TCP连接 Addr[%s]",
 			newconn.RemoteAddr().String())
-		conn := this.NewServerConn(tcpconn.ServerSCTypeTask, newconn, "")
+		conn := this.NewServerConn(connect.ServerSCTypeTask, newconn, "")
 		if conn != nil {
 			conn.Logger = this.Logger
 			this.OnCreateTCPConnect(conn)

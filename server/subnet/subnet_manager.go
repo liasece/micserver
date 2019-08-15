@@ -2,10 +2,10 @@ package subnet
 
 import (
 	"github.com/liasece/micserver/conf"
+	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/server/subnet/serconfs"
 	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"strconv"
 	"sync"
@@ -22,7 +22,7 @@ func CheckServerType(servertype uint32) bool {
 type SubnetManager struct {
 	*log.Logger
 	// 服务器连接池
-	tcpconn.ServerConnPool
+	connect.ServerConnPool
 	// 回调注册
 	SubnetCallback
 	// 配置信息
@@ -75,7 +75,7 @@ func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uin
 
 //通知所有服务器列表信息
 func (this *SubnetManager) NotifyAllServerInfo(
-	tcptask *tcpconn.ServerConn) {
+	tcptask *connect.ServerConn) {
 	retmsg := &servercomm.SNotifyAllInfo{}
 	retmsg.Serverinfos = make([]*servercomm.SServerInfo, 0)
 	this.connInfos.RangeConnInfo(func(

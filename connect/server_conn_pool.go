@@ -1,7 +1,6 @@
-package tcpconn
+package connect
 
 import (
-	//	"os"
 	"fmt"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"

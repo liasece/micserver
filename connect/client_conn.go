@@ -1,17 +1,15 @@
-package tcpconn
+package connect
 
 import (
-	"github.com/liasece/micserver/msg"
-	// "math/rand"
-	"net"
-	// "servercomm"
-	// "sync"
 	"fmt"
+	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/tcpconn"
+	"net"
 	"time"
 )
 
 type ClientConn struct {
-	TCPConn
+	tcpconn.TCPConn
 	// 唯一编号
 	Tempid string
 	// 结束时间 为0表示不结束
@@ -42,13 +40,13 @@ const ClientConnSendBufferSize = msg.MessageMaxSize * 2
 
 // 获取一个新的服务器连接
 // sctype: 连接的 客户端/服务器 类型
-// conn: 连接的net.Conn对象
-func NewClientConn(conn net.Conn) *ClientConn {
-	tcpconn := new(ClientConn)
-	tcpconn.Init(conn, ClientConnSendChanSize, ClientConnSendBufferSize)
-	tcpconn.CreateTime = int64(time.Now().Unix())
-	tcpconn.Session = make(map[string]string)
-	return tcpconn
+// netconn: 连接的net.Conn对象
+func NewClientConn(netconn net.Conn) *ClientConn {
+	conn := new(ClientConn)
+	conn.Init(netconn, ClientConnSendChanSize, ClientConnSendBufferSize)
+	conn.CreateTime = int64(time.Now().Unix())
+	conn.Session = make(map[string]string)
+	return conn
 }
 
 func ClientDial(addr string) (*ClientConn, error) {

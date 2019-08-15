@@ -1,14 +1,11 @@
-package tcpconn
+package connect
 
 import (
-	//	"os"
-	// "msg/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/servercomm"
+	"github.com/liasece/micserver/tcpconn"
 	"math/rand"
 	"net"
-	// "sync"
-	// "time"
 )
 
 type TServerSCType uint32
@@ -26,7 +23,7 @@ const ServerConnSendChanSize = 10000
 const ServerConnSendBufferSize = msg.MessageMaxSize * 10
 
 type ServerConn struct {
-	TCPConn
+	tcpconn.TCPConn
 	// 唯一编号
 	Tempid string
 	// 结束时间 为0表示不结束
@@ -49,14 +46,14 @@ type ServerConn struct {
 
 // 获取一个新的服务器连接
 // sctype: 连接的 客户端/服务器 类型
-// conn: 连接的net.Conn对象
-func NewServerConn(sctype TServerSCType, conn net.Conn) *ServerConn {
-	tcpconn := new(ServerConn)
-	tcpconn.Serverinfo = &servercomm.SServerInfo{}
-	tcpconn.SetSC(sctype)
-	tcpconn.Init(conn, ServerConnSendChanSize, ServerConnSendBufferSize)
-	tcpconn.ConnectPriority = rand.Int63()
-	return tcpconn
+// netconn: 连接的net.Conn对象
+func NewServerConn(sctype TServerSCType, netconn net.Conn) *ServerConn {
+	conn := new(ServerConn)
+	conn.Serverinfo = &servercomm.SServerInfo{}
+	conn.SetSC(sctype)
+	conn.Init(netconn, ServerConnSendChanSize, ServerConnSendBufferSize)
+	conn.ConnectPriority = rand.Int63()
+	return conn
 }
 
 // 获取服务器连接当前负载

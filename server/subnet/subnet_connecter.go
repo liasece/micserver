@@ -12,8 +12,8 @@ package subnet
 import (
 	"errors"
 	"fmt"
+	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"net"
 	"time"
@@ -69,7 +69,7 @@ func (this *SubnetManager) TryConnectServer(id string, addr string) {
 
 // 连接服务器
 func (this *SubnetManager) ConnectServer(id string,
-	addr string) (*tcpconn.ServerConn, error) {
+	addr string) (*connect.ServerConn, error) {
 	this.connectMutex.Lock()
 	defer this.connectMutex.Unlock()
 	oldconn := this.GetServerConn(id)
@@ -96,7 +96,7 @@ func (this *SubnetManager) ConnectServer(id string,
 			addr, err.Error())
 		return nil, err
 	}
-	conn := this.NewServerConn(tcpconn.ServerSCTypeClient, Conn, id)
+	conn := this.NewServerConn(connect.ServerSCTypeClient, Conn, id)
 	conn.Logger = this.Logger
 	// 发起登录
 
@@ -116,12 +116,12 @@ func (this *SubnetManager) ConnectServer(id string,
 	return conn, nil
 }
 
-func (this *SubnetManager) onClientDisconnected(conn *tcpconn.ServerConn) {
+func (this *SubnetManager) onClientDisconnected(conn *connect.ServerConn) {
 	this.OnRemoveTCPConnect(conn)
 	this.RemoveServerConn(conn.Tempid)
 
 	if !conn.IsNormalDisconnect &&
-		conn.GetSCType() == tcpconn.ServerSCTypeClient {
+		conn.GetSCType() == connect.ServerSCTypeClient {
 		this.connectMutex.Lock()
 		defer this.connectMutex.Unlock()
 		if this.serverexitchan[fmt.Sprint(conn.Serverinfo.ServerID)] != nil {

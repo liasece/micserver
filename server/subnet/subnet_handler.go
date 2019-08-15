@@ -1,25 +1,25 @@
 package subnet
 
 import (
+	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"io"
 	"time"
 )
 
 type ConnectMsgQueueStruct struct {
-	conn *tcpconn.ServerConn
+	conn *connect.ServerConn
 	msg  *msg.MessageBinary
 }
 
 // 当TCP连接被移除时调用
-func (this *SubnetManager) OnRemoveTCPConnect(conn *tcpconn.ServerConn) {
+func (this *SubnetManager) OnRemoveTCPConnect(conn *connect.ServerConn) {
 }
 
 // 当收到TCP消息时调用
-func (this *SubnetManager) OnRecvTCPMsg(conn *tcpconn.ServerConn,
+func (this *SubnetManager) OnRecvTCPMsg(conn *connect.ServerConn,
 	msgbinary *msg.MessageBinary) {
 	switch msgbinary.CmdID {
 	case servercomm.SForwardToServerID:
@@ -58,17 +58,17 @@ func (this *SubnetManager) OnRecvTCPMsg(conn *tcpconn.ServerConn,
 }
 
 // 获取TCP消息的消息处理通道
-func (this *SubnetManager) OnGetRecvTCPMsgParseChan(conn *tcpconn.ServerConn,
+func (this *SubnetManager) OnGetRecvTCPMsgParseChan(conn *connect.ServerConn,
 	maxChan int32, msgbinary *msg.MessageBinary) int32 {
 	return 0
 }
 
-func (this *SubnetManager) OnCreateTCPConnect(conn *tcpconn.ServerConn) {
+func (this *SubnetManager) OnCreateTCPConnect(conn *connect.ServerConn) {
 	// 监听处理消息
 	go this.handleClientConnection(conn)
 }
 
-func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
+func (this *SubnetManager) handleClientConnection(conn *connect.ServerConn) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
@@ -81,7 +81,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 	msgReader := msg.NewMessageBinaryReader(netbuffer)
 
 	for true {
-		if conn.GetSCType() == tcpconn.ServerSCTypeTask {
+		if conn.GetSCType() == connect.ServerSCTypeTask {
 			curtime := uint64(time.Now().Unix())
 			if conn.IsTerminateTimeout(curtime) {
 				this.RemoveServerConn(conn.Tempid)
@@ -155,7 +155,7 @@ func (this *SubnetManager) handleClientConnection(conn *tcpconn.ServerConn) {
 	}
 }
 
-func (this *SubnetManager) msgParseTCPConn(conn *tcpconn.ServerConn,
+func (this *SubnetManager) msgParseTCPConn(conn *connect.ServerConn,
 	msgbin *msg.MessageBinary) {
 	// this.Debug("[SubnetManager.msgParseTCPConn] 收到消息 %s",
 	// 	servercomm.MsgIdToString(msgbin.CmdID))

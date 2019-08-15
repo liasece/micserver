@@ -1,10 +1,10 @@
 package manager
 
 import (
+	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/server/gate/handle"
-	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"io"
 	"net"
@@ -16,7 +16,7 @@ type ClientSocketManager struct {
 	*log.Logger
 	handle.ClientTcpHandler
 
-	connPool tcpconn.ClientConnPool
+	connPool connect.ClientConnPool
 }
 
 func (this *ClientSocketManager) Init(moduleID string) {
@@ -24,7 +24,7 @@ func (this *ClientSocketManager) Init(moduleID string) {
 }
 
 func (this *ClientSocketManager) AddClientTcpSocket(
-	netConn net.Conn) (*tcpconn.ClientConn, error) {
+	netConn net.Conn) (*connect.ClientConn, error) {
 	conn, err := this.connPool.NewClientConn(netConn)
 	conn.Logger = this.Logger
 	if err != nil {
@@ -40,7 +40,7 @@ func (this *ClientSocketManager) AddClientTcpSocket(
 }
 
 func (this *ClientSocketManager) GetTaskByTmpID(
-	webtaskid string) *tcpconn.ClientConn {
+	webtaskid string) *connect.ClientConn {
 	return this.connPool.Get(webtaskid)
 }
 
@@ -63,17 +63,17 @@ func (this *ClientSocketManager) RemoveTaskByTmpID(
 
 // 遍历所有的连接
 func (this *ClientSocketManager) ExecAllUsers(
-	callback func(string, *tcpconn.ClientConn)) {
-	this.connPool.Range(func(value *tcpconn.ClientConn) {
+	callback func(string, *connect.ClientConn)) {
+	this.connPool.Range(func(value *connect.ClientConn) {
 		callback(value.Tempid, value)
 	})
 }
 
 // 遍历所有的连接，检查需要移除的连接
 func (this *ClientSocketManager) ExecRemove(
-	callback func(*tcpconn.ClientConn) bool) {
+	callback func(*connect.ClientConn) bool) {
 	removelist := make([]string, 0)
-	this.connPool.Range(func(value *tcpconn.ClientConn) {
+	this.connPool.Range(func(value *connect.ClientConn) {
 		// 遍历所有的连接
 		if callback(value) {
 			// 该连接需要被移除

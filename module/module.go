@@ -3,12 +3,12 @@ package module
 import (
 	"fmt"
 	"github.com/liasece/micserver/conf"
+	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/server/gate"
 	"github.com/liasece/micserver/server/subnet"
 	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/tcpconn"
 	"github.com/liasece/micserver/util"
 	"time"
 )
@@ -77,7 +77,7 @@ func (this *BaseModule) GetConfiger() *conf.ModuleConfig {
 }
 
 // 获取一个客户端连接
-func (this *BaseModule) GetClientConn(tmpid string) *tcpconn.ClientConn {
+func (this *BaseModule) GetClientConn(tmpid string) *connect.ClientConn {
 	if this.gateBase != nil {
 		return this.gateBase.GetTaskByTmpID(tmpid)
 	}
@@ -103,7 +103,7 @@ func (this *BaseModule) SendServerCmdToServer(
 }
 
 // 转发一个客户端消息到另一个服务器
-func (this *BaseModule) ForwardClientMsgToServer(fromconn *tcpconn.ClientConn,
+func (this *BaseModule) ForwardClientMsgToServer(fromconn *connect.ClientConn,
 	to string, msgname string, data []byte) {
 	conn := this.subnetManager.GetServerConn(to)
 	if conn != nil {
@@ -228,7 +228,7 @@ func (this *BaseModule) GetBalanceServerID(servertype string) string {
 
 // 获取一个服务器消息的服务器间转发协议
 func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
-	tarconn *tcpconn.ServerConn) msg.MsgStruct {
+	tarconn *connect.ServerConn) msg.MsgStruct {
 	res := &servercomm.SForwardToServer{}
 	res.FromServerID = this.ModuleID
 	if tarconn != nil {
@@ -243,7 +243,7 @@ func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
 
 // 获取一个客户端消息到其他服务器间的转发协议
 func (this *BaseModule) getGateServerMsgPack(msgname string, data []byte,
-	fromconn *tcpconn.ClientConn, tarconn *tcpconn.ServerConn) msg.MsgStruct {
+	fromconn *connect.ClientConn, tarconn *connect.ServerConn) msg.MsgStruct {
 	res := &servercomm.SForwardFromGate{}
 	res.FromServerID = this.ModuleID
 	if tarconn != nil {

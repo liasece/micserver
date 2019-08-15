@@ -1,14 +1,14 @@
 package handle
 
 import (
+	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/tcpconn"
 	"time"
 )
 
-type TFuncHandleSocketPackage func(*tcpconn.ClientConn, *msg.MessageBinary)
+type TFuncHandleSocketPackage func(*connect.ClientConn, *msg.MessageBinary)
 
 type ClientTcpHandler struct {
 	*log.Logger
@@ -22,7 +22,7 @@ func (this *ClientTcpHandler) RegHandleSocketPackage(
 	this.regHandleSocketPackage = cb
 }
 
-func (this *ClientTcpHandler) OnRecvSocketPackage(task *tcpconn.ClientConn,
+func (this *ClientTcpHandler) OnRecvSocketPackage(task *connect.ClientConn,
 	msgbin *msg.MessageBinary) {
 	cmdname := servercomm.MsgIdToString(msgbin.CmdID)
 	this.Analysiswsmsgcount++
