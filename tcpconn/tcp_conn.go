@@ -43,7 +43,6 @@ type TCPConn struct {
 
 	// 尝试关闭一个连接
 	shutdownChan chan struct{}
-	stopChan     chan struct{}
 	state        int32
 
 	// 发送缓冲区
@@ -62,7 +61,6 @@ func (this *TCPConn) Init(conn net.Conn,
 	msgChanSize int, sendBufferSize int) {
 	this.sendmsgchan = make(chan *msg.MessageBinary, msgChanSize)
 	this.shutdownChan = make(chan struct{})
-	this.stopChan = make(chan struct{})
 	this.Conn = conn
 	this.maxWaitingSendBufferLength = msg.MessageMaxSize * msgChanSize
 	this.state = TCPCONNSTATE_LINKED
@@ -80,19 +78,6 @@ func (this *TCPConn) IsAlive() bool {
 
 // 尝试关闭此连接
 func (this *TCPConn) Shutdown() {
-	if this.state < TCPCONNSTATE_LINKED {
-		return
-	}
-	sec := atomic.CompareAndSwapInt32(&this.state,
-		TCPCONNSTATE_LINKED, TCPCONNSTATE_HOLD)
-	if sec {
-		go this.shutdownThread()
-	}
-}
-
-// 异步 停止一个TCP连接的发送过程
-// 异步是为了推迟实际关闭连接的时间，给处理剩余未发送的消息的时间
-func (this *TCPConn) shutdownThread() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
@@ -100,15 +85,14 @@ func (this *TCPConn) shutdownThread() {
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
-	// 延迟两秒发送，否则消息可能处理不完
-	// time.Sleep(2 * time.Second)
-	close(this.shutdownChan)
-}
-
-//关闭socket
-func (this *TCPConn) closeSocket() error {
-	this.state = TCPCONNSTATE_CLOSED
-	return this.Conn.Close()
+	if this.state != TCPCONNSTATE_LINKED {
+		return
+	}
+	sec := atomic.CompareAndSwapInt32(&this.state,
+		TCPCONNSTATE_LINKED, TCPCONNSTATE_HOLD)
+	if sec {
+		close(this.shutdownChan)
+	}
 }
 
 func (this *TCPConn) ReadAll() ([]byte, error) {
@@ -119,7 +103,8 @@ func (this *TCPConn) ReadAll() ([]byte, error) {
 func (this *TCPConn) SendCmd(v msg.MsgStruct,
 	encryption msg.TEncryptionType) error {
 	if this.state >= TCPCONNSTATE_HOLD {
-		this.Warn("[TCPConn.SendCmd] 连接已失效，取消发送")
+		this.Warn("[TCPConn.SendCmd] 连接已被关闭，取消发送 Msg[%s]",
+			v.GetMsgName())
 		return ErrCloseed
 	}
 
@@ -186,7 +171,7 @@ func (this *TCPConn) SendMessageBinary(
 
 	// 检查发送channel是否已经关闭
 	select {
-	case <-this.stopChan:
+	case <-this.shutdownChan:
 		this.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
 		return ErrCloseed
 	default:
@@ -200,7 +185,7 @@ func (this *TCPConn) SendMessageBinary(
 
 	// 确认发送channel是否已经关闭
 	select {
-	case <-this.stopChan:
+	case <-this.shutdownChan:
 		this.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
 		return ErrCloseed
 	case this.sendmsgchan <- msgbinary:
@@ -212,7 +197,7 @@ func (this *TCPConn) SendMessageBinary(
 	return nil
 }
 
-// 消息发送进程
+// 消息发送线程 必须单线程执行
 func (this *TCPConn) sendThread() {
 	for {
 		if this.asyncSendCmd() {
@@ -222,7 +207,7 @@ func (this *TCPConn) sendThread() {
 	}
 	// 用于通知发送线程，发送channel已关闭
 	this.Debug("[TCPConn.sendThread] 发送线程已关闭")
-	close(this.stopChan)
+	// close(this.stopChan)
 	err := this.closeSocket()
 	if err != nil {
 		this.Error("[TCPConn.sendThread] closeSocket Err[%s]",
@@ -230,6 +215,13 @@ func (this *TCPConn) sendThread() {
 	}
 }
 
+//关闭socket 应该在消息尝试发送完之后执行
+func (this *TCPConn) closeSocket() error {
+	this.state = TCPCONNSTATE_CLOSED
+	return this.Conn.Close()
+}
+
+// 异步方式发送消息 必须单线程执行
 func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
@@ -251,15 +243,18 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 			}
 			this.sendMsgList(msg)
 		case <-this.shutdownChan:
+			// 线程被主动关闭
 			isrunning = false
 			break
 		}
 	}
 
+	// 线程准备退出，执行收尾工作，尝试将未发送的消息发送出去
 	waitting := true
 	for waitting {
 		select {
 		case msg, ok := <-this.sendmsgchan:
+			// 从发送chan中获取一条消息
 			if msg == nil || !ok {
 				this.Warn("[TCPConn.asyncSendCmd] " +
 					"Channle已关闭，发送行为终止")
@@ -275,12 +270,12 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 	return true
 }
 
-// 发送拼接消息
+// 发送拼接消息 必须单线程执行
 // 	tmsg 首消息，如果没有需要加入的第一个消息，直接给Nil即可
 func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 	// 开始拼包
 	msglist, nowpkglen, maxlow := this.joinMsgByFunc(
-		func(nowpkgsum uint32, nowpkglen int) *msg.MessageBinary {
+		func(nowpkgsum int, nowpkglen int) *msg.MessageBinary {
 			if nowpkgsum == 0 && tmsg != nil {
 				// 如果这是第一个包，且包含首包
 				return tmsg
@@ -314,7 +309,7 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 			return nil
 		})
 	// 拼包总消息长度
-	nowpkgsum := uint32(len(msglist))
+	nowpkgsum := len(msglist)
 	if nowpkgsum == 0 {
 		// 当前没有需要发送的消息
 		return
@@ -365,7 +360,7 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 	}
 }
 
-// 从指定接口中拼接消息
+// 从指定接口中拼接消息 必须单线程执行
 // 	回调参数：
 // 		当前消息数量
 // 		当前消息总大小
@@ -375,12 +370,12 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 //  			二进制列表
 //  	总长度
 //  	最大延迟
-func (this *TCPConn) joinMsgByFunc(getMsg func(uint32, int) *msg.MessageBinary) (
+func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) (
 	[]*msg.MessageBinary, int, uint32) {
 	// 初始化变量
 	var (
 		msglist   = make([]*msg.MessageBinary, 0)
-		nowpkgsum = uint32(0)
+		nowpkgsum = int(0)
 		nowpkglen = int(0)
 		curtime   = uint32(time.Now().Unix())
 		maxlow    = uint32(0)

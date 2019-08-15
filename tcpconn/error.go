@@ -1,21 +1,13 @@
-/**
- * \file TCPConn.go
- * \version
- * \author liaojiansheng
- * \date  2019年01月31日 12:22:43
- * \brief 连接数据管理器
- *
- */
-
 package tcpconn
 
-import (
-	"errors"
-	// "fmt"
-)
+type TCPConnError string
 
-var (
-	ErrSendNilData = errors.New("send nil data")
-	ErrCloseed     = errors.New("conn has been closed")
-	ErrBufferFull  = errors.New("buffer full")
+func (this TCPConnError) Error() string {
+	return string(this)
+}
+
+const (
+	ErrSendNilData TCPConnError = "send nil data"
+	ErrCloseed     TCPConnError = "conn has been closed"
+	ErrBufferFull  TCPConnError = "buffer full"
 )
