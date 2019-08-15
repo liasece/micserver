@@ -365,7 +365,6 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 			// 发送
 			// 发送缓冲区长度减少
 			atomic.AddInt64(&this.waitingSendBufferLength, int64(-secn))
-
 		}
 	}
 
@@ -431,7 +430,7 @@ func (this *TCPConn) recvThread() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			this.Error("[SubnetManager.handleClientConnection] "+
+			this.Error("[TCPConn.recvThread] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 		close(this.recvmsgchan)
@@ -468,7 +467,7 @@ func (this *TCPConn) recvThread() {
 			this.recvmsgchan <- msgbinary
 		})
 		if err != nil {
-			this.Error("[SubnetManager.handleClientConnection] "+
+			this.Error("[TCPConn.recvThread] "+
 				"RangeMsgBinary读消息失败，断开连接 Err[%s]", err.Error())
 			return
 		}
