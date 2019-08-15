@@ -38,23 +38,58 @@ const ClientConnSendChanSize = 256
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
 const ClientConnSendBufferSize = msg.MessageMaxSize * 2
 
+// 客户端连接发送消息缓冲不宜过大， 10*64KiB*100000连接=64GiB
+const ClientConnRecvChanSize = 256
+
+// 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
+const ClientConnRecvBufferSize = msg.MessageMaxSize * 2
+
 // 获取一个新的服务器连接
 // sctype: 连接的 客户端/服务器 类型
 // netconn: 连接的net.Conn对象
-func NewClientConn(netconn net.Conn) *ClientConn {
+func NewClientConn(netconn net.Conn,
+	onRecv func(*ClientConn, *msg.MessageBinary),
+	onClose func(*ClientConn)) *ClientConn {
 	conn := new(ClientConn)
-	conn.Init(netconn, ClientConnSendChanSize, ClientConnSendBufferSize)
+	ch := conn.Init(netconn,
+		ClientConnSendChanSize, ClientConnSendBufferSize,
+		ClientConnRecvChanSize, ClientConnRecvBufferSize)
 	conn.CreateTime = int64(time.Now().Unix())
 	conn.Session = make(map[string]string)
+	go conn.recvMsgThread(ch, onRecv, onClose)
 	return conn
 }
 
-func ClientDial(addr string) (*ClientConn, error) {
+func ClientDial(addr string,
+	onRecv func(*ClientConn, *msg.MessageBinary),
+	onClose func(*ClientConn)) (*ClientConn, error) {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
-	return NewClientConn(conn), err
+	return NewClientConn(conn, onRecv, onClose), err
+}
+
+func (this *ClientConn) recvMsgThread(c chan *msg.MessageBinary,
+	onRecv func(*ClientConn, *msg.MessageBinary),
+	onClose func(*ClientConn)) {
+	defer func() {
+		if onClose != nil {
+			onClose(this)
+		}
+	}()
+
+	for {
+		select {
+		case m, ok := <-c:
+			if !ok || m == nil {
+				return
+			}
+			if onRecv != nil {
+				onRecv(this, m)
+			}
+		}
+	}
 }
 
 // 返回连接是否仍可用

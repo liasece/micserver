@@ -13,6 +13,7 @@ import (
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/util"
+	"io"
 	"io/ioutil"
 	"net"
 	"sync/atomic"
@@ -39,34 +40,52 @@ const (
 type TCPConn struct {
 	*log.Logger
 	net.Conn
-	sendmsgchan chan *msg.MessageBinary
 
 	// 尝试关闭一个连接
 	shutdownChan chan struct{}
 	state        int32
 
+	// 发送等待通道
+	sendmsgchan chan *msg.MessageBinary
 	// 发送缓冲区
 	sendBuffer *util.IOBuffer
 	// 当前等待发送出去的数据总大小
 	waitingSendBufferLength int64
 	// 等待发送数据的总大小
 	maxWaitingSendBufferLength int
+
+	// 接收等待通道
+	recvmsgchan chan *msg.MessageBinary
+	// 接收缓冲区
+	recvBuffer *util.IOBuffer
 }
 
 // 初始化一个TCPConn对象
 // 	conn: net.Conn对象
-// 	sendBufferSize: 拼包发送缓冲区大小
-// 	maxWaitingSendBufferLength: 等待队列中的消息缓冲区大小
+// 	sendChanSize: 	发送等待队列中的消息缓冲区大小
+// 	sendBufferSize: 发送拼包发送缓冲区大小
+// 	recvChanSize: 	接收等待队列中的消息缓冲区大小
+// 	recvBufferSize: 接收拼包发送缓冲区大小
+// 返回：接收到的 messagebinary 的对象 chan
 func (this *TCPConn) Init(conn net.Conn,
-	msgChanSize int, sendBufferSize int) {
-	this.sendmsgchan = make(chan *msg.MessageBinary, msgChanSize)
+	sendChanSize int, sendBufferSize int,
+	recvChanSize int, recvBufferSize int) chan *msg.MessageBinary {
 	this.shutdownChan = make(chan struct{})
 	this.Conn = conn
-	this.maxWaitingSendBufferLength = msg.MessageMaxSize * msgChanSize
 	this.state = TCPCONNSTATE_LINKED
-	this.sendBuffer = util.NewIOBuffer(nil, sendBufferSize)
 
+	// 发送
+	this.sendmsgchan = make(chan *msg.MessageBinary, sendChanSize)
+	this.maxWaitingSendBufferLength = msg.MessageMaxSize * sendChanSize
+	this.sendBuffer = util.NewIOBuffer(nil, sendBufferSize)
 	go this.sendThread()
+
+	// 接收
+	this.recvmsgchan = make(chan *msg.MessageBinary, recvChanSize)
+	this.recvBuffer = util.NewIOBuffer(conn, recvBufferSize)
+	go this.recvThread()
+
+	return this.recvmsgchan
 }
 
 func (this *TCPConn) IsAlive() bool {
@@ -406,4 +425,52 @@ func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) (
 	}
 
 	return msglist, nowpkglen, maxlow
+}
+
+func (this *TCPConn) recvThread() {
+	defer func() {
+		// 必须要先声明defer，否则不能捕获到panic异常
+		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+			this.Error("[SubnetManager.handleClientConnection] "+
+				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+		}
+		close(this.recvmsgchan)
+	}()
+	if this.recvBuffer.TotalSize() == 0 {
+		return
+	}
+	// 消息缓冲
+	msgReader := msg.NewMessageBinaryReader(this.recvBuffer)
+
+	for true {
+		if this.state != TCPCONNSTATE_LINKED {
+			return
+		}
+		derr := this.SetReadDeadline(time.Now().
+			Add(time.Duration(time.Millisecond * 250)))
+		if derr != nil {
+			return
+		}
+		_, err := this.recvBuffer.ReadFromReader()
+		if err != nil {
+			if err == io.EOF {
+				return
+			} else {
+				continue
+			}
+		}
+		err = msgReader.RangeMsgBinary(func(msgbinary *msg.MessageBinary) {
+			// 判断消息是否阻塞严重
+			curtime := uint32(time.Now().Unix())
+			// 重置消息标签为接收时间，用于处理阻塞判断
+			msgbinary.TimeStamp = curtime
+			// 解析消息
+			this.recvmsgchan <- msgbinary
+		})
+		if err != nil {
+			this.Error("[SubnetManager.handleClientConnection] "+
+				"RangeMsgBinary读消息失败，断开连接 Err[%s]", err.Error())
+			return
+		}
+	}
 }

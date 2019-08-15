@@ -3,10 +3,8 @@ package manager
 import (
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/server/gate/handle"
 	"github.com/liasece/micserver/util"
-	"io"
 	"net"
 	"time"
 )
@@ -25,7 +23,8 @@ func (this *ClientSocketManager) Init(moduleID string) {
 
 func (this *ClientSocketManager) AddClientTcpSocket(
 	netConn net.Conn) (*connect.ClientConn, error) {
-	conn, err := this.connPool.NewClientConn(netConn)
+	conn, err := this.connPool.NewClientConn(netConn, this.OnConnectRecv,
+		this.onConnectClose)
 	conn.Logger = this.Logger
 	if err != nil {
 		return nil, err
@@ -37,6 +36,10 @@ func (this *ClientSocketManager) AddClientTcpSocket(
 		"新增连接数 当前连接数量 NowSum[%d]",
 		this.GetClientTcpSocketCount())
 	return conn, nil
+}
+
+func (this *ClientSocketManager) onConnectClose(conn *connect.ClientConn) {
+	this.RemoveTaskByTmpID(conn.Tempid)
 }
 
 func (this *ClientSocketManager) GetTaskByTmpID(
@@ -90,77 +93,6 @@ func (this *ClientSocketManager) ExecRemove(
 		len(removelist), this.GetClientTcpSocketCount())
 }
 
-func (this *ClientSocketManager) onNewConnect(netConn net.Conn) {
-	defer func() {
-		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			this.Error("[onNewConnect] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
-		}
-	}()
-	this.Debug("[onNewConnect] Receive one netConn connect json")
-	conn, err := this.AddClientTcpSocket(netConn)
-	if err != nil || conn == nil {
-		this.Error("[onNewConnect] "+
-			"创建 ClientTcpSocket 对象失败，断开连接 Err[%s]", err.Error())
-		return
-	}
-	netbuffer := util.NewIOBuffer(netConn, 64*1024)
-	msgReader := msg.NewMessageBinaryReader(netbuffer)
-
-	// 所有连接都需要经过加密
-	// conn.Encryption = base.EncryptionTypeXORSimple
-
-	for {
-		if !conn.Check() {
-			// 强制移除客户端连接
-			this.RemoveTaskByTmpID(conn.Tempid)
-			return
-		}
-		// 设置阻塞读取过期时间
-		err := netConn.SetReadDeadline(
-			time.Now().Add(time.Duration(time.Millisecond * 250)))
-		if err != nil {
-			conn.Error("[onNewConnect] SetReadDeadline Err[%s]",
-				err.Error())
-		}
-		// buffer从连接中读取socket数据
-		_, err = netbuffer.ReadFromReader()
-
-		// 异常
-		if err != nil {
-			if err == io.EOF {
-				conn.Debug("[onNewConnect] "+
-					"Scoket数据读写异常,断开连接了,"+
-					"scoket返回 Err[%s]", err.Error())
-				this.RemoveTaskByTmpID(conn.Tempid)
-				return
-			} else {
-				continue
-			}
-		}
-
-		err = msgReader.RangeMsgBinary(func(msgbinary *msg.MessageBinary) {
-			if conn.Encryption != msg.EncryptionTypeNone &&
-				msgbinary.CmdMask != conn.Encryption {
-				conn.Error("加密方式错误，加密方式应为 %d 此消息为 %d "+
-					"MsgID[%d]", conn.Encryption,
-					msgbinary.CmdMask, msgbinary.CmdID)
-			} else {
-				// 解析消息
-				this.OnRecvSocketPackage(conn, msgbinary)
-			}
-		})
-		if err != nil {
-			conn.Error("[onNewConnect] 解析消息错误，断开连接 "+
-				"Err[%s]", err.Error())
-			// 强制移除客户端连接
-			this.RemoveTaskByTmpID(conn.Tempid)
-			return
-		}
-	}
-}
-
 func (this *ClientSocketManager) StartAddClientTcpSocketHandle(addr string) {
 	// 由于部分 NAT 主机没有网卡概念，需要自己配置IP
 	ln, err := net.Listen("tcp", addr)
@@ -182,7 +114,7 @@ func (this *ClientSocketManager) StartAddClientTcpSocketHandle(addr string) {
 					err.Error())
 				continue
 			}
-			go this.onNewConnect(netConn)
+			this.AddClientTcpSocket(netConn)
 		}
 	}()
 }

@@ -96,7 +96,8 @@ func (this *SubnetManager) ConnectServer(id string,
 			addr, err.Error())
 		return nil, err
 	}
-	conn := this.NewServerConn(connect.ServerSCTypeClient, Conn, id)
+	conn := this.NewServerConn(connect.ServerSCTypeClient, Conn, id,
+		this.onConnectRecv, this.onConnectClose)
 	conn.Logger = this.Logger
 	// 发起登录
 
@@ -117,7 +118,7 @@ func (this *SubnetManager) ConnectServer(id string,
 }
 
 func (this *SubnetManager) onClientDisconnected(conn *connect.ServerConn) {
-	this.OnRemoveTCPConnect(conn)
+	this.onConnectClose(conn)
 	this.RemoveServerConn(conn.Tempid)
 
 	if !conn.IsNormalDisconnect &&

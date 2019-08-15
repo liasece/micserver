@@ -1,6 +1,7 @@
 package connect
 
 import (
+	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/tcpconn"
@@ -22,8 +23,15 @@ const ServerConnSendChanSize = 10000
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
 const ServerConnSendBufferSize = msg.MessageMaxSize * 10
 
+// 服务器连接发送消息缓冲要考虑到服务器处理消息的能力
+const ServerConnRecvChanSize = 10000
+
+// 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
+const ServerConnRecvBufferSize = msg.MessageMaxSize * 10
+
 type ServerConn struct {
-	tcpconn.TCPConn
+	*log.Logger
+	TCPConn *tcpconn.TCPConn
 	// 唯一编号
 	Tempid string
 	// 结束时间 为0表示不结束
@@ -47,13 +55,41 @@ type ServerConn struct {
 // 获取一个新的服务器连接
 // sctype: 连接的 客户端/服务器 类型
 // netconn: 连接的net.Conn对象
-func NewServerConn(sctype TServerSCType, netconn net.Conn) *ServerConn {
+func NewServerConn(sctype TServerSCType, netconn net.Conn,
+	onRecv func(*ServerConn, *msg.MessageBinary),
+	onClose func(*ServerConn)) *ServerConn {
 	conn := new(ServerConn)
 	conn.Serverinfo = &servercomm.SServerInfo{}
 	conn.SetSC(sctype)
-	conn.Init(netconn, ServerConnSendChanSize, ServerConnSendBufferSize)
 	conn.ConnectPriority = rand.Int63()
+	conn.TCPConn = &tcpconn.TCPConn{}
+	ch := conn.TCPConn.Init(netconn,
+		ServerConnSendChanSize, ServerConnSendBufferSize,
+		ServerConnRecvChanSize, ServerConnRecvBufferSize)
+	go conn.recvMsgThread(ch, onRecv, onClose)
 	return conn
+}
+
+func (this *ServerConn) recvMsgThread(c chan *msg.MessageBinary,
+	onRecv func(*ServerConn, *msg.MessageBinary),
+	onClose func(*ServerConn)) {
+	defer func() {
+		if onClose != nil {
+			onClose(this)
+		}
+	}()
+
+	for {
+		select {
+		case m, ok := <-c:
+			if !ok || m == nil {
+				return
+			}
+			if onRecv != nil {
+				onRecv(this, m)
+			}
+		}
+	}
 }
 
 // 获取服务器连接当前负载
@@ -125,4 +161,16 @@ func (this *ServerConn) SetSC(sctype TServerSCType) {
 
 func (this *ServerConn) GetSCType() TServerSCType {
 	return this.serverSCType
+}
+
+func (this *ServerConn) Shutdown() {
+	this.TCPConn.Shutdown()
+}
+
+func (this *ServerConn) RemoteAddr() net.Addr {
+	return this.TCPConn.RemoteAddr()
+}
+
+func (this *ServerConn) GetTCPConn() *tcpconn.TCPConn {
+	return this.TCPConn
 }

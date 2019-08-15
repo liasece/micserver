@@ -3,6 +3,7 @@ package connect
 import (
 	"errors"
 	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/util"
 	"math/rand"
 	"net"
@@ -61,8 +62,10 @@ func (this *ClientConnPool) Init(groupID int32) {
 	this.allSockets.InitMapPool(mClientConnPoolGroupSum)
 }
 
-func (this *ClientConnPool) NewClientConn(conn net.Conn) (*ClientConn, error) {
-	tcptask := NewClientConn(conn)
+func (this *ClientConnPool) NewClientConn(conn net.Conn,
+	onRecv func(*ClientConn, *msg.MessageBinary),
+	onClose func(*ClientConn)) (*ClientConn, error) {
+	tcptask := NewClientConn(conn, onRecv, onClose)
 	err := this.AddAuto(tcptask)
 	if err != nil {
 		return nil, err

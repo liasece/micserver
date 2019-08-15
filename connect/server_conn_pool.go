@@ -24,8 +24,10 @@ func (this *ServerConnPool) Init(groupID uint16) {
 }
 
 func (this *ServerConnPool) NewServerConn(sctype TServerSCType,
-	conn net.Conn, serverid string) *ServerConn {
-	tcptask := NewServerConn(sctype, conn)
+	conn net.Conn, serverid string,
+	onRecv func(*ServerConn, *msg.MessageBinary),
+	onClose func(*ServerConn)) *ServerConn {
+	tcptask := NewServerConn(sctype, conn, onRecv, onClose)
 	tcptask.Logger = this.Logger
 	if serverid == "" {
 		this.AddServerConnAuto(tcptask)
@@ -167,7 +169,7 @@ func (this *ServerConnPool) GetServerConn(tempid string) *ServerConn {
 func (this *ServerConnPool) RemoveServerConn(tempid string) {
 	if tvalue, found := this.allSockets.Load(tempid); found {
 		value := tvalue.(*ServerConn)
-		// 关闭消息发送协程
+		// 关闭连接
 		value.Shutdown()
 		// 删除连接
 		this.remove(tempid)

@@ -143,7 +143,8 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 		this.Debug("[SubNetManager.BindTCPServer] "+
 			"收到新的TCP连接 Addr[%s]",
 			newconn.RemoteAddr().String())
-		conn := this.NewServerConn(connect.ServerSCTypeTask, newconn, "")
+		conn := this.NewServerConn(connect.ServerSCTypeTask, newconn, "",
+			this.onConnectRecv, this.onConnectClose)
 		if conn != nil {
 			conn.Logger = this.Logger
 			this.OnCreateTCPConnect(conn)

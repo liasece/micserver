@@ -5,7 +5,6 @@ import (
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/util"
-	"io"
 	"time"
 )
 
@@ -15,7 +14,8 @@ type ConnectMsgQueueStruct struct {
 }
 
 // 当TCP连接被移除时调用
-func (this *SubnetManager) OnRemoveTCPConnect(conn *connect.ServerConn) {
+func (this *SubnetManager) onConnectClose(conn *connect.ServerConn) {
+	this.RemoveServerConn(conn.Tempid)
 }
 
 // 当收到TCP消息时调用
@@ -64,99 +64,26 @@ func (this *SubnetManager) OnGetRecvTCPMsgParseChan(conn *connect.ServerConn,
 }
 
 func (this *SubnetManager) OnCreateTCPConnect(conn *connect.ServerConn) {
-	// 监听处理消息
-	go this.handleClientConnection(conn)
 }
 
-func (this *SubnetManager) handleClientConnection(conn *connect.ServerConn) {
-	defer func() {
-		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			this.Error("[SubnetManager.handleClientConnection] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
-		}
-	}()
-	// 消息缓冲
-	netbuffer := util.NewIOBuffer(conn.Conn, 64*1024*1024)
-	msgReader := msg.NewMessageBinaryReader(netbuffer)
-
-	for true {
-		if conn.GetSCType() == connect.ServerSCTypeTask {
-			curtime := uint64(time.Now().Unix())
-			if conn.IsTerminateTimeout(curtime) {
-				this.RemoveServerConn(conn.Tempid)
-				this.Error("[SubnetManager.handleConnection] "+
-					"长时间未通过验证，断开连接 TmpID[%d]",
-					conn.Tempid)
-				return
-			}
-			if conn.IsTerminateForce() {
-				this.OnRemoveTCPConnect(conn)
-				this.RemoveServerConn(conn.Tempid)
-				this.Debug("[SubnetManager.handleConnection] "+
-					"服务器主动断开连接 TmpID[%s]", conn.Tempid)
-				return
-			}
-		}
-
-		derr := conn.Conn.SetReadDeadline(time.Now().
-			Add(time.Duration(time.Millisecond * 1000)))
-		if derr != nil {
-			if !conn.IsNormalDisconnect {
-				this.Error("[SubnetManager.handleClientConnection] "+
-					"SetReadDeadline Err[%s] ServerID[%s]",
-					derr.Error(), conn.Serverinfo.ServerID)
-			}
+func (this *SubnetManager) onConnectRecv(conn *connect.ServerConn,
+	msgbin *msg.MessageBinary) {
+	if conn.GetSCType() == connect.ServerSCTypeTask {
+		curtime := uint64(time.Now().Unix())
+		if conn.IsTerminateTimeout(curtime) {
 			this.onClientDisconnected(conn)
+			this.Error("[SubnetManager.handleConnection] "+
+				"长时间未通过验证，断开连接 TmpID[%d]",
+				conn.Tempid)
 			return
 		}
-		n, err := netbuffer.ReadFromReader()
-		if err != nil {
-			if err == io.EOF {
-				if !conn.IsNormalDisconnect {
-					this.Debug("[SubnetManager.handleClientConnection] "+
-						"数据读写异常，断开连接"+
-						" ReadLen[%d] ServerID[%s] Error[%s]",
-						n, conn.Tempid, err.Error())
-				}
-				this.onClientDisconnected(conn)
-				return
-			} else {
-				continue
-			}
-		}
-		functiontime := util.FunctionTime{}
-		functiontime.Start("handleClientConnection")
-
-		err = msgReader.RangeMsgBinary(func(msgbinary *msg.MessageBinary) {
-
-			// 判断消息是否阻塞严重
-			curtime := uint32(time.Now().Unix())
-			if curtime > msgbinary.TimeStamp+1 &&
-				curtime > this.lastwarningtime1 {
-				this.Error("[SubnetManager.handleClientConnection] "+
-					"[消耗时间统计] 服务器TCPConn"+
-					"接收消息延迟很严重 TimeInc[%d]",
-					curtime-msgbinary.TimeStamp)
-				this.lastwarningtime1 = curtime
-			}
-			// 重置消息标签为接收时间，用于处理阻塞判断
-			msgbinary.TimeStamp = curtime
-			// 解析消息
-			this.msgParseTCPConn(conn, msgbinary)
-		})
-		functiontime.Stop()
-		if err != nil {
-			this.Error("[SubnetManager.handleClientConnection] "+
-				"RangeMsgBinary读消息失败，断开连接 Err[%s]", err.Error())
+		if conn.IsTerminateForce() {
 			this.onClientDisconnected(conn)
+			this.Debug("[SubnetManager.handleConnection] "+
+				"服务器主动断开连接 TmpID[%s]", conn.Tempid)
 			return
 		}
 	}
-}
-
-func (this *SubnetManager) msgParseTCPConn(conn *connect.ServerConn,
-	msgbin *msg.MessageBinary) {
 	// this.Debug("[SubnetManager.msgParseTCPConn] 收到消息 %s",
 	// 	servercomm.MsgIdToString(msgbin.CmdID))
 	switch msgbin.CmdID {
