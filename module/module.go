@@ -28,6 +28,8 @@ type BaseModule struct {
 	*log.Logger
 	util.TimerManager
 
+	msgHandler
+
 	ModuleID string
 	Configer *conf.ModuleConfig
 
@@ -39,6 +41,7 @@ type BaseModule struct {
 
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.Configer = &configer
+	this.msgHandler.mod = this
 	// 初始化logger
 	if this.Configer.HasSetting("logpath") {
 		this.Logger = log.NewLogger(this.Configer.GetModuleSettingMap())
@@ -54,7 +57,9 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.subnetManager.Logger = this.Logger
 	// 初始化服务器网络管理器
 	this.subnetManager.InitManager(this.Configer)
-	this.subnetManager.RegHandleToClientMsg(this.handleToClientMsg)
+	this.subnetManager.RegForwardToClient(this.msgHandler.OnForwardToClient)
+	this.subnetManager.RegUpdateSession(this.msgHandler.OnUpdateSession)
+	this.subnetManager.RegForwardFromGate(this.msgHandler.OnForwardFromGate)
 
 	this.Debug("[BaseModule.InitModule] module initting...")
 	// gateway初始化
@@ -94,11 +99,22 @@ func (this *BaseModule) InitSubnet(subnetAddrMap map[string]string) {
 }
 
 // 发送一个服务器消息到另一个服务器
-func (this *BaseModule) SendServerCmdToServer(
+func (this *BaseModule) SendServerMsg(
 	to string, msgstr msg.MsgStruct) {
 	conn := this.subnetManager.GetServerConn(to)
 	if conn != nil {
 		conn.SendCmd(this.getServerMsgPack(msgstr, conn))
+	}
+}
+
+// 发送一个服务器消息到另一个服务器,仅框架内使用
+func (this *BaseModule) SInner_SendServerMsg(
+	to string, msgstr msg.MsgStruct) {
+	conn := this.subnetManager.GetServerConn(to)
+	if conn != nil {
+		conn.SendCmd(msgstr)
+	} else {
+		this.Error("BaseModule.SInner_SendServerMsg conn == nil[%s]", to)
 	}
 }
 
@@ -107,29 +123,11 @@ func (this *BaseModule) ForwardClientMsgToServer(fromconn *connect.ClientConn,
 	to string, msgid uint16, data []byte) {
 	conn := this.subnetManager.GetServerConn(to)
 	if conn != nil {
-		conn.SendCmd(this.getGateServerMsgPack(msgid, data, fromconn, conn))
+		conn.SendCmd(this.getFarwardFromGateMsgPack(msgid, data, fromconn, conn))
+	} else {
+		this.Error("BaseModule.ForwardClientMsgToServer conn == nil [%s]",
+			to)
 	}
-}
-
-// 发送一个消息到连接到本服务器的客户端
-func (this *BaseModule) doSendMsgToClient(fromserver string, gateid string,
-	to string, msgid uint16, data []byte) error {
-	sec := false
-	gate := this.GetGate()
-	if gate != nil {
-		conn := gate.GetTaskByTmpID(to)
-		if conn != nil {
-			if fromserver != gateid {
-				conn.Session[util.GetServerIDType(fromserver)] = fromserver
-			}
-			conn.SendBytes(0, data)
-			sec = true
-		}
-	}
-	if !sec {
-		return fmt.Errorf("目标客户端连接不存在")
-	}
-	return nil
 }
 
 // 发送一个消息到客户端
@@ -167,12 +165,12 @@ func (this *BaseModule) SendBytesToClient(gateid string,
 func (this *BaseModule) doSendBytesToClient(fromserver string, gateid string,
 	to string, msgid uint16, data []byte) error {
 	sec := false
-	gate := this.GetGate()
-	if gate != nil {
-		conn := gate.GetTaskByTmpID(to)
+	if this.gateBase != nil {
+		conn := this.gateBase.GetTaskByTmpID(to)
 		if conn != nil {
 			if fromserver != gateid {
-				conn.Session[util.GetServerIDType(fromserver)] = fromserver
+				conn.Session.SetBindServer(util.GetServerIDType(fromserver),
+					fromserver)
 			}
 			conn.SendBytes(msgid, data)
 			sec = true
@@ -214,7 +212,7 @@ func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
 }
 
 // 获取一个客户端消息到其他服务器间的转发协议
-func (this *BaseModule) getGateServerMsgPack(msgid uint16, data []byte,
+func (this *BaseModule) getFarwardFromGateMsgPack(msgid uint16, data []byte,
 	fromconn *connect.ClientConn, tarconn *connect.ServerConn) msg.MsgStruct {
 	res := &servercomm.SForwardFromGate{}
 	res.FromServerID = this.ModuleID
@@ -232,14 +230,8 @@ func (this *BaseModule) getGateServerMsgPack(msgid uint16, data []byte,
 	return res
 }
 
-// 获取本服务器的gate管理器
 func (this *BaseModule) GetGate() *gate.GateBase {
 	return this.gateBase
-}
-
-// 获取本服务器的集群子网管理器
-func (this *BaseModule) GetSubnetManager() *subnet.SubnetManager {
-	return this.subnetManager
 }
 
 func (this *BaseModule) GetModuleID() string {
@@ -266,11 +258,6 @@ func (this *BaseModule) TopRunner() {
 	})
 }
 
-// 处理经过本服务器发送到客户端的消息
-func (this *BaseModule) handleToClientMsg(smsg *servercomm.SForwardToClient) {
-	err := this.doSendBytesToClient(smsg.FromServerID, smsg.ToGateID,
-		smsg.ToClientID, smsg.MsgID, smsg.Data)
-	if err != nil {
-		this.Error("this.doSendBytesToClient Err:%s", err.Error())
-	}
+func (this *BaseModule) GetServerType() string {
+	return util.GetServerIDType(this.ModuleID)
 }

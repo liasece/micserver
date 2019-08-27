@@ -5,22 +5,28 @@ import (
 )
 
 type SubnetCallback struct {
-	regHandleServerMsg   func(msg *servercomm.SForwardToServer)
-	regHandleGateMsg     func(msg *servercomm.SForwardFromGate)
-	regHandleToClientMsg func(msg *servercomm.SForwardToClient)
+	regForwardToServer func(msg *servercomm.SForwardToServer)
+	regForwardFromGate func(msg *servercomm.SForwardFromGate)
+	regForwardToClient func(msg *servercomm.SForwardToClient)
+	regUpdateSession   func(msg *servercomm.SUpdateSession)
 }
 
-func (this *SubnetCallback) RegHandleServerMsg(
+func (this *SubnetCallback) RegForwardToServer(
 	cb func(msg *servercomm.SForwardToServer)) {
-	this.regHandleServerMsg = cb
+	this.regForwardToServer = cb
 }
 
-func (this *SubnetCallback) RegHandleGateMsg(
+func (this *SubnetCallback) RegForwardFromGate(
 	cb func(msg *servercomm.SForwardFromGate)) {
-	this.regHandleGateMsg = cb
+	this.regForwardFromGate = cb
 }
 
-func (this *SubnetCallback) RegHandleToClientMsg(
+func (this *SubnetCallback) RegForwardToClient(
 	cb func(msg *servercomm.SForwardToClient)) {
-	this.regHandleToClientMsg = cb
+	this.regForwardToClient = cb
+}
+
+func (this *SubnetCallback) RegUpdateSession(
+	cb func(msg *servercomm.SUpdateSession)) {
+	this.regUpdateSession = cb
 }
