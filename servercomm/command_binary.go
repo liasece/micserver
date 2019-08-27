@@ -16,9 +16,10 @@ const (
 	SStartMyNotifyCommandID = 44
 	SNotifyAllInfoID = 45
 	SNotifySafelyQuitID = 46
-	SForwardToServerID = 47
-	SForwardToClientID = 48
-	SForwardFromGateID = 49
+	SUpdateSessionID = 47
+	SForwardToServerID = 48
+	SForwardToClientID = 49
+	SForwardFromGateID = 50
 )
 const (
 	SServerInfoName = "servercomm.SServerInfo"
@@ -32,6 +33,7 @@ const (
 	SStartMyNotifyCommandName = "servercomm.SStartMyNotifyCommand"
 	SNotifyAllInfoName = "servercomm.SNotifyAllInfo"
 	SNotifySafelyQuitName = "servercomm.SNotifySafelyQuit"
+	SUpdateSessionName = "servercomm.SUpdateSession"
 	SForwardToServerName = "servercomm.SForwardToServer"
 	SForwardToClientName = "servercomm.SForwardToClient"
 	SForwardFromGateName = "servercomm.SForwardFromGate"
@@ -68,6 +70,9 @@ func (this *SNotifyAllInfo) WriteBinary(data []byte) int {
 }
 func (this *SNotifySafelyQuit) WriteBinary(data []byte) int {
 	return WriteMsgSNotifySafelyQuitByObj(data,this)
+}
+func (this *SUpdateSession) WriteBinary(data []byte) int {
+	return WriteMsgSUpdateSessionByObj(data,this)
 }
 func (this *SForwardToServer) WriteBinary(data []byte) int {
 	return WriteMsgSForwardToServerByObj(data,this)
@@ -122,6 +127,10 @@ func (this *SNotifySafelyQuit) ReadBinary(data []byte) int {
 	size,_ := ReadMsgSNotifySafelyQuitByBytes(data, this)
 	return size
 }
+func (this *SUpdateSession) ReadBinary(data []byte) int {
+	size,_ := ReadMsgSUpdateSessionByBytes(data, this)
+	return size
+}
 func (this *SForwardToServer) ReadBinary(data []byte) int {
 	size,_ := ReadMsgSForwardToServerByBytes(data, this)
 	return size
@@ -158,6 +167,8 @@ func MsgIdToString(id uint16) string {
 		return SNotifyAllInfoName
 		case SNotifySafelyQuitID: 
 		return SNotifySafelyQuitName
+		case SUpdateSessionID: 
+		return SUpdateSessionName
 		case SForwardToServerID: 
 		return SForwardToServerName
 		case SForwardToClientID: 
@@ -192,6 +203,8 @@ func StringToMsgId(msgname string) uint16 {
 		return SNotifyAllInfoID
 		case SNotifySafelyQuitName: 
 		return SNotifySafelyQuitID
+		case SUpdateSessionName: 
+		return SUpdateSessionID
 		case SForwardToServerName: 
 		return SForwardToServerID
 		case SForwardToClientName: 
@@ -225,6 +238,8 @@ func MsgIdToType(id uint16) rune {
 		case SNotifyAllInfoID: 
 		return rune('S')
 		case SNotifySafelyQuitID: 
+		return rune('S')
+		case SUpdateSessionID: 
 		return rune('S')
 		case SForwardToServerID: 
 		return rune('S')
@@ -269,6 +284,9 @@ func (this *SNotifyAllInfo) GetMsgId() uint16 {
 func (this *SNotifySafelyQuit) GetMsgId() uint16 {
 	return SNotifySafelyQuitID
 }
+func (this *SUpdateSession) GetMsgId() uint16 {
+	return SUpdateSessionID
+}
 func (this *SForwardToServer) GetMsgId() uint16 {
 	return SForwardToServerID
 }
@@ -311,6 +329,9 @@ func (this *SNotifyAllInfo) GetMsgName() string {
 func (this *SNotifySafelyQuit) GetMsgName() string {
 	return SNotifySafelyQuitName
 }
+func (this *SUpdateSession) GetMsgName() string {
+	return SUpdateSessionName
+}
 func (this *SForwardToServer) GetMsgName() string {
 	return SForwardToServerName
 }
@@ -352,6 +373,9 @@ func (this *SNotifyAllInfo) GetSize() int {
 }
 func (this *SNotifySafelyQuit) GetSize() int {
 	return GetSizeSNotifySafelyQuit(this)
+}
+func (this *SUpdateSession) GetSize() int {
+	return GetSizeSUpdateSession(this)
 }
 func (this *SForwardToServer) GetSize() int {
 	return GetSizeSForwardToServer(this)
@@ -403,6 +427,10 @@ func (this *SNotifyAllInfo) GetJson() string {
 	return string(json)
 }
 func (this *SNotifySafelyQuit) GetJson() string {
+	json,_ := json.Marshal(this)
+	return string(json)
+}
+func (this *SUpdateSession) GetJson() string {
 	json,_ := json.Marshal(this)
 	return string(json)
 }
@@ -1156,6 +1184,92 @@ func GetSizeSNotifySafelyQuit(obj *SNotifySafelyQuit) int {
 		return 4
 	}
 	return 4 + obj.TargetServerInfo.GetSize()
+}
+func ReadMsgSUpdateSessionByBytes(indata []byte, obj *SUpdateSession) (int,*SUpdateSession ) {
+	offset := 0
+	if len(indata) < 4 {
+		return 0,nil
+	}
+	objsize := int(binary.BigEndian.Uint32(indata))
+	offset += 4
+	if objsize == 0 {
+		return 4,nil
+	}
+	if obj == nil{
+		obj=&SUpdateSession{}
+	}
+	if offset + objsize > len(indata ) {
+		return offset,obj
+	}
+	endpos := offset+objsize
+	data := indata[offset:offset+objsize]
+	offset = 0
+	data__len := len(data)
+	if offset + 4 + len(obj.ClientConnID) > data__len{
+		return endpos,obj
+	}
+	obj.ClientConnID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.ClientConnID)
+	if offset + 4 > data__len{
+		return endpos,obj
+	}
+	Session_slen := binary.BigEndian.Uint32(data[offset:offset+4])
+	offset += 4
+	if Session_slen != 0xffffffff {
+		obj.Session = make(map[string]string)
+		for i2i := uint32(0); i2i < Session_slen; i2i++ {
+			if offset + 0 > data__len{
+				return endpos,obj
+			}
+			keySession := readBinaryString(data[offset:])
+			Session_kcatlen := len(keySession)
+			offset += Session_kcatlen + 4
+			if offset + 2 > data__len{
+				return endpos,obj
+			}
+			valueSession := readBinaryString(data[offset:])
+			Session_vcatlen := len(valueSession)
+			offset += Session_vcatlen + 4
+			obj.Session[keySession] = valueSession
+		}
+	}
+	return endpos,obj
+}
+func WriteMsgSUpdateSessionByObj(data []byte, obj *SUpdateSession) int {
+	if obj == nil {
+		binary.BigEndian.PutUint32(data[0:4],0)
+		return 4
+	}
+	objsize := obj.GetSize() - 4
+	offset := 0
+	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	offset += 4
+	writeBinaryString(data[offset:],obj.ClientConnID)
+	offset += 4 + len(obj.ClientConnID)
+	if obj.Session == nil {
+		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+	} else {
+		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.Session)))
+	}
+	offset += 4
+	for Sessionkey,Sessionvalue := range obj.Session {
+		Session_kcatlen := writeBinaryString(data[offset:],Sessionkey)
+		offset += Session_kcatlen
+		Session_vcatlen := writeBinaryString(data[offset:],Sessionvalue)
+		offset += Session_vcatlen
+	}
+	return offset
+}
+func GetSizeSUpdateSession(obj *SUpdateSession) int {
+	if obj == nil {
+		return 4
+	}
+	sizerelystring2 := 0
+	for Sessionvalue,Sessionkey := range obj.Session {
+		sizerelystring2 += len(Sessionvalue) + 4
+		sizerelystring2 += len(Sessionkey) + 4
+	}
+	return 4 + 4 + len(obj.ClientConnID) + 4 + sizerelystring2
 }
 func ReadMsgSForwardToServerByBytes(indata []byte, obj *SForwardToServer) (int,*SForwardToServer ) {
 	offset := 0

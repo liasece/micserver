@@ -79,6 +79,11 @@ type SNotifySafelyQuit struct {
 	TargetServerInfo *SServerInfo
 }
 
+type SUpdateSession struct {
+	ClientConnID string
+	Session      map[string]string
+}
+
 type SForwardToServer struct {
 	FromServerID string
 	ToServerID   string
