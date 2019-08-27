@@ -12,14 +12,14 @@ const (
 
 // layer 1
 type MessageBinaryHeadL1 struct {
-	CmdLen uint32 // 4  消息长度
-	CmdID  uint16 // 2
+	CmdLen uint32 // 4 消息长度
+	CmdID  uint16 // 2 消息号
 
 	// 不存在于二进制数据中，由 CmdLen - MSG_HEADSIZE 得到
 	DataLen uint32
 }
 
-func (this *MessageBinaryHeadL1) WriteToBuffer(data []byte) (size int) {
+func (this *MessageBinaryHeadL1) WriteBinary(data []byte) (size int) {
 	binary.BigEndian.PutUint32(data[size:], this.CmdLen) // 4
 	size += 4
 	binary.BigEndian.PutUint16(data[size:], this.CmdID) // 2
@@ -28,7 +28,7 @@ func (this *MessageBinaryHeadL1) WriteToBuffer(data []byte) (size int) {
 	return
 }
 
-func (this *MessageBinaryHeadL1) ReadFromBuffer(data []byte) (int, error) {
+func (this *MessageBinaryHeadL1) ReadBinary(data []byte) (int, error) {
 	if len(data) < MSG_HEADSIZE_L1 {
 		return 0, fmt.Errorf("data not enough")
 	}

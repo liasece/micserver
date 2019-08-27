@@ -411,19 +411,25 @@ func (this *TCPConn) recvThread() {
 		if this.state != TCPCONNSTATE_LINKED {
 			return
 		}
+		// 设置阻塞过期时间
 		derr := this.SetReadDeadline(time.Now().
 			Add(time.Duration(time.Millisecond * 250)))
 		if derr != nil {
+			// 设置阻塞过期时间失败
 			return
 		}
+		// 从连接中读取数据
 		_, err := this.recvBuffer.ReadFromReader()
 		if err != nil {
 			if err == io.EOF {
+				// 连接关闭
 				return
 			} else {
+				// 其他错误
 				continue
 			}
 		}
+		// 循环读取当前缓冲区中的所有消息
 		err = msgReader.RangeMsgBinary(func(msgbinary *msg.MessageBinary) {
 			// 解析消息
 			this.recvmsgchan <- msgbinary

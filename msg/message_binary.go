@@ -98,7 +98,7 @@ func (this *MessageBinary) Reset() {
 // 从二进制流中读取 Message 结构，带消息头
 func (this *MessageBinary) ReadBinary(cmddata []byte) error {
 	// 获取基础数据
-	offset, err := this.MessageBinaryHeadL1.ReadFromBuffer(cmddata)
+	offset, err := this.MessageBinaryHeadL1.ReadBinary(cmddata)
 	// 过小的长度
 	if err != nil {
 		log.Error("[MakeMessageByBytes] "+
@@ -143,7 +143,7 @@ func (this *MessageBinary) readBinaryNoHeadL1(cmddata []byte) error {
 		this.buffers = tmpmsg.buffers
 	}
 	offset := 0
-	offset += this.MessageBinaryHeadL1.WriteToBuffer(this.buffers[offset:])
+	offset += this.MessageBinaryHeadL1.WriteBinary(this.buffers[offset:])
 	// 复制 MessageBinaryHeadL2+protodata 数据域
 	copy(this.buffers[offset:this.MessageBinaryHeadL1.CmdLen],
 		cmddata[:int(this.MessageBinaryHeadL1.CmdLen)-offset])
@@ -157,7 +157,7 @@ func (this *MessageBinary) readBinaryNoHeadL1(cmddata []byte) error {
 func (this *MessageBinary) writeHeadBuffer() int {
 	// 将结构数据填入 buffer
 	offset := 0
-	offset += this.MessageBinaryHeadL1.WriteToBuffer(this.buffers[offset:])
+	offset += this.MessageBinaryHeadL1.WriteBinary(this.buffers[offset:])
 	return offset
 }
 

@@ -41,7 +41,7 @@ func (this *MessageBinaryReader) RangeMsgBinary(
 			if err != nil {
 				return err
 			}
-			_, err = this.HeadL1.ReadFromBuffer(MessageBinaryHeadL1buf)
+			_, err = this.HeadL1.ReadBinary(MessageBinaryHeadL1buf)
 			if err != nil {
 				return fmt.Errorf("Head dec err:%s. headdata:%#v",
 					err.Error(), MessageBinaryHeadL1buf)
