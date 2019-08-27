@@ -25,8 +25,6 @@ type ClientConn struct {
 	// 	值为服务器ID
 	Session map[string]string
 
-	Encryption msg.TEncryptionType
-
 	ping Ping
 
 	loghead string
@@ -172,7 +170,7 @@ func (this *ClientConn) Terminate() {
 func (this *ClientConn) SendCmd(v msg.MsgStruct) {
 	this.Debug("[SendCmd] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())
-	this.TCPConn.SendCmd(v, this.Encryption)
+	this.TCPConn.SendCmd(v)
 }
 
 // 异步发送一条消息，带发送完成回调
@@ -180,12 +178,12 @@ func (this *ClientConn) SendCmdWithCallback(v msg.MsgStruct,
 	callback func(interface{}), cbarg interface{}) {
 	this.Debug("[SendCmdWithCallback] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())
-	this.TCPConn.SendCmdWithCallback(v, callback, cbarg, this.Encryption)
+	this.TCPConn.SendCmdWithCallback(v, callback, cbarg)
 }
 
 func (this *ClientConn) SendBytes(
 	cmdid uint16, protodata []byte) error {
-	return this.TCPConn.SendBytes(cmdid, protodata, this.Encryption)
+	return this.TCPConn.SendBytes(cmdid, protodata)
 }
 
 func (this *ClientConn) GetLogHead() string {

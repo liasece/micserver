@@ -119,8 +119,7 @@ func (this *TCPConn) ReadAll() ([]byte, error) {
 }
 
 // 异步发送一条消息，不带发送完成回调
-func (this *TCPConn) SendCmd(v msg.MsgStruct,
-	encryption msg.TEncryptionType) error {
+func (this *TCPConn) SendCmd(v msg.MsgStruct) error {
 	if this.state >= TCPCONNSTATE_HOLD {
 		this.Warn("[TCPConn.SendCmd] 连接已被关闭，取消发送 Msg[%s]",
 			v.GetMsgName())
@@ -128,42 +127,33 @@ func (this *TCPConn) SendCmd(v msg.MsgStruct,
 	}
 
 	msg := msg.MakeMessageByJson(v)
-	if encryption != 0 && msg != nil {
-		msg.Encryption(encryption)
-	}
+
 	return this.SendMessageBinary(msg)
 }
 
 // 异步发送一条消息，带发送完成回调
 func (this *TCPConn) SendCmdWithCallback(v msg.MsgStruct,
-	callback func(interface{}), cbarg interface{},
-	encryption msg.TEncryptionType) error {
+	callback func(interface{}), cbarg interface{}) error {
 	if this.state >= TCPCONNSTATE_HOLD {
 		this.Warn("[TCPConn.SendCmdWithCallback] 连接已失效，取消发送")
 		return ErrCloseed
 	}
 	msg := msg.MakeMessageByJson(v)
-
 	msg.OnSendDone = callback
 	msg.OnSendDoneArg = cbarg
 
-	if encryption != 0 && msg != nil {
-		msg.Encryption(encryption)
-	}
 	return this.SendMessageBinary(msg)
 }
 
 // 发送 Bytes
 func (this *TCPConn) SendBytes(
-	cmdid uint16, protodata []byte, encryption msg.TEncryptionType) error {
+	cmdid uint16, protodata []byte) error {
 	if this.state >= TCPCONNSTATE_HOLD {
 		this.Warn("[TCPConn.SendBytes] 连接已失效，取消发送")
 		return ErrCloseed
 	}
 	msgbinary := msg.MakeMessageByBytes(cmdid, protodata)
-	if encryption != 0 && msgbinary != nil {
-		msgbinary.Encryption(encryption)
-	}
+
 	return this.SendMessageBinary(msgbinary)
 }
 
@@ -293,7 +283,7 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 // 	tmsg 首消息，如果没有需要加入的第一个消息，直接给Nil即可
 func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 	// 开始拼包
-	msglist, nowpkglen, maxlow := this.joinMsgByFunc(
+	msglist := this.joinMsgByFunc(
 		func(nowpkgsum int, nowpkglen int) *msg.MessageBinary {
 			if nowpkgsum == 0 && tmsg != nil {
 				// 如果这是第一个包，且包含首包
@@ -334,21 +324,6 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 		return
 	}
 
-	// 检查消息包的超时时间
-	if maxlow > 2 {
-		// 发送时间超时
-		// 由于可能时客户端网络原因，只需要Info等级log
-		log.Info("[TCPConn.sendMsgList] "+
-			"发送消息延迟[%d]s PkgSum[%d] AllSize[%d]",
-			maxlow, nowpkgsum, nowpkglen)
-	}
-
-	// msgbuf := bytes.NewBuffer(make([]byte, 0, nowpkglen))
-	// // 此处存在大量拷贝，待优化
-	// for _, buf := range buflist {
-	// 	msgbuf.Write(buf)
-	// }
-
 	bs, err := this.sendBuffer.SeekAll()
 	if err != nil {
 		this.Error("[TCPConn.sendMsgList] "+
@@ -388,15 +363,12 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 //  			二进制列表
 //  	总长度
 //  	最大延迟
-func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) (
-	[]*msg.MessageBinary, int, uint32) {
+func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) []*msg.MessageBinary {
 	// 初始化变量
 	var (
 		msglist   = make([]*msg.MessageBinary, 0)
 		nowpkgsum = int(0)
 		nowpkglen = int(0)
-		curtime   = uint32(time.Now().Unix())
-		maxlow    = uint32(0)
 	)
 	for {
 		msg := getMsg(nowpkgsum, nowpkglen)
@@ -404,12 +376,6 @@ func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) (
 			break
 		}
 		// 拼接一个消息
-
-		// 用于计算发送延迟
-		tmplow := curtime - msg.TimeStamp
-		if tmplow > maxlow {
-			maxlow = tmplow
-		}
 
 		sendata, sendlen := msg.WriteBinary()
 		err := this.sendBuffer.Write(sendata)
@@ -423,7 +389,7 @@ func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) (
 		nowpkglen += sendlen
 	}
 
-	return msglist, nowpkglen, maxlow
+	return msglist
 }
 
 func (this *TCPConn) recvThread() {
@@ -459,10 +425,6 @@ func (this *TCPConn) recvThread() {
 			}
 		}
 		err = msgReader.RangeMsgBinary(func(msgbinary *msg.MessageBinary) {
-			// 判断消息是否阻塞严重
-			curtime := uint32(time.Now().Unix())
-			// 重置消息标签为接收时间，用于处理阻塞判断
-			msgbinary.TimeStamp = curtime
 			// 解析消息
 			this.recvmsgchan <- msgbinary
 		})

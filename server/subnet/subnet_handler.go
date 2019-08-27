@@ -208,15 +208,6 @@ func (this *SubnetManager) MultiRecvmsgQueue(
 
 	msgchan := this.runningMsgChan[index]
 	for msgqueues := range msgchan {
-		curtime := uint32(time.Now().Unix())
-		if curtime > msgqueues.msg.TimeStamp+1 &&
-			curtime > this.lastwarningtime2 {
-			this.Error("[SubnetManager.MultiRecvmsgQueue] "+
-				"[消耗时间统计]服务器TCPConn处理消息延迟很严重"+
-				" TimeInc[%d] in Thread[%d]",
-				curtime-msgqueues.msg.TimeStamp, index)
-			this.lastwarningtime2 = curtime
-		}
 		functiontime := util.FunctionTime{}
 		functiontime.Start("MultiRecvmsgQueue")
 		this.OnRecvTCPMsg(msgqueues.conn, msgqueues.msg)

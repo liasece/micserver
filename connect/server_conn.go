@@ -146,13 +146,13 @@ func (this *ServerConn) Terminate() {
 
 // 异步发送一条消息，不带发送完成回调
 func (this *ServerConn) SendCmd(v msg.MsgStruct) error {
-	return this.TCPConn.SendCmd(v, 0)
+	return this.TCPConn.SendCmd(v)
 }
 
 // 异步发送一条消息，带发送完成回调
 func (this *ServerConn) SendCmdWithCallback(v msg.MsgStruct,
 	callback func(interface{}), cbarg interface{}) error {
-	return this.TCPConn.SendCmdWithCallback(v, callback, cbarg, 0)
+	return this.TCPConn.SendCmdWithCallback(v, callback, cbarg)
 }
 
 func (this *ServerConn) SetSC(sctype TServerSCType) {

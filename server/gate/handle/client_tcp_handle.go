@@ -33,8 +33,8 @@ func (this *ClientTcpHandler) OnConnectRecv(conn *connect.ClientConn,
 		return
 	}
 	conn.Debug("[ParseClientJsonMsg] 收到数据 "+
-		"MsgMask[%d] MsgID[%d] Msgname[%s] CmdLen[%d] DataLen[%d]",
-		msgbin.CmdMask, msgbin.CmdID, cmdname, msgbin.CmdLen, msgbin.DataLen)
+		"MsgID[%d] Msgname[%s] CmdLen[%d] DataLen[%d]",
+		msgbin.CmdID, cmdname, msgbin.CmdLen, msgbin.DataLen)
 	if msgbin.CmdID == 0 {
 		conn.Error("[ParseClientJsonMsg] 错误的 MsgID[%d]", msgbin.CmdID)
 		return
