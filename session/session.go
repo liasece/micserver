@@ -53,10 +53,10 @@ func (this *Session) HasKey(key string) bool {
 }
 
 func (this *Session) SyncToServer(mod ISInner_SendServerMsg,
-	targetServer string, clientconnid string) {
+	targetServer string) {
 	smsg := &servercomm.SUpdateSession{
 		Session:      *this,
-		ClientConnID: clientconnid,
+		ClientConnID: this.GetConnectID(),
 	}
 	mod.SInner_SendServerMsg(targetServer, smsg)
 }
