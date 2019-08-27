@@ -1044,7 +1044,7 @@ def getgomsg(msgdef):
     return name,res,ressend,ressize
 
 # go 解析函数
-def getgoheadfunc(names,types,packname,proto):
+def getgoheadfunc(names,types,packname,proto,onlynames):
     ressend = "func WriteBinary(msgname string, obj interface{}, data []byte) ([]byte,int) {\nswitch(msgname){\n"
     resinterface = ''
     resinterfaceread = ''
@@ -1111,33 +1111,38 @@ return offset\n}\n\n'
     MsgIdToType += 'default:\nreturn rune(0)\n}\n}\n'
     constmsgid += ')\n'
     constmsgname += ')\n'
-    
+    if onlynames == True :
+        return constmsgname+resinterfacegetname
     return "" + constmsgid + constmsgname  + resinterface+ resinterfaceread + MsgIdToString + StringToMsgId + MsgIdToType + resinterfacegetid + resinterfacegetname + resinterfacegetsize + resinterfacegetjsonstring
 
-def getgocode(packname,gomsgs,proto):
+def getgocode(packname,gomsgs,proto,onlynames):
     msgNameList = []
     msgTypeList = []
-    readstr,sendstr = getgostringfunc()
-    basefunccode = getgobasefunc()
-    res = readstr+sendstr + basefunccode
+    res = ''
+    if onlynames == False :
+        readstr,sendstr = getgostringfunc()
+        basefunccode = getgobasefunc()
+        res = readstr+sendstr + basefunccode
     for i in gomsgs:
+        name = recvstr(i.group(3))
         ismsg = isMsg(i.group(0))
         # print(i+"\n\n")
-        name,code,codesend,codesize = getgomsg(i)
+        if onlynames == False :
+            name,code,codesend,codesize = getgomsg(i)
+            res += code + "\n" + codesend + "\n" + codesize + "\n"
         if ismsg:
             msgNameList.append(name)
             msgTypeList.append(getMsgType(name,i.group(0)))
-        res += code + "\n" + codesend + "\n" + codesize + "\n"
     # 根据是否使用其他proto决定是否需要编解码接口
-    rescontent = getgoheadfunc(msgNameList,msgTypeList,packname,proto)
+    rescontent = getgoheadfunc(msgNameList,msgTypeList,packname,proto,onlynames)
     if proto == 'protobuf':
         rescontent += ''
-    else :
+    elif onlynames == False:
         rescontent += res
     # 返回最终结果
     return rescontent,packname
     
-def procfile(filename,gofile,proto,showdetail):
+def procfile(filename,gofile,proto,showdetail,onlynames):
     global backstr
     backstr = []
     
@@ -1166,22 +1171,24 @@ def procfile(filename,gofile,proto,showdetail):
     if gofile != "" :
         # go代码生成
         gomsgs = re.finditer(reg, content)
-        gocontent,packname = getgocode(packname,gomsgs,proto)
+        gocontent,packname = getgocode(packname,gomsgs,proto,onlynames)
         # 插入头
-        totalcontent = 'package '+packname+'\n\n\
-import (\n'
-        # 根据是否使用其他协议区分引用的包
-        if proto == 'protobuf':
-            totalcontent += ''
-        else :
+        totalcontent = 'package '+packname+'\n\n'
+        if onlynames == False :
             totalcontent += '\
-\t"encoding/binary"\n\
-\t"math"\n'
-        # 包尾部
-        totalcontent += '\
-\t"encoding/json"\n\
-\t'+needpack+'\n\
-)\n\n'  
+    import (\n'
+            # 根据是否使用其他协议区分引用的包
+            if proto == 'protobuf':
+                totalcontent += ''
+            else :
+                totalcontent += '\
+    \t"encoding/binary"\n\
+    \t"math"\n'
+            # 包尾部
+            totalcontent += '\
+    \t"encoding/json"\n\
+    \t'+needpack+'\n\
+    )\n\n'  
         # 实现体
         totalcontent += gocontent
         # 简单格式化代码
@@ -1198,10 +1205,11 @@ def main():
     outtype = []
     proto = ''
     showdetail = False
+    onlynames = False
 
     # 尝试解析命令行参数
     try:
-        opts, args = getopt.getopt(sys.argv[1:],"hi:o:t:p:d",["help","infile=","outtype=","tsarg=","proto=","detail"])
+        opts, args = getopt.getopt(sys.argv[1:],"hi:o:t:p:d",["help","infile=","outtype=","tsarg=","proto=","detail","onlynames"])
     except getopt.GetoptError as e:
         print('\033[1;31mError:'+str(e)+'\nExample: go2ts.py -i <inputfile> -o <outtype> -t <tsarg> -p <proto> -d <detail>\033[0m')
         sys.exit(2)
@@ -1213,6 +1221,7 @@ def main():
             print('  -o, --outtype    Output code type, e.g., go, ts.')
             print('  -p, --proto      Create Marshal/Unmarshal use other proto.')
             print('  -d, --detail     Show detail infomation.')
+            print('  --onlynames      Gen msg interface only GetMsgName().')
             sys.exit()
         elif opt in ("-i", "--infile"):
             index = arg.rfind('.')
@@ -1223,12 +1232,14 @@ def main():
             proto = arg
         elif opt in ("-d", "--detail"):
             showdetail = True
+        elif opt in ("--onlynames"):
+            onlynames = True
 
     if 'go' in outtype:
         gofile = os.path.join(pwd,goname + "_binary.go")
     sourcegofile = os.path.join(pwd,goname+".go")
 
-    procfile(sourcegofile,gofile,proto,showdetail)
+    procfile(sourcegofile,gofile,proto,showdetail,onlynames)
 
 if __name__ == '__main__':
     main()
