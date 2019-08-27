@@ -104,45 +104,16 @@ func (this *BaseModule) SendServerCmdToServer(
 
 // 转发一个客户端消息到另一个服务器
 func (this *BaseModule) ForwardClientMsgToServer(fromconn *connect.ClientConn,
-	to string, msgname string, data []byte) {
+	to string, msgid uint16, data []byte) {
 	conn := this.subnetManager.GetServerConn(to)
 	if conn != nil {
-		conn.SendCmd(this.getGateServerMsgPack(msgname, data, fromconn, conn))
+		conn.SendCmd(this.getGateServerMsgPack(msgid, data, fromconn, conn))
 	}
-}
-
-// 发送一个消息到客户端
-func (this *BaseModule) SendMsgToClient(gateid string,
-	to string, msgstr msg.MsgStruct) error {
-	sec := false
-	if this.ModuleID == gateid {
-		if this.doSendMsgToClient(this.ModuleID, gateid, to, msgstr) == nil {
-			sec = true
-		}
-	} else {
-		conn := this.subnetManager.GetServerConn(gateid)
-		if conn != nil {
-			forward := &servercomm.SForwardToClient{}
-			forward.FromServerID = this.ModuleID
-			forward.MsgName = msgstr.GetMsgName()
-			forward.MsgID = msgstr.GetMsgId()
-			forward.ToClientID = to
-			forward.ToGateID = gateid
-			forward.Data = make([]byte, msgstr.GetSize())
-			msgstr.WriteBinary(forward.Data)
-			conn.SendCmd(forward)
-			sec = true
-		}
-	}
-	if !sec {
-		return fmt.Errorf("目标客户端连接不存在")
-	}
-	return nil
 }
 
 // 发送一个消息到连接到本服务器的客户端
 func (this *BaseModule) doSendMsgToClient(fromserver string, gateid string,
-	to string, msgstr msg.MsgStruct) error {
+	to string, msgid uint16, data []byte) error {
 	sec := false
 	gate := this.GetGate()
 	if gate != nil {
@@ -151,7 +122,7 @@ func (this *BaseModule) doSendMsgToClient(fromserver string, gateid string,
 			if fromserver != gateid {
 				conn.Session[util.GetServerIDType(fromserver)] = fromserver
 			}
-			conn.SendCmd(msgstr)
+			conn.SendBytes(0, data)
 			sec = true
 		}
 	}
@@ -163,11 +134,11 @@ func (this *BaseModule) doSendMsgToClient(fromserver string, gateid string,
 
 // 发送一个消息到客户端
 func (this *BaseModule) SendBytesToClient(gateid string,
-	to string, msgid uint16, msgname string, data []byte) error {
+	to string, msgid uint16, data []byte) error {
 	sec := false
 	if this.ModuleID == gateid {
 		if this.doSendBytesToClient(
-			this.ModuleID, gateid, to, msgid, msgname, data) == nil {
+			this.ModuleID, gateid, to, msgid, data) == nil {
 			sec = true
 		}
 	} else {
@@ -175,7 +146,6 @@ func (this *BaseModule) SendBytesToClient(gateid string,
 		if conn != nil {
 			forward := &servercomm.SForwardToClient{}
 			forward.FromServerID = this.ModuleID
-			forward.MsgName = msgname
 			forward.MsgID = msgid
 			forward.ToClientID = to
 			forward.ToGateID = gateid
@@ -183,6 +153,8 @@ func (this *BaseModule) SendBytesToClient(gateid string,
 			copy(forward.Data, data)
 			conn.SendCmd(forward)
 			sec = true
+		} else {
+			this.Error("目标服务器连接不存在 GateID[%s]", gateid)
 		}
 	}
 	if !sec {
@@ -193,7 +165,7 @@ func (this *BaseModule) SendBytesToClient(gateid string,
 
 // 发送一个消息到连接到本服务器的客户端
 func (this *BaseModule) doSendBytesToClient(fromserver string, gateid string,
-	to string, msgid uint16, msgname string, data []byte) error {
+	to string, msgid uint16, data []byte) error {
 	sec := false
 	gate := this.GetGate()
 	if gate != nil {
@@ -234,7 +206,7 @@ func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
 	if tarconn != nil {
 		res.ToServerID = tarconn.Serverinfo.ServerID
 	}
-	res.MsgName = msgstr.GetMsgName()
+	res.MsgID = msgstr.GetMsgId()
 	size := msgstr.GetSize()
 	res.Data = make([]byte, size)
 	msgstr.WriteBinary(res.Data)
@@ -242,7 +214,7 @@ func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
 }
 
 // 获取一个客户端消息到其他服务器间的转发协议
-func (this *BaseModule) getGateServerMsgPack(msgname string, data []byte,
+func (this *BaseModule) getGateServerMsgPack(msgid uint16, data []byte,
 	fromconn *connect.ClientConn, tarconn *connect.ServerConn) msg.MsgStruct {
 	res := &servercomm.SForwardFromGate{}
 	res.FromServerID = this.ModuleID
@@ -253,7 +225,7 @@ func (this *BaseModule) getGateServerMsgPack(msgname string, data []byte,
 		res.ClientConnID = fromconn.Tempid
 		res.Session = fromconn.Session
 	}
-	res.MsgName = msgname
+	res.MsgID = msgid
 	size := len(data)
 	res.Data = make([]byte, size)
 	copy(res.Data, data)
@@ -297,7 +269,7 @@ func (this *BaseModule) TopRunner() {
 // 处理经过本服务器发送到客户端的消息
 func (this *BaseModule) handleToClientMsg(smsg *servercomm.SForwardToClient) {
 	err := this.doSendBytesToClient(smsg.FromServerID, smsg.ToGateID,
-		smsg.ToClientID, smsg.MsgID, smsg.MsgName, smsg.Data)
+		smsg.ToClientID, smsg.MsgID, smsg.Data)
 	if err != nil {
 		this.Error("this.doSendBytesToClient Err:%s", err.Error())
 	}

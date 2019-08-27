@@ -1187,11 +1187,11 @@ func ReadMsgSForwardToServerByBytes(indata []byte, obj *SForwardToServer) (int,*
 	}
 	obj.ToServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ToServerID)
-	if offset + 4 + len(obj.MsgName) > data__len{
+	if offset + 2 > data__len{
 		return endpos,obj
 	}
-	obj.MsgName = readBinaryString(data[offset:])
-	offset += 4 + len(obj.MsgName)
+	obj.MsgID = binary.BigEndian.Uint16(data[offset:offset+2])
+	offset+=2
 	if offset + 4 > data__len{
 		return endpos,obj
 	}
@@ -1220,8 +1220,8 @@ func WriteMsgSForwardToServerByObj(data []byte, obj *SForwardToServer) int {
 	offset += 4 + len(obj.FromServerID)
 	writeBinaryString(data[offset:],obj.ToServerID)
 	offset += 4 + len(obj.ToServerID)
-	writeBinaryString(data[offset:],obj.MsgName)
-	offset += 4 + len(obj.MsgName)
+	binary.BigEndian.PutUint16(data[offset:offset+2], obj.MsgID)
+	offset+=2
 	if obj.Data == nil {
 		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
 	} else {
@@ -1237,7 +1237,7 @@ func GetSizeSForwardToServer(obj *SForwardToServer) int {
 	if obj == nil {
 		return 4
 	}
-	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 4 + len(obj.MsgName) + 4 + len(obj.Data) * 1
+	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 2 + 4 + len(obj.Data) * 1
 }
 func ReadMsgSForwardToClientByBytes(indata []byte, obj *SForwardToClient) (int,*SForwardToClient ) {
 	offset := 0
@@ -1274,11 +1274,6 @@ func ReadMsgSForwardToClientByBytes(indata []byte, obj *SForwardToClient) (int,*
 	}
 	obj.ToClientID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ToClientID)
-	if offset + 4 + len(obj.MsgName) > data__len{
-		return endpos,obj
-	}
-	obj.MsgName = readBinaryString(data[offset:])
-	offset += 4 + len(obj.MsgName)
 	if offset + 2 > data__len{
 		return endpos,obj
 	}
@@ -1314,8 +1309,6 @@ func WriteMsgSForwardToClientByObj(data []byte, obj *SForwardToClient) int {
 	offset += 4 + len(obj.ToGateID)
 	writeBinaryString(data[offset:],obj.ToClientID)
 	offset += 4 + len(obj.ToClientID)
-	writeBinaryString(data[offset:],obj.MsgName)
-	offset += 4 + len(obj.MsgName)
 	binary.BigEndian.PutUint16(data[offset:offset+2], obj.MsgID)
 	offset+=2
 	if obj.Data == nil {
@@ -1333,8 +1326,8 @@ func GetSizeSForwardToClient(obj *SForwardToClient) int {
 	if obj == nil {
 		return 4
 	}
-	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToGateID) + 4 + len(obj.ToClientID) + 4 + len(obj.MsgName) + 
-	2 + 4 + len(obj.Data) * 1
+	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToGateID) + 4 + len(obj.ToClientID) + 2 + 
+	4 + len(obj.Data) * 1
 }
 func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int,*SForwardFromGate ) {
 	offset := 0
@@ -1394,11 +1387,11 @@ func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int,*
 			obj.Session[keySession] = valueSession
 		}
 	}
-	if offset + 4 + len(obj.MsgName) > data__len{
+	if offset + 2 > data__len{
 		return endpos,obj
 	}
-	obj.MsgName = readBinaryString(data[offset:])
-	offset += 4 + len(obj.MsgName)
+	obj.MsgID = binary.BigEndian.Uint16(data[offset:offset+2])
+	offset+=2
 	if offset + 4 > data__len{
 		return endpos,obj
 	}
@@ -1441,8 +1434,8 @@ func WriteMsgSForwardFromGateByObj(data []byte, obj *SForwardFromGate) int {
 		Session_vcatlen := writeBinaryString(data[offset:],Sessionvalue)
 		offset += Session_vcatlen
 	}
-	writeBinaryString(data[offset:],obj.MsgName)
-	offset += 4 + len(obj.MsgName)
+	binary.BigEndian.PutUint16(data[offset:offset+2], obj.MsgID)
+	offset+=2
 	if obj.Data == nil {
 		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
 	} else {
@@ -1464,5 +1457,5 @@ func GetSizeSForwardFromGate(obj *SForwardFromGate) int {
 		sizerelystring4 += len(Sessionkey) + 4
 	}
 	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 4 + len(obj.ClientConnID) + 4 + sizerelystring4 + 
-	4 + len(obj.MsgName) + 4 + len(obj.Data) * 1
+	2 + 4 + len(obj.Data) * 1
 }

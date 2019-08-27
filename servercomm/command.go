@@ -82,7 +82,7 @@ type SNotifySafelyQuit struct {
 type SForwardToServer struct {
 	FromServerID string
 	ToServerID   string
-	MsgName      string
+	MsgID        uint16
 	Data         []byte
 }
 
@@ -90,7 +90,6 @@ type SForwardToClient struct {
 	FromServerID string
 	ToGateID     string
 	ToClientID   string
-	MsgName      string
 	MsgID        uint16
 	Data         []byte
 }
@@ -100,6 +99,6 @@ type SForwardFromGate struct {
 	ToServerID   string
 	ClientConnID string
 	Session      map[string]string
-	MsgName      string
+	MsgID        uint16
 	Data         []byte
 }

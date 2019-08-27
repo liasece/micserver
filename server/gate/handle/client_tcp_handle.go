@@ -9,12 +9,14 @@ import (
 )
 
 type TFuncHandleSocketPackage func(*connect.ClientConn, *msg.MessageBinary)
+type TFuncOnNewConn func(*connect.ClientConn)
 
 type ClientTcpHandler struct {
 	*log.Logger
 
 	Analysiswsmsgcount     uint32
 	regHandleSocketPackage TFuncHandleSocketPackage
+	regOnNewConn           TFuncOnNewConn
 }
 
 func (this *ClientTcpHandler) RegHandleSocketPackage(
@@ -35,11 +37,6 @@ func (this *ClientTcpHandler) OnConnectRecv(conn *connect.ClientConn,
 	conn.Debug("[ParseClientJsonMsg] 收到数据 "+
 		"MsgID[%d] Msgname[%s] CmdLen[%d] DataLen[%d]",
 		msgbin.CmdID, cmdname, msgbin.CmdLen, msgbin.DataLen)
-	if msgbin.CmdID == 0 {
-		conn.Error("[ParseClientJsonMsg] 错误的 MsgID[%d]", msgbin.CmdID)
-		return
-	}
-
 	// 接收到有效消息，开始处理
 	now := time.Now().Unix()
 	// 设置连接活动过期时间 5分钟
@@ -47,5 +44,16 @@ func (this *ClientTcpHandler) OnConnectRecv(conn *connect.ClientConn,
 
 	if this.regHandleSocketPackage != nil {
 		this.regHandleSocketPackage(conn, msgbin)
+	}
+}
+
+func (this *ClientTcpHandler) RegOnNewConn(
+	cb TFuncOnNewConn) {
+	this.regOnNewConn = cb
+}
+
+func (this *ClientTcpHandler) OnNewConn(conn *connect.ClientConn) {
+	if this.regOnNewConn != nil {
+		this.regOnNewConn(conn)
 	}
 }
