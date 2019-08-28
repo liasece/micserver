@@ -2,6 +2,7 @@ package connect
 
 import (
 	"fmt"
+	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/session"
 	"github.com/liasece/micserver/tcpconn"
@@ -172,8 +173,8 @@ func (this *ClientConn) SendBytes(
 	return this.TCPConn.SendBytes(cmdid, protodata)
 }
 
-func (this *ClientConn) GetLogTopic() string {
-	loghead := fmt.Sprintf("ClientConn.CID(%s).IP(%s)",
-		this.GetConnectID(), this.Conn.RemoteAddr().String())
-	return loghead
+func (this *ClientConn) SetLogger(logger *log.Logger) {
+	this.Logger = logger.Clone()
+	this.Logger.SetTopic(fmt.Sprintf("ClientConn.CID(%s).IP(%s)",
+		this.GetConnectID(), this.Conn.RemoteAddr().String()))
 }

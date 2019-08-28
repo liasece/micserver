@@ -28,8 +28,7 @@ func (this *ClientSocketManager) AddClientTcpSocket(
 	if err != nil {
 		return nil, err
 	}
-	conn.Logger = this.Logger.Clone()
-	conn.Logger.SetTopic(conn.GetLogTopic())
+	conn.SetLogger(this.Logger)
 
 	this.OnNewConn(conn)
 	curtime := time.Now().Unix()
