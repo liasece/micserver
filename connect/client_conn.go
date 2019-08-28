@@ -10,24 +10,21 @@ import (
 )
 
 type ClientConn struct {
+	// 会话信息 可在不同服务器之间同步的
+	session.Session
+	// 连接实体
 	tcpconn.TCPConn
-	// 唯一编号
-	Tempid string
 	// 结束时间 为0表示不结束
 	terminate_time int64
 	// 主动断开连接
 	terminate_force bool
-	// 验证是否成功，没有成功不允许处理后面的消息
-	verify_ok bool
 	// 连接创建的时间
 	CreateTime int64
-	// 目标服务器
-	// 	键为服务器类型
-	// 	值为服务器ID
-	Session session.Session
 
+	// 连接的延迟信息
 	ping Ping
 
+	// log 头部
 	loghead string
 }
 
@@ -49,6 +46,7 @@ const ClientConnRecvBufferSize = msg.MessageMaxSize * 2
 func NewClientConn(netconn net.Conn,
 	onRecv func(*ClientConn, *msg.MessageBinary),
 	onClose func(*ClientConn)) *ClientConn {
+	// 新建一个客户端连接
 	conn := new(ClientConn)
 	ch := conn.Init(netconn,
 		ClientConnSendChanSize, ClientConnSendBufferSize,
@@ -126,16 +124,6 @@ func (this *ClientConn) Read() (msg []byte, cmdlen int, err error) {
 	return msg, len(msg), err4
 }
 
-// 是否通过了验证
-func (this *ClientConn) IsVertify() bool {
-	return this.verify_ok
-}
-
-// 设置验证状态
-func (this *ClientConn) SetVertify(value bool) {
-	this.verify_ok = value
-}
-
 // 设置过期时间
 func (this *ClientConn) SetTerminateTime(value int64) {
 	this.terminate_time = value
@@ -188,8 +176,8 @@ func (this *ClientConn) SendBytes(
 }
 
 func (this *ClientConn) GetLogHead() string {
-	this.loghead = fmt.Sprintf("[ClientConn] TmpID[%s] IPPort[%s] ",
-		this.Tempid, this.Conn.RemoteAddr().String())
+	this.loghead = fmt.Sprintf("[ClientConn] ConnectID[%s] IPPort[%s] ",
+		this.GetConnectID(), this.Conn.RemoteAddr().String())
 	return this.loghead
 }
 

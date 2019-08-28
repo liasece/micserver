@@ -52,6 +52,16 @@ func (this *Session) HasKey(key string) bool {
 	return ok
 }
 
+func (this *Session) IsVertify() bool {
+	if !this.HasKey("UUID") {
+		return false
+	}
+	if this.GetUUID() == "" {
+		return false
+	}
+	return true
+}
+
 func (this *Session) SyncToServer(mod ISInner_SendServerMsg,
 	targetServer string) {
 	smsg := &servercomm.SUpdateSession{

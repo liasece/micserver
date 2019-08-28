@@ -54,9 +54,10 @@ func (this *msgHandler) OnUpdateSession(smsg *servercomm.SUpdateSession) {
 			client.Session[k] = v
 		}
 		if client.Session.GetUUID() != "" {
-			client.SetVertify(true)
 			this.mod.Info("[gate] 用户登陆成功 %s", smsg.GetJson())
 		}
+	} else {
+		this.mod.Warn("msgHandler.OnUpdateSession client == nil[%s]",
+			smsg.ClientConnID)
 	}
-	this.mod.Error("OnUpdateSession[%s]", smsg.GetJson())
 }

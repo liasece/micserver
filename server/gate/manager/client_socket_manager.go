@@ -40,7 +40,7 @@ func (this *ClientSocketManager) AddClientTcpSocket(
 }
 
 func (this *ClientSocketManager) onConnectClose(conn *connect.ClientConn) {
-	this.RemoveTaskByTmpID(conn.Tempid)
+	this.RemoveTaskByTmpID(conn.GetConnectID())
 }
 
 func (this *ClientSocketManager) GetTaskByTmpID(
@@ -69,7 +69,7 @@ func (this *ClientSocketManager) RemoveTaskByTmpID(
 func (this *ClientSocketManager) ExecAllUsers(
 	callback func(string, *connect.ClientConn)) {
 	this.connPool.Range(func(value *connect.ClientConn) {
-		callback(value.Tempid, value)
+		callback(value.GetConnectID(), value)
 	})
 }
 
@@ -81,7 +81,7 @@ func (this *ClientSocketManager) ExecRemove(
 		// 遍历所有的连接
 		if callback(value) {
 			// 该连接需要被移除
-			removelist = append(removelist, value.Tempid)
+			removelist = append(removelist, value.GetConnectID())
 			value.Terminate()
 		}
 	})

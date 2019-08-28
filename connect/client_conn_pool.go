@@ -110,8 +110,8 @@ func (this *ClientConnPool) AddAuto(connct *ClientConn) error {
 			err.Error())
 		return errors.New("unique id create error: " + err.Error())
 	}
-	connct.Tempid = tmpid
-	this.add(connct.Tempid, connct)
+	connct.SetConnectID(tmpid)
+	this.add(connct.GetConnectID(), connct)
 	return nil
 }
 
