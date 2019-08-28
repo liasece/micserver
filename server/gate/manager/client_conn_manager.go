@@ -30,7 +30,7 @@ func (this *ClientManager) addTCPClient(
 	}
 	conn.SetLogger(this.Logger)
 
-	this.OnNewConn(conn)
+	this.OnNewClient(conn)
 	curtime := time.Now().Unix()
 	conn.SetTerminateTime(curtime + 20) // 20秒以后还没有验证通过就断开连接
 
@@ -117,6 +117,7 @@ func (this *ClientManager) StartAddClientTcpSocketHandle(addr string) {
 					err.Error())
 				continue
 			}
+			this.OnAcceptConnect(netConn)
 			this.addTCPClient(netConn)
 		}
 	}()
