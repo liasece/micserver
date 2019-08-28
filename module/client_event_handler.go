@@ -9,21 +9,21 @@ import (
 type clientEventHandler struct {
 	mod *BaseModule
 
-	regRecvMsg func(client *connect.ClientConn, msgbin *msg.MessageBinary)
+	regRecvMsg func(client *connect.Client, msgbin *msg.MessageBinary)
 }
 
-func (this *clientEventHandler) onNewClient(client *connect.ClientConn) {
+func (this *clientEventHandler) onNewClient(client *connect.Client) {
 	servertype := util.GetServerIDType(this.mod.ModuleID)
 	client.SetBindServer(servertype, this.mod.ModuleID)
 }
 
 func (this *clientEventHandler) RegRecvMsg(
-	cb func(client *connect.ClientConn, msgbin *msg.MessageBinary)) {
+	cb func(client *connect.Client, msgbin *msg.MessageBinary)) {
 	this.regRecvMsg = cb
 }
 
 func (this *clientEventHandler) onRecvMsg(
-	client *connect.ClientConn, msgbin *msg.MessageBinary) {
+	client *connect.Client, msgbin *msg.MessageBinary) {
 	if this.regRecvMsg != nil {
 		this.regRecvMsg(client, msgbin)
 	}

@@ -10,20 +10,20 @@ import (
 )
 
 // websocket连接管理器
-type ClientConnManager struct {
+type ClientManager struct {
 	*log.Logger
 	handle.ClientTcpHandler
 
-	connPool connect.ClientConnPool
+	connPool connect.ClientPool
 }
 
-func (this *ClientConnManager) Init(moduleID string) {
+func (this *ClientManager) Init(moduleID string) {
 	this.connPool.Init(int32(util.GetStringHash(moduleID)))
 }
 
-func (this *ClientConnManager) addTCPClient(
-	netConn net.Conn) (*connect.ClientConn, error) {
-	conn, err := this.connPool.NewClientConn(netConn, this.OnConnectRecv,
+func (this *ClientManager) addTCPClient(
+	netConn net.Conn) (*connect.Client, error) {
+	conn, err := this.connPool.NewClient(netConn, this.OnConnectRecv,
 		this.onConnectClose)
 	if err != nil {
 		return nil, err
@@ -34,51 +34,51 @@ func (this *ClientConnManager) addTCPClient(
 	curtime := time.Now().Unix()
 	conn.SetTerminateTime(curtime + 20) // 20秒以后还没有验证通过就断开连接
 
-	conn.Debug("[ClientConnManager.addTCPClient] "+
+	conn.Debug("[ClientManager.addTCPClient] "+
 		"新增连接数 当前连接数量 NowSum[%d]",
 		this.GetClientTcpSocketCount())
 	return conn, nil
 }
 
-func (this *ClientConnManager) onConnectClose(conn *connect.ClientConn) {
+func (this *ClientManager) onConnectClose(conn *connect.Client) {
 	this.RemoveTaskByTmpID(conn.GetConnectID())
 }
 
-func (this *ClientConnManager) GetClientConn(
-	webtaskid string) *connect.ClientConn {
+func (this *ClientManager) GetClient(
+	webtaskid string) *connect.Client {
 	return this.connPool.Get(webtaskid)
 }
 
-func (this *ClientConnManager) GetClientTcpSocketCount() uint32 {
+func (this *ClientManager) GetClientTcpSocketCount() uint32 {
 	return this.connPool.Len()
 }
 
-func (this *ClientConnManager) remove(connectid string) {
-	value := this.GetClientConn(connectid)
+func (this *ClientManager) remove(connectid string) {
+	value := this.GetClient(connectid)
 	if value == nil {
 		return
 	}
 	this.connPool.Remove(connectid)
 }
 
-func (this *ClientConnManager) RemoveTaskByTmpID(
+func (this *ClientManager) RemoveTaskByTmpID(
 	connectid string) {
 	this.remove(connectid)
 }
 
 // 遍历所有的连接
-func (this *ClientConnManager) Range(
-	callback func(string, *connect.ClientConn) bool) {
-	this.connPool.Range(func(value *connect.ClientConn) bool {
+func (this *ClientManager) Range(
+	callback func(string, *connect.Client) bool) {
+	this.connPool.Range(func(value *connect.Client) bool {
 		return callback(value.GetConnectID(), value)
 	})
 }
 
 // 遍历所有的连接，检查需要移除的连接
-func (this *ClientConnManager) RangeRemove(
-	callback func(*connect.ClientConn) bool) {
+func (this *ClientManager) RangeRemove(
+	callback func(*connect.Client) bool) {
 	removelist := make([]string, 0)
-	this.connPool.Range(func(value *connect.ClientConn) bool {
+	this.connPool.Range(func(value *connect.Client) bool {
 		// 遍历所有的连接
 		if callback(value) {
 			// 该连接需要被移除
@@ -91,20 +91,20 @@ func (this *ClientConnManager) RangeRemove(
 		this.remove(v)
 	}
 
-	this.Debug("[ClientConnManager.ExecRemove] "+
+	this.Debug("[ClientManager.ExecRemove] "+
 		"条件删除连接数 RemoveSum[%d] 当前连接数量 LinkSum[%d]",
 		len(removelist), this.GetClientTcpSocketCount())
 }
 
-func (this *ClientConnManager) StartAddClientTcpSocketHandle(addr string) {
+func (this *ClientManager) StartAddClientTcpSocketHandle(addr string) {
 	// 由于部分 NAT 主机没有网卡概念，需要自己配置IP
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		this.Error("[ClientConnManager.StartAddClientTcpSocketHandle] %s",
+		this.Error("[ClientManager.StartAddClientTcpSocketHandle] %s",
 			err.Error())
 		return
 	}
-	this.Debug("[ClientConnManager.StartAddClientTcpSocketHandle] "+
+	this.Debug("[ClientManager.StartAddClientTcpSocketHandle] "+
 		"Gateway Client TCP服务启动成功 IPPort[%s]", addr)
 	go func() {
 		for {
@@ -112,7 +112,7 @@ func (this *ClientConnManager) StartAddClientTcpSocketHandle(addr string) {
 			netConn, err := ln.Accept()
 			if err != nil {
 				// handle error
-				this.Error("[ClientConnManager.StartAddClientTcpSocketHandle] "+
+				this.Error("[ClientManager.StartAddClientTcpSocketHandle] "+
 					"Accept() ERR:%q",
 					err.Error())
 				continue

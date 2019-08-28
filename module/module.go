@@ -87,9 +87,9 @@ func (this *BaseModule) GetConfiger() *conf.ModuleConfig {
 }
 
 // 获取一个客户端连接
-func (this *BaseModule) GetClientConn(tmpid string) *connect.ClientConn {
+func (this *BaseModule) GetClient(tmpid string) *connect.Client {
 	if this.gateBase != nil {
-		return this.gateBase.GetClientConn(tmpid)
+		return this.gateBase.GetClient(tmpid)
 	}
 	return nil
 }
@@ -106,7 +106,7 @@ func (this *BaseModule) InitSubnet(subnetAddrMap map[string]string) {
 // 发送一个服务器消息到另一个服务器
 func (this *BaseModule) SendServerMsg(
 	to string, msgstr msg.MsgStruct) {
-	conn := this.subnetManager.GetServerConn(to)
+	conn := this.subnetManager.GetServer(to)
 	if conn != nil {
 		conn.SendCmd(this.getServerMsgPack(msgstr, conn))
 	}
@@ -115,7 +115,7 @@ func (this *BaseModule) SendServerMsg(
 // 发送一个服务器消息到另一个服务器,仅框架内使用
 func (this *BaseModule) SInner_SendServerMsg(
 	to string, msgstr msg.MsgStruct) {
-	conn := this.subnetManager.GetServerConn(to)
+	conn := this.subnetManager.GetServer(to)
 	if conn != nil {
 		conn.SendCmd(msgstr)
 	} else {
@@ -124,9 +124,9 @@ func (this *BaseModule) SInner_SendServerMsg(
 }
 
 // 转发一个客户端消息到另一个服务器
-func (this *BaseModule) ForwardClientMsgToServer(fromconn *connect.ClientConn,
+func (this *BaseModule) ForwardClientMsgToServer(fromconn *connect.Client,
 	to string, msgid uint16, data []byte) {
-	conn := this.subnetManager.GetServerConn(to)
+	conn := this.subnetManager.GetServer(to)
 	if conn != nil {
 		conn.SendCmd(this.getFarwardFromGateMsgPack(msgid, data, fromconn, conn))
 	} else {
@@ -145,7 +145,7 @@ func (this *BaseModule) SendBytesToClient(gateid string,
 			sec = true
 		}
 	} else {
-		conn := this.subnetManager.GetServerConn(gateid)
+		conn := this.subnetManager.GetServer(gateid)
 		if conn != nil {
 			forward := &servercomm.SForwardToClient{}
 			forward.FromServerID = this.ModuleID
@@ -171,7 +171,7 @@ func (this *BaseModule) doSendBytesToClient(fromserver string, gateid string,
 	to string, msgid uint16, data []byte) error {
 	sec := false
 	if this.gateBase != nil {
-		conn := this.gateBase.GetClientConn(to)
+		conn := this.gateBase.GetClient(to)
 		if conn != nil {
 			if fromserver != gateid {
 				conn.Session.SetBindServer(util.GetServerIDType(fromserver),
@@ -194,7 +194,7 @@ func (this *BaseModule) BroadcastServerCmd(msgstr msg.MsgStruct) {
 
 // 获取一个均衡的负载服务器
 func (this *BaseModule) GetBalanceServerID(servertype string) string {
-	server := this.subnetManager.GetRandomServerConn(servertype)
+	server := this.subnetManager.GetRandomServer(servertype)
 	if server != nil {
 		return server.Tempid
 	}
@@ -203,7 +203,7 @@ func (this *BaseModule) GetBalanceServerID(servertype string) string {
 
 // 获取一个服务器消息的服务器间转发协议
 func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
-	tarconn *connect.ServerConn) msg.MsgStruct {
+	tarconn *connect.Server) msg.MsgStruct {
 	res := &servercomm.SForwardToServer{}
 	res.FromServerID = this.ModuleID
 	if tarconn != nil {
@@ -218,7 +218,7 @@ func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
 
 // 获取一个客户端消息到其他服务器间的转发协议
 func (this *BaseModule) getFarwardFromGateMsgPack(msgid uint16, data []byte,
-	fromconn *connect.ClientConn, tarconn *connect.ServerConn) msg.MsgStruct {
+	fromconn *connect.Client, tarconn *connect.Server) msg.MsgStruct {
 	res := &servercomm.SForwardFromGate{}
 	res.FromServerID = this.ModuleID
 	if tarconn != nil {

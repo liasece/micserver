@@ -9,17 +9,17 @@ import (
 
 type GateBase struct {
 	*log.Logger
-	*manager.ClientConnManager
+	*manager.ClientManager
 
 	subnetManager *subnet.SubnetManager
 	modleConf     *conf.TopConfig
 }
 
 func (this *GateBase) Init(moduleID string) {
-	this.ClientConnManager = &manager.ClientConnManager{
+	this.ClientManager = &manager.ClientManager{
 		Logger: this.Logger,
 	}
-	this.ClientConnManager.Init(moduleID)
+	this.ClientManager.Init(moduleID)
 }
 
 func (this *GateBase) BindOuterTCP(addr string) {

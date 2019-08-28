@@ -22,7 +22,7 @@ func CheckServerType(servertype uint32) bool {
 type SubnetManager struct {
 	*log.Logger
 	// 服务器连接池
-	connect.ServerConnPool
+	connect.ServerPool
 	// 回调注册
 	SubnetCallback
 	// 配置信息
@@ -41,7 +41,7 @@ type SubnetManager struct {
 func (this *SubnetManager) InitManager(moudleConf *conf.ModuleConfig) {
 	this.myServerInfo = &servercomm.SServerInfo{}
 	this.moudleConf = moudleConf
-	this.ServerConnPool.Logger = this.Logger
+	this.ServerPool.Logger = this.Logger
 	// 初始化连接
 	this.BindTCPSubnet(this.moudleConf.Settings)
 	// 初始化消息处理队列
@@ -72,7 +72,7 @@ func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uin
 
 //通知所有服务器列表信息
 func (this *SubnetManager) NotifyAllServerInfo(
-	tcptask *connect.ServerConn) {
+	tcptask *connect.Server) {
 	retmsg := &servercomm.SNotifyAllInfo{}
 	retmsg.Serverinfos = make([]*servercomm.SServerInfo, 0)
 	this.connInfos.RangeConnInfo(func(

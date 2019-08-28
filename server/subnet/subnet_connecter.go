@@ -69,10 +69,10 @@ func (this *SubnetManager) TryConnectServer(id string, addr string) {
 
 // 连接服务器
 func (this *SubnetManager) ConnectServer(id string,
-	addr string) (*connect.ServerConn, error) {
+	addr string) (*connect.Server, error) {
 	this.connectMutex.Lock()
 	defer this.connectMutex.Unlock()
-	oldconn := this.GetServerConn(id)
+	oldconn := this.GetServer(id)
 	// 重复连接
 	if oldconn != nil {
 		this.Debug("[SubnetManager.ConnectServer] "+
@@ -96,7 +96,7 @@ func (this *SubnetManager) ConnectServer(id string,
 			addr, err.Error())
 		return nil, err
 	}
-	conn := this.NewServerConn(connect.ServerSCTypeClient, Conn, id,
+	conn := this.NewServer(connect.ServerSCTypeClient, Conn, id,
 		this.onConnectRecv, this.onConnectClose)
 	conn.Logger = this.Logger
 	// 发起登录
@@ -117,9 +117,9 @@ func (this *SubnetManager) ConnectServer(id string,
 	return conn, nil
 }
 
-func (this *SubnetManager) onClientDisconnected(conn *connect.ServerConn) {
+func (this *SubnetManager) onClientDisconnected(conn *connect.Server) {
 	this.onConnectClose(conn)
-	this.RemoveServerConn(conn.Tempid)
+	this.RemoveServer(conn.Tempid)
 
 	if !conn.IsNormalDisconnect &&
 		conn.GetSCType() == connect.ServerSCTypeClient {

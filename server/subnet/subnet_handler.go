@@ -9,17 +9,17 @@ import (
 )
 
 type ConnectMsgQueueStruct struct {
-	conn *connect.ServerConn
+	conn *connect.Server
 	msg  *msg.MessageBinary
 }
 
 // 当TCP连接被移除时调用
-func (this *SubnetManager) onConnectClose(conn *connect.ServerConn) {
-	this.RemoveServerConn(conn.Tempid)
+func (this *SubnetManager) onConnectClose(conn *connect.Server) {
+	this.RemoveServer(conn.Tempid)
 }
 
 // 当收到TCP消息时调用
-func (this *SubnetManager) OnRecvTCPMsg(conn *connect.ServerConn,
+func (this *SubnetManager) OnRecvTCPMsg(conn *connect.Server,
 	msgbinary *msg.MessageBinary) {
 	switch msgbinary.CmdID {
 	case servercomm.SForwardToServerID:
@@ -70,15 +70,15 @@ func (this *SubnetManager) OnRecvTCPMsg(conn *connect.ServerConn,
 }
 
 // 获取TCP消息的消息处理通道
-func (this *SubnetManager) OnGetRecvTCPMsgParseChan(conn *connect.ServerConn,
+func (this *SubnetManager) OnGetRecvTCPMsgParseChan(conn *connect.Server,
 	maxChan int32, msgbinary *msg.MessageBinary) int32 {
 	return 0
 }
 
-func (this *SubnetManager) OnCreateTCPConnect(conn *connect.ServerConn) {
+func (this *SubnetManager) OnCreateTCPConnect(conn *connect.Server) {
 }
 
-func (this *SubnetManager) onConnectRecv(conn *connect.ServerConn,
+func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 	msgbin *msg.MessageBinary) {
 	if conn.GetSCType() == connect.ServerSCTypeTask {
 		curtime := uint64(time.Now().Unix())

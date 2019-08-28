@@ -10,36 +10,36 @@ import (
 	"time"
 )
 
-const mClientConnPoolGroupSum = 10
+const mClientPoolGroupSum = 10
 
-type stringToClientConn struct {
+type stringToClient struct {
 	*util.MapPool
 }
 
 // 加载或存储
-func (this *stringToClientConn) LoadOrStore(k string,
-	v *ClientConn) (*ClientConn, bool) {
+func (this *stringToClient) LoadOrStore(k string,
+	v *Client) (*Client, bool) {
 	vi, isLoad := this.MapPool.LoadOrStore(k, v)
-	res := vi.(*ClientConn)
+	res := vi.(*Client)
 	return res, isLoad
 }
 
 // 加载
-func (this *stringToClientConn) Load(k string) (*ClientConn, bool) {
+func (this *stringToClient) Load(k string) (*Client, bool) {
 	tv, ok := this.MapPool.Load(k)
 	if tv == nil || !ok {
 		return nil, false
 	}
-	return tv.(*ClientConn), true
+	return tv.(*Client), true
 }
 
 // 遍历所有
-func (this *stringToClientConn) Range(callback func(string, *ClientConn) bool) {
+func (this *stringToClient) Range(callback func(string, *Client) bool) {
 	this.MapPool.RangeAll(func(tk interface{}, tv interface{}) bool {
 		if tk == nil || tv == nil {
 			return true
 		}
-		if !callback(tk.(string), tv.(*ClientConn)) {
+		if !callback(tk.(string), tv.(*Client)) {
 			return false
 		}
 		return true
@@ -47,25 +47,25 @@ func (this *stringToClientConn) Range(callback func(string, *ClientConn) bool) {
 }
 
 // 初始化
-func (this *stringToClientConn) InitMapPool(gsum uint32) {
+func (this *stringToClient) InitMapPool(gsum uint32) {
 	this.MapPool = util.NewMapPool(gsum)
 }
 
-type ClientConnPool struct {
-	allSockets stringToClientConn // 所有连接
+type ClientPool struct {
+	allSockets stringToClient // 所有连接
 	linkSum    int32
 	groupID    uint16
 }
 
-func (this *ClientConnPool) Init(groupID int32) {
+func (this *ClientPool) Init(groupID int32) {
 	this.groupID = uint16(groupID)
-	this.allSockets.InitMapPool(mClientConnPoolGroupSum)
+	this.allSockets.InitMapPool(mClientPoolGroupSum)
 }
 
-func (this *ClientConnPool) NewClientConn(conn net.Conn,
-	onRecv func(*ClientConn, *msg.MessageBinary),
-	onClose func(*ClientConn)) (*ClientConn, error) {
-	tcptask := NewClientConn(conn, onRecv, onClose)
+func (this *ClientPool) NewClient(conn net.Conn,
+	onRecv func(*Client, *msg.MessageBinary),
+	onClose func(*Client)) (*Client, error) {
+	tcptask := NewClient(conn, onRecv, onClose)
 	err := this.AddAuto(tcptask)
 	if err != nil {
 		return nil, err
@@ -74,10 +74,10 @@ func (this *ClientConnPool) NewClientConn(conn net.Conn,
 }
 
 // 遍历连接池中的所有连接
-func (this *ClientConnPool) Range(
-	callback func(*ClientConn) bool) {
+func (this *ClientPool) Range(
+	callback func(*Client) bool) {
 	this.allSockets.Range(func(key string,
-		value *ClientConn) bool {
+		value *Client) bool {
 		if !callback(value) {
 			return false
 		}
@@ -86,30 +86,30 @@ func (this *ClientConnPool) Range(
 }
 
 // 根据连接的 TmpID 获取一个连接
-func (this *ClientConnPool) Get(tempid string) *ClientConn {
+func (this *ClientPool) Get(tempid string) *Client {
 	if tcptask, found := this.allSockets.Load(tempid); found {
 		return tcptask
 	}
 	return nil
 }
 
-func (this *ClientConnPool) Remove(tempid string) {
+func (this *ClientPool) Remove(tempid string) {
 	if value, found := this.allSockets.Load(tempid); found {
 		// 关闭消息发送协程
 		value.Shutdown()
 		// 删除连接
 		this.remove(tempid)
-		value.Debug("[ClientConnPool.Remove] 删除连接 当前连接数量"+
+		value.Debug("[ClientPool.Remove] 删除连接 当前连接数量"+
 			" Len[%d]",
 			this.Len())
 		return
 	}
 }
 
-func (this *ClientConnPool) AddAuto(connct *ClientConn) error {
+func (this *ClientPool) AddAuto(connct *Client) error {
 	tmpid, err := util.NewUniqueID(this.groupID)
 	if err != nil {
-		log.Error("[ClientConnPool.AddAuto] 生成ConnectID出错 Error[%s]",
+		log.Error("[ClientPool.AddAuto] 生成ConnectID出错 Error[%s]",
 			err.Error())
 		return errors.New("unique id create error: " + err.Error())
 	}
@@ -118,14 +118,14 @@ func (this *ClientConnPool) AddAuto(connct *ClientConn) error {
 	return nil
 }
 
-func (this *ClientConnPool) Len() uint32 {
+func (this *ClientPool) Len() uint32 {
 	if this.linkSum < 0 {
 		return 0
 	}
 	return uint32(this.linkSum)
 }
 
-func (this *ClientConnPool) remove(tmpid string) {
+func (this *ClientPool) remove(tmpid string) {
 	if _, ok := this.allSockets.Load(tmpid); !ok {
 		return
 	}
@@ -134,7 +134,7 @@ func (this *ClientConnPool) remove(tmpid string) {
 	this.linkSum--
 }
 
-func (this *ClientConnPool) add(tmpid string, value *ClientConn) {
+func (this *ClientPool) add(tmpid string, value *Client) {
 	_, isLoad := this.allSockets.LoadOrStore(tmpid, value)
 	if !isLoad {
 		this.linkSum++
@@ -144,9 +144,9 @@ func (this *ClientConnPool) add(tmpid string, value *ClientConn) {
 }
 
 // 随机获取指定类型的一个连接
-func (this *ClientConnPool) GetRandom() *ClientConn {
+func (this *ClientPool) GetRandom() *Client {
 	tasklist := make([]string, 0)
-	this.allSockets.Range(func(key string, value *ClientConn) bool {
+	this.allSockets.Range(func(key string, value *Client) bool {
 		tasklist = append(tasklist, key)
 		return true
 	})

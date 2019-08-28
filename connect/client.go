@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type ClientConn struct {
+type Client struct {
 	// 会话信息 可在不同服务器之间同步的
 	session.Session
 	// 连接实体
@@ -41,11 +41,11 @@ const ClientConnRecvBufferSize = msg.MessageMaxSize * 2
 // 获取一个新的服务器连接
 // sctype: 连接的 客户端/服务器 类型
 // netconn: 连接的net.Conn对象
-func NewClientConn(netconn net.Conn,
-	onRecv func(*ClientConn, *msg.MessageBinary),
-	onClose func(*ClientConn)) *ClientConn {
+func NewClient(netconn net.Conn,
+	onRecv func(*Client, *msg.MessageBinary),
+	onClose func(*Client)) *Client {
 	// 新建一个客户端连接
-	conn := new(ClientConn)
+	conn := new(Client)
 	ch := conn.Init(netconn,
 		ClientConnSendChanSize, ClientConnSendBufferSize,
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
@@ -56,18 +56,18 @@ func NewClientConn(netconn net.Conn,
 }
 
 func ClientDial(addr string,
-	onRecv func(*ClientConn, *msg.MessageBinary),
-	onClose func(*ClientConn)) (*ClientConn, error) {
+	onRecv func(*Client, *msg.MessageBinary),
+	onClose func(*Client)) (*Client, error) {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
-	return NewClientConn(conn, onRecv, onClose), err
+	return NewClient(conn, onRecv, onClose), err
 }
 
-func (this *ClientConn) recvMsgThread(c chan *msg.MessageBinary,
-	onRecv func(*ClientConn, *msg.MessageBinary),
-	onClose func(*ClientConn)) {
+func (this *Client) recvMsgThread(c chan *msg.MessageBinary,
+	onRecv func(*Client, *msg.MessageBinary),
+	onClose func(*Client)) {
 	defer func() {
 		if onClose != nil {
 			onClose(this)
@@ -88,12 +88,12 @@ func (this *ClientConn) recvMsgThread(c chan *msg.MessageBinary,
 }
 
 // 返回连接是否仍可用
-func (this *ClientConn) Check() bool {
+func (this *Client) Check() bool {
 	curtime := int64(time.Now().Unix())
 	// 检查本服务器时候还存活
 	if this.IsTerminateForce() {
 		// 本服务器关闭
-		this.Debug("[ClientConn.Check] 服务器强制断开连接")
+		this.Debug("[Client.Check] 服务器强制断开连接")
 		// 强制移除客户端连接
 		return false
 	}
@@ -101,34 +101,34 @@ func (this *ClientConn) Check() bool {
 	if this.IsTerminateTimeout(curtime) {
 		// 客户端超时未通过验证
 		if !this.IsVertify() {
-			this.Debug("[ClientConn.Check] 长时间未通过验证，断开连接")
+			this.Debug("[Client.Check] 长时间未通过验证，断开连接")
 		} else {
-			this.Debug("[ClientConn.Check] 长时间未活动，断开连接")
+			this.Debug("[Client.Check] 长时间未活动，断开连接")
 		}
 		return false
 	}
 	return true
 }
 
-func (this *ClientConn) GetPing() *Ping {
+func (this *Client) GetPing() *Ping {
 	return &this.ping
 }
 
 // 读数据
-func (this *ClientConn) Read() (msg []byte, cmdlen int, err error) {
+func (this *Client) Read() (msg []byte, cmdlen int, err error) {
 	msg, err4 := this.ReadAll()
-	this.Debug("[ClientConn.Read] Read N[%d] ", len(msg))
+	this.Debug("[Client.Read] Read N[%d] ", len(msg))
 
 	return msg, len(msg), err4
 }
 
 // 设置过期时间
-func (this *ClientConn) SetTerminateTime(value int64) {
+func (this *Client) SetTerminateTime(value int64) {
 	this.terminate_time = value
 }
 
 // 判断是否已强制终止
-func (this *ClientConn) IsTerminateTimeout(curtime int64) bool {
+func (this *Client) IsTerminateTimeout(curtime int64) bool {
 	if this.terminate_time > 0 && this.terminate_time < curtime {
 		return true
 	}
@@ -136,12 +136,12 @@ func (this *ClientConn) IsTerminateTimeout(curtime int64) bool {
 }
 
 // 判断是否已到达终止时间
-func (this *ClientConn) IsTerminateForce() bool {
+func (this *Client) IsTerminateForce() bool {
 	return this.terminate_force
 }
 
 // 判断是否已终止
-func (this *ClientConn) IsTerminate(curtime int64) bool {
+func (this *Client) IsTerminate(curtime int64) bool {
 	if this.IsTerminateForce() || this.IsTerminateTimeout(curtime) {
 		return true
 	}
@@ -149,32 +149,32 @@ func (this *ClientConn) IsTerminate(curtime int64) bool {
 }
 
 // 强制终止该连接
-func (this *ClientConn) Terminate() {
+func (this *Client) Terminate() {
 	this.terminate_force = true
 }
 
 // 异步发送一条消息，不带发送完成回调
-func (this *ClientConn) SendCmd(v msg.MsgStruct) {
+func (this *Client) SendCmd(v msg.MsgStruct) {
 	this.Debug("[SendCmd] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())
 	this.TCPConn.SendCmd(v)
 }
 
 // 异步发送一条消息，带发送完成回调
-func (this *ClientConn) SendCmdWithCallback(v msg.MsgStruct,
+func (this *Client) SendCmdWithCallback(v msg.MsgStruct,
 	callback func(interface{}), cbarg interface{}) {
 	this.Debug("[SendCmdWithCallback] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())
 	this.TCPConn.SendCmdWithCallback(v, callback, cbarg)
 }
 
-func (this *ClientConn) SendBytes(
+func (this *Client) SendBytes(
 	cmdid uint16, protodata []byte) error {
 	return this.TCPConn.SendBytes(cmdid, protodata)
 }
 
-func (this *ClientConn) SetLogger(logger *log.Logger) {
+func (this *Client) SetLogger(logger *log.Logger) {
 	this.Logger = logger.Clone()
-	this.Logger.SetTopic(fmt.Sprintf("ClientConn.CID(%s).IP(%s)",
+	this.Logger.SetTopic(fmt.Sprintf("Client.CID(%s).IP(%s)",
 		this.GetConnectID(), this.Conn.RemoteAddr().String()))
 }

@@ -48,7 +48,7 @@ func (this *msgHandler) onForwardToClient(smsg *servercomm.SForwardToClient) {
 }
 
 func (this *msgHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
-	client := this.mod.GetClientConn(smsg.ClientConnID)
+	client := this.mod.GetClient(smsg.ClientConnID)
 	if client != nil {
 		for k, v := range smsg.Session {
 			client.Session[k] = v

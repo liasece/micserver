@@ -18,18 +18,18 @@ const (
 )
 
 // 服务器连接发送消息缓冲要考虑到服务器处理消息的能力
-const ServerConnSendChanSize = 10000
+const ServerSendChanSize = 10000
 
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
-const ServerConnSendBufferSize = msg.MessageMaxSize * 10
+const ServerSendBufferSize = msg.MessageMaxSize * 10
 
 // 服务器连接发送消息缓冲要考虑到服务器处理消息的能力
-const ServerConnRecvChanSize = 10000
+const ServerRecvChanSize = 10000
 
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
-const ServerConnRecvBufferSize = msg.MessageMaxSize * 10
+const ServerRecvBufferSize = msg.MessageMaxSize * 10
 
-type ServerConn struct {
+type Server struct {
 	*log.Logger
 	TCPConn *tcpconn.TCPConn
 	// 唯一编号
@@ -55,24 +55,24 @@ type ServerConn struct {
 // 获取一个新的服务器连接
 // sctype: 连接的 客户端/服务器 类型
 // netconn: 连接的net.Conn对象
-func NewServerConn(sctype TServerSCType, netconn net.Conn,
-	onRecv func(*ServerConn, *msg.MessageBinary),
-	onClose func(*ServerConn)) *ServerConn {
-	conn := new(ServerConn)
+func NewServer(sctype TServerSCType, netconn net.Conn,
+	onRecv func(*Server, *msg.MessageBinary),
+	onClose func(*Server)) *Server {
+	conn := new(Server)
 	conn.Serverinfo = &servercomm.SServerInfo{}
 	conn.SetSC(sctype)
 	conn.ConnectPriority = rand.Int63()
 	conn.TCPConn = &tcpconn.TCPConn{}
 	ch := conn.TCPConn.Init(netconn,
-		ServerConnSendChanSize, ServerConnSendBufferSize,
-		ServerConnRecvChanSize, ServerConnRecvBufferSize)
+		ServerSendChanSize, ServerSendBufferSize,
+		ServerRecvChanSize, ServerRecvBufferSize)
 	go conn.recvMsgThread(ch, onRecv, onClose)
 	return conn
 }
 
-func (this *ServerConn) recvMsgThread(c chan *msg.MessageBinary,
-	onRecv func(*ServerConn, *msg.MessageBinary),
-	onClose func(*ServerConn)) {
+func (this *Server) recvMsgThread(c chan *msg.MessageBinary,
+	onRecv func(*Server, *msg.MessageBinary),
+	onClose func(*Server)) {
 	defer func() {
 		if onClose != nil {
 			onClose(this)
@@ -93,32 +93,32 @@ func (this *ServerConn) recvMsgThread(c chan *msg.MessageBinary,
 }
 
 // 获取服务器连接当前负载
-func (this *ServerConn) GetJobNum() uint32 {
+func (this *Server) GetJobNum() uint32 {
 	return this.jobnum
 }
 
 // 设置该服务器连接
-func (this *ServerConn) SetJobNum(jnum uint32) {
+func (this *Server) SetJobNum(jnum uint32) {
 	this.jobnum = jnum
 }
 
 // 是否通过了验证
-func (this *ServerConn) IsVertify() bool {
+func (this *Server) IsVertify() bool {
 	return this.verify_ok
 }
 
 // 设置验证状态
-func (this *ServerConn) SetVertify(value bool) {
+func (this *Server) SetVertify(value bool) {
 	this.verify_ok = value
 }
 
 // 设置过期时间
-func (this *ServerConn) SetTerminateTime(value uint64) {
+func (this *Server) SetTerminateTime(value uint64) {
 	this.terminate_time = value
 }
 
 // 判断是否已强制终止
-func (this *ServerConn) IsTerminateTimeout(curtime uint64) bool {
+func (this *Server) IsTerminateTimeout(curtime uint64) bool {
 	if this.terminate_time > 0 && this.terminate_time < curtime {
 		return true
 	}
@@ -126,12 +126,12 @@ func (this *ServerConn) IsTerminateTimeout(curtime uint64) bool {
 }
 
 // 判断是否已到达终止时间
-func (this *ServerConn) IsTerminateForce() bool {
+func (this *Server) IsTerminateForce() bool {
 	return this.terminate_force
 }
 
 // 判断是否已终止
-func (this *ServerConn) IsTerminate(curtime uint64) bool {
+func (this *Server) IsTerminate(curtime uint64) bool {
 	if this.IsTerminateForce() || this.IsTerminateTimeout(curtime) {
 		return true
 	}
@@ -139,38 +139,38 @@ func (this *ServerConn) IsTerminate(curtime uint64) bool {
 }
 
 // 强制终止该连接
-func (this *ServerConn) Terminate() {
-	this.Debug("[ServerConn.Terminate] 连接停止 Tempid[%s]", this.Tempid)
+func (this *Server) Terminate() {
+	this.Debug("[Server.Terminate] 连接停止 Tempid[%s]", this.Tempid)
 	this.terminate_force = true
 }
 
 // 异步发送一条消息，不带发送完成回调
-func (this *ServerConn) SendCmd(v msg.MsgStruct) error {
+func (this *Server) SendCmd(v msg.MsgStruct) error {
 	return this.TCPConn.SendCmd(v)
 }
 
 // 异步发送一条消息，带发送完成回调
-func (this *ServerConn) SendCmdWithCallback(v msg.MsgStruct,
+func (this *Server) SendCmdWithCallback(v msg.MsgStruct,
 	callback func(interface{}), cbarg interface{}) error {
 	return this.TCPConn.SendCmdWithCallback(v, callback, cbarg)
 }
 
-func (this *ServerConn) SetSC(sctype TServerSCType) {
+func (this *Server) SetSC(sctype TServerSCType) {
 	this.serverSCType = sctype
 }
 
-func (this *ServerConn) GetSCType() TServerSCType {
+func (this *Server) GetSCType() TServerSCType {
 	return this.serverSCType
 }
 
-func (this *ServerConn) Shutdown() {
+func (this *Server) Shutdown() {
 	this.TCPConn.Shutdown()
 }
 
-func (this *ServerConn) RemoteAddr() net.Addr {
+func (this *Server) RemoteAddr() net.Addr {
 	return this.TCPConn.RemoteAddr()
 }
 
-func (this *ServerConn) GetTCPConn() *tcpconn.TCPConn {
+func (this *Server) GetTCPConn() *tcpconn.TCPConn {
 	return this.TCPConn
 }

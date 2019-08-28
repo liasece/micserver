@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-type TFuncHandleSocketPackage func(*connect.ClientConn, *msg.MessageBinary)
-type TFuncOnNewConn func(*connect.ClientConn)
+type TFuncHandleSocketPackage func(*connect.Client, *msg.MessageBinary)
+type TFuncOnNewConn func(*connect.Client)
 
 type ClientTcpHandler struct {
 	*log.Logger
@@ -24,7 +24,7 @@ func (this *ClientTcpHandler) RegRecvMsg(
 	this.regRecvMsg = cb
 }
 
-func (this *ClientTcpHandler) OnConnectRecv(conn *connect.ClientConn,
+func (this *ClientTcpHandler) OnConnectRecv(conn *connect.Client,
 	msgbin *msg.MessageBinary) {
 	cmdname := servercomm.MsgIdToString(msgbin.CmdID)
 	this.Analysiswsmsgcount++
@@ -52,7 +52,7 @@ func (this *ClientTcpHandler) RegNewConn(
 	this.regNewConn = cb
 }
 
-func (this *ClientTcpHandler) OnNewConn(conn *connect.ClientConn) {
+func (this *ClientTcpHandler) OnNewConn(conn *connect.Client) {
 	if this.regNewConn != nil {
 		this.regNewConn(conn)
 	}
