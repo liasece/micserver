@@ -89,21 +89,21 @@ func ParseUInt64FromHttp(request *http.Request, keyname string) uint64 {
 }
 
 // http客户端连接管理器
-type ClientConnPool struct {
+type ClientPool struct {
 	alllink     map[uint64]*HttpConn // 所有连接
 	mutex       sync.Mutex
 	starttempid uint64
 }
 
-var httptaskmanager_s *ClientConnPool
+var httptaskmanager_s *ClientPool
 
 func init() {
-	httptaskmanager_s = &ClientConnPool{}
+	httptaskmanager_s = &ClientPool{}
 	httptaskmanager_s.alllink = make(map[uint64]*HttpConn)
 	httptaskmanager_s.starttempid = 1000000000
 }
 
-func (this *ClientConnPool) AddHttpTask(
+func (this *ClientPool) AddHttpTask(
 	writer http.ResponseWriter) *HttpConn {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -113,7 +113,7 @@ func (this *ClientConnPool) AddHttpTask(
 	curtime := uint64(time.Now().Unix())
 	wstask.Tempid = (curtime << 32) + this.starttempid
 	this.alllink[wstask.Tempid] = wstask
-	log.Debug("[ClientConnPool.AddHttpTask] 添加新的HTTP连接,%d,%d",
+	log.Debug("[ClientPool.AddHttpTask] 添加新的HTTP连接,%d,%d",
 		wstask.Tempid,
 		len(this.alllink))
 
@@ -123,23 +123,23 @@ func (this *ClientConnPool) AddHttpTask(
 		this.mutex.Lock()
 		defer this.mutex.Unlock()
 		delete(this.alllink, wstask.Tempid) // 这里应该需要加锁
-		log.Debug("[ClientConnPool.AddHttpTask] 删除关闭的的HTTP连接,%d,%d",
+		log.Debug("[ClientPool.AddHttpTask] 删除关闭的的HTTP连接,%d,%d",
 			wstask.Tempid, len(this.alllink))
 	}()
 	return wstask
 }
 
-func (this *ClientConnPool) RemoveHttpTask(tempid uint64) {
+func (this *ClientPool) RemoveHttpTask(tempid uint64) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	if _, found := this.alllink[tempid]; found {
 		delete(this.alllink, tempid) // 这里应该需要加锁
-		log.Debug("[ClientConnPool.RemoveHttpTask] 删除HTTP连接,%d,%d",
+		log.Debug("[ClientPool.RemoveHttpTask] 删除HTTP连接,%d,%d",
 			tempid, len(this.alllink))
 	}
 }
 
-func (this *ClientConnPool) GetHttpTask(tempid uint64) *HttpConn {
+func (this *ClientPool) GetHttpTask(tempid uint64) *HttpConn {
 	if value, found := this.alllink[tempid]; found {
 		return value
 	}
