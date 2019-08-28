@@ -13,11 +13,29 @@ import (
 	"time"
 )
 
+/**
+ * App 是 MicServer 中在 "Module" 上一层的概念，使用 MicServer 的
+ * 第一步就是实例化出一个 App 对象，并且向其中插入你的 Modules 。
+ * 建议一个代码上下文中仅存在一个 App 对象，如果你的需求让你觉得你有
+ * 必要实例化多个 App 在同一个可执行文件中，那么你应该考虑增加一个
+ * Module 而不是 App 。
+ */
 type App struct {
+	/*
+	 * 匿名成员 Logger 帮助你在此 App 中通过 App.Debug 等方式输出你的
+	 * 日志信息到指定的输出上。
+	 * 你可以在任何模块代码中新增 Logger 引用，并且从该 Logger 中 Clone()
+	 * 出来，定制化 log 的名字/主题 等，Logger 的底层实现已经帮你处理好了
+	 * Clone() 出来的 Logger 指向同一个输出。
+	 */
 	*log.Logger
 	Configer *conf.TopConfig
 	modules  []module.IModule
 
+	/**
+	 * App 是否已停止，如果为 true ，App将会在下一个循环周期执行清理工作，
+	 * 退出阻塞循环。
+	 */
 	isStoped bool
 }
 
@@ -99,9 +117,10 @@ func (this *App) SignalListen() {
 		case syscall.SIGUSR2:
 		case syscall.SIGTERM:
 		case syscall.SIGINT:
-			// //收到信号后的处理
+			// kill -2 || Ctrl+c 触发的信号，中断信号，执行正常退出操作
 			this.isStoped = true
 		case syscall.SIGQUIT:
+			// kill -9 || Ctrl+z 触发的信号，强制杀死进程
 			// 捕捉到就退不出了
 			buf := make([]byte, 1<<20)
 			stacklen := runtime.Stack(buf, true)
