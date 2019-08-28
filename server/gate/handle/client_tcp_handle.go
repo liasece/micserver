@@ -14,14 +14,14 @@ type TFuncOnNewConn func(*connect.ClientConn)
 type ClientTcpHandler struct {
 	*log.Logger
 
-	Analysiswsmsgcount     uint32
-	regHandleSocketPackage TFuncHandleSocketPackage
-	regOnNewConn           TFuncOnNewConn
+	Analysiswsmsgcount uint32
+	regRecvMsg         TFuncHandleSocketPackage
+	regNewConn         TFuncOnNewConn
 }
 
-func (this *ClientTcpHandler) RegHandleSocketPackage(
+func (this *ClientTcpHandler) RegRecvMsg(
 	cb TFuncHandleSocketPackage) {
-	this.regHandleSocketPackage = cb
+	this.regRecvMsg = cb
 }
 
 func (this *ClientTcpHandler) OnConnectRecv(conn *connect.ClientConn,
@@ -42,18 +42,18 @@ func (this *ClientTcpHandler) OnConnectRecv(conn *connect.ClientConn,
 	// 设置连接活动过期时间 5分钟
 	conn.SetTerminateTime(now + 5*60)
 
-	if this.regHandleSocketPackage != nil {
-		this.regHandleSocketPackage(conn, msgbin)
+	if this.regRecvMsg != nil {
+		this.regRecvMsg(conn, msgbin)
 	}
 }
 
-func (this *ClientTcpHandler) RegOnNewConn(
+func (this *ClientTcpHandler) RegNewConn(
 	cb TFuncOnNewConn) {
-	this.regOnNewConn = cb
+	this.regNewConn = cb
 }
 
 func (this *ClientTcpHandler) OnNewConn(conn *connect.ClientConn) {
-	if this.regOnNewConn != nil {
-		this.regOnNewConn(conn)
+	if this.regNewConn != nil {
+		this.regNewConn(conn)
 	}
 }

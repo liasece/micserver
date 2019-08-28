@@ -59,9 +59,9 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.subnetManager.Logger = this.Logger
 	// 初始化服务器网络管理器
 	this.subnetManager.InitManager(this.Configer)
-	this.subnetManager.RegForwardToClient(this.msgHandler.OnForwardToClient)
-	this.subnetManager.RegUpdateSession(this.msgHandler.OnUpdateSession)
-	this.subnetManager.RegForwardFromGate(this.msgHandler.OnForwardFromGate)
+	this.subnetManager.RegForwardToClient(this.msgHandler.onForwardToClient)
+	this.subnetManager.RegUpdateSession(this.msgHandler.onUpdateSession)
+	this.subnetManager.RegForwardFromGate(this.msgHandler.onForwardFromGate)
 
 	this.Debug("[BaseModule.InitModule] module initting...")
 	// gateway初始化
@@ -72,8 +72,8 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 		this.gateBase.Init(this.GetModuleID())
 		this.gateBase.BindOuterTCP(gateaddr)
 		// 事件监听
-		this.gateBase.RegHandleSocketPackage(this.clientEventHandler.OnRecvMsg)
-		this.gateBase.RegOnNewConn(this.clientEventHandler.OnNewClient)
+		this.gateBase.RegRecvMsg(this.clientEventHandler.onRecvMsg)
+		this.gateBase.RegNewConn(this.clientEventHandler.onNewClient)
 	}
 }
 

@@ -12,7 +12,7 @@ type clientEventHandler struct {
 	regRecvMsg func(client *connect.ClientConn, msgbin *msg.MessageBinary)
 }
 
-func (this *clientEventHandler) OnNewClient(client *connect.ClientConn) {
+func (this *clientEventHandler) onNewClient(client *connect.ClientConn) {
 	servertype := util.GetServerIDType(this.mod.ModuleID)
 	client.SetBindServer(servertype, this.mod.ModuleID)
 }
@@ -22,7 +22,7 @@ func (this *clientEventHandler) RegRecvMsg(
 	this.regRecvMsg = cb
 }
 
-func (this *clientEventHandler) OnRecvMsg(
+func (this *clientEventHandler) onRecvMsg(
 	client *connect.ClientConn, msgbin *msg.MessageBinary) {
 	if this.regRecvMsg != nil {
 		this.regRecvMsg(client, msgbin)

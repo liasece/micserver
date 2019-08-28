@@ -17,7 +17,7 @@ func (this *msgHandler) RegForwardToServer(
 	this.regForwardToServer = cb
 }
 
-func (this *msgHandler) OnForwardToServer(smsg *servercomm.SForwardToServer) {
+func (this *msgHandler) onForwardToServer(smsg *servercomm.SForwardToServer) {
 	if this.regForwardToServer != nil {
 		this.regForwardToServer(smsg)
 	}
@@ -28,7 +28,7 @@ func (this *msgHandler) RegForwardFromGate(
 	this.regForwardFromGate = cb
 }
 
-func (this *msgHandler) OnForwardFromGate(smsg *servercomm.SForwardFromGate) {
+func (this *msgHandler) onForwardFromGate(smsg *servercomm.SForwardFromGate) {
 	if this.regForwardFromGate != nil {
 		this.regForwardFromGate(smsg)
 	}
@@ -39,7 +39,7 @@ func (this *msgHandler) RegForwardToClient(
 	this.regForwardToClient = cb
 }
 
-func (this *msgHandler) OnForwardToClient(smsg *servercomm.SForwardToClient) {
+func (this *msgHandler) onForwardToClient(smsg *servercomm.SForwardToClient) {
 	err := this.mod.doSendBytesToClient(smsg.FromServerID, smsg.ToGateID,
 		smsg.ToClientID, smsg.MsgID, smsg.Data)
 	if err != nil {
@@ -47,7 +47,7 @@ func (this *msgHandler) OnForwardToClient(smsg *servercomm.SForwardToClient) {
 	}
 }
 
-func (this *msgHandler) OnUpdateSession(smsg *servercomm.SUpdateSession) {
+func (this *msgHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 	client := this.mod.GetClientConn(smsg.ClientConnID)
 	if client != nil {
 		for k, v := range smsg.Session {
