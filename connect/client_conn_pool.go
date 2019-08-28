@@ -13,33 +13,29 @@ import (
 const mClientConnPoolGroupSum = 10
 
 type stringToClientConn struct {
-	m *util.MapPool
+	*util.MapPool
 }
 
-func (this *stringToClientConn) Store(k string, v *ClientConn) {
-	this.m.Push(util.GetStringHash(k)%mClientConnPoolGroupSum, k, v)
-}
-
-func (this *stringToClientConn) LoadOrStore(k string, v *ClientConn) (*ClientConn, bool) {
-	vi, isLoad := this.m.LoadOfStroe(util.GetStringHash(k)%mClientConnPoolGroupSum, k, v)
+// 加载或存储
+func (this *stringToClientConn) LoadOrStore(k string,
+	v *ClientConn) (*ClientConn, bool) {
+	vi, isLoad := this.MapPool.LoadOrStore(k, v)
 	res := vi.(*ClientConn)
 	return res, isLoad
 }
 
+// 加载
 func (this *stringToClientConn) Load(k string) (*ClientConn, bool) {
-	tv, ok := this.m.Get(util.GetStringHash(k)%mClientConnPoolGroupSum, k)
+	tv, ok := this.MapPool.Load(k)
 	if tv == nil || !ok {
 		return nil, false
 	}
 	return tv.(*ClientConn), true
 }
 
-func (this *stringToClientConn) Delete(k string) {
-	this.m.Pop(util.GetStringHash(k)%mClientConnPoolGroupSum, k)
-}
-
+// 遍历所有
 func (this *stringToClientConn) Range(callback func(string, *ClientConn) bool) {
-	this.m.RangeAll(func(tk interface{}, tv interface{}) bool {
+	this.MapPool.RangeAll(func(tk interface{}, tv interface{}) bool {
 		if tk == nil || tv == nil {
 			return true
 		}
@@ -50,8 +46,9 @@ func (this *stringToClientConn) Range(callback func(string, *ClientConn) bool) {
 	})
 }
 
+// 初始化
 func (this *stringToClientConn) InitMapPool(gsum uint32) {
-	this.m = util.NewMapPool(gsum)
+	this.MapPool = util.NewMapPool(gsum)
 }
 
 type ClientConnPool struct {

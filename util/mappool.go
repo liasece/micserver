@@ -6,61 +6,16 @@ import (
 
 // 用户组，用于优化锁
 type GroupItem struct {
-	datas  sync.Map
-	length uint32
+	sync.Map
 }
 
-// 遍历组内所有用户
-func (this *GroupItem) Range(
-	f func(interface{}, interface{}) bool) {
-	this.datas.Range(f)
-}
-
-func (this *GroupItem) Len() uint32 {
-	return this.length
-}
-
-func (this *GroupItem) Push(key interface{}, value interface{}) {
-	this.add(key, value)
-}
-
-func (this *GroupItem) Pop(key interface{}) {
-	this.remove(key)
-}
-
-func (this *GroupItem) Get(key interface{}) (interface{}, bool) {
-	if value, found := this.datas.Load(key); found {
-		// 在列表中找到了 User 对象
-		return value, true
-	}
-	return nil, false
-}
-
-func (this *GroupItem) LoadOfStroe(key interface{}, value interface{}) (interface{}, bool) {
-	vi, isLoad := this.datas.LoadOrStore(key, value)
-	if !isLoad {
-		this.length++
-	} else {
-		this.datas.Store(key, value)
-	}
-	return vi, isLoad
-}
-
-func (this *GroupItem) remove(key interface{}) {
-	if _, ok := this.datas.Load(key); !ok {
-		return
-	}
-	// 删除
-	this.datas.Delete(key)
-	this.length--
-}
-
-func (this *GroupItem) add(key interface{}, value interface{}) {
-	if _, ok := this.datas.Load(key); !ok {
-		// 是新增的
-		this.length++
-	}
-	this.datas.Store(key, value)
+func (this *GroupItem) Len() int {
+	res := 0
+	this.Map.Range(func(k, v interface{}) bool {
+		res++
+		return true
+	})
+	return res
 }
 
 type MapPool struct {
@@ -85,42 +40,45 @@ func (this *MapPool) RangeAll(f func(interface{}, interface{}) bool) {
 	}
 }
 
-// 遍历组内所有
-func (this *MapPool) Range(groupIndex uint32,
-	f func(interface{}, interface{}) bool) {
-	this.groups[groupIndex].Range(f)
-}
-
-func (this *MapPool) LenTotal() uint32 {
-	res := uint32(0)
+func (this *MapPool) LenTotal() int {
+	res := 0
 	for _, v := range this.groups {
 		res += v.Len()
 	}
 	return res
 }
 
-func (this *MapPool) Len(groupIndex uint32) uint32 {
+func (this *MapPool) GetGroupIndex(key interface{}) uint32 {
+	if s, ok := key.(string); ok {
+		return GetStringHash(s) % this.groupSum
+	}
+	return 0
+}
+
+func (this *MapPool) Len(key interface{}) int {
+	groupIndex := this.GetGroupIndex(key)
 	return this.groups[groupIndex].Len()
 }
 
-func (this *MapPool) Push(groupIndex uint32,
-	key interface{}, value interface{}) {
-	this.groups[groupIndex].Push(key, value)
+func (this *MapPool) Store(key interface{}, value interface{}) {
+	groupIndex := this.GetGroupIndex(key)
+	this.groups[groupIndex].Store(key, value)
 }
 
-func (this *MapPool) Pop(groupIndex uint32,
-	key interface{}) {
-	this.groups[groupIndex].Pop(key)
+func (this *MapPool) Delete(key interface{}) {
+	groupIndex := this.GetGroupIndex(key)
+	this.groups[groupIndex].Delete(key)
 }
 
-func (this *MapPool) Get(groupIndex uint32,
-	key interface{}) (interface{}, bool) {
-	return this.groups[groupIndex].Get(key)
+func (this *MapPool) Load(key interface{}) (interface{}, bool) {
+	groupIndex := this.GetGroupIndex(key)
+	return this.groups[groupIndex].Load(key)
 }
 
-func (this *MapPool) LoadOfStroe(groupIndex uint32,
-	key interface{}, value interface{}) (interface{}, bool) {
-	return this.groups[groupIndex].LoadOfStroe(key, value)
+func (this *MapPool) LoadOrStore(key interface{},
+	value interface{}) (interface{}, bool) {
+	groupIndex := this.GetGroupIndex(key)
+	return this.groups[groupIndex].LoadOrStore(key, value)
 }
 
 func NewMapPool(groupSum uint32) *MapPool {
