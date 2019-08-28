@@ -77,11 +77,10 @@ func (this *MapPool) Init(groupSum uint32) {
 }
 
 // 遍历所有
-func (this *MapPool) RangeAll(f func(interface{}, interface{})) {
+func (this *MapPool) RangeAll(f func(interface{}, interface{}) bool) {
 	for _, v := range this.groups {
 		v.Range(func(key interface{}, value interface{}) bool {
-			f(key, value)
-			return true
+			return f(key, value)
 		})
 	}
 }

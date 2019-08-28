@@ -38,12 +38,15 @@ func (this *stringToClientConn) Delete(k string) {
 	this.m.Pop(util.GetStringHash(k)%mClientConnPoolGroupSum, k)
 }
 
-func (this *stringToClientConn) Range(callback func(string, *ClientConn)) {
-	this.m.RangeAll(func(tk interface{}, tv interface{}) {
+func (this *stringToClientConn) Range(callback func(string, *ClientConn) bool) {
+	this.m.RangeAll(func(tk interface{}, tv interface{}) bool {
 		if tk == nil || tv == nil {
-			return
+			return true
 		}
-		callback(tk.(string), tv.(*ClientConn))
+		if !callback(tk.(string), tv.(*ClientConn)) {
+			return false
+		}
+		return true
 	})
 }
 
@@ -75,10 +78,13 @@ func (this *ClientConnPool) NewClientConn(conn net.Conn,
 
 // 遍历连接池中的所有连接
 func (this *ClientConnPool) Range(
-	callback func(*ClientConn)) {
+	callback func(*ClientConn) bool) {
 	this.allSockets.Range(func(key string,
-		value *ClientConn) {
-		callback(value)
+		value *ClientConn) bool {
+		if !callback(value) {
+			return false
+		}
+		return true
 	})
 }
 
@@ -143,8 +149,9 @@ func (this *ClientConnPool) add(tmpid string, value *ClientConn) {
 // 随机获取指定类型的一个连接
 func (this *ClientConnPool) GetRandom() *ClientConn {
 	tasklist := make([]string, 0)
-	this.allSockets.Range(func(key string, value *ClientConn) {
+	this.allSockets.Range(func(key string, value *ClientConn) bool {
 		tasklist = append(tasklist, key)
+		return true
 	})
 
 	length := len(tasklist)

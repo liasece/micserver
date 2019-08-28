@@ -84,7 +84,7 @@ func (this *BaseModule) GetConfiger() *conf.ModuleConfig {
 // 获取一个客户端连接
 func (this *BaseModule) GetClientConn(tmpid string) *connect.ClientConn {
 	if this.gateBase != nil {
-		return this.gateBase.GetTaskByTmpID(tmpid)
+		return this.gateBase.GetClientConn(tmpid)
 	}
 	return nil
 }
@@ -166,7 +166,7 @@ func (this *BaseModule) doSendBytesToClient(fromserver string, gateid string,
 	to string, msgid uint16, data []byte) error {
 	sec := false
 	if this.gateBase != nil {
-		conn := this.gateBase.GetTaskByTmpID(to)
+		conn := this.gateBase.GetClientConn(to)
 		if conn != nil {
 			if fromserver != gateid {
 				conn.Session.SetBindServer(util.GetServerIDType(fromserver),

@@ -10,18 +10,18 @@ import (
 )
 
 // websocket连接管理器
-type ClientSocketManager struct {
+type ClientConnManager struct {
 	*log.Logger
 	handle.ClientTcpHandler
 
 	connPool connect.ClientConnPool
 }
 
-func (this *ClientSocketManager) Init(moduleID string) {
+func (this *ClientConnManager) Init(moduleID string) {
 	this.connPool.Init(int32(util.GetStringHash(moduleID)))
 }
 
-func (this *ClientSocketManager) AddClientTcpSocket(
+func (this *ClientConnManager) addTCPClient(
 	netConn net.Conn) (*connect.ClientConn, error) {
 	conn, err := this.connPool.NewClientConn(netConn, this.OnConnectRecv,
 		this.onConnectClose)
@@ -34,76 +34,77 @@ func (this *ClientSocketManager) AddClientTcpSocket(
 	curtime := time.Now().Unix()
 	conn.SetTerminateTime(curtime + 20) // 20秒以后还没有验证通过就断开连接
 
-	conn.Debug("[ClientSocketManager.AddClientTcpSocket] "+
+	conn.Debug("[ClientConnManager.addTCPClient] "+
 		"新增连接数 当前连接数量 NowSum[%d]",
 		this.GetClientTcpSocketCount())
 	return conn, nil
 }
 
-func (this *ClientSocketManager) onConnectClose(conn *connect.ClientConn) {
+func (this *ClientConnManager) onConnectClose(conn *connect.ClientConn) {
 	this.RemoveTaskByTmpID(conn.GetConnectID())
 }
 
-func (this *ClientSocketManager) GetTaskByTmpID(
+func (this *ClientConnManager) GetClientConn(
 	webtaskid string) *connect.ClientConn {
 	return this.connPool.Get(webtaskid)
 }
 
-func (this *ClientSocketManager) GetClientTcpSocketCount() uint32 {
+func (this *ClientConnManager) GetClientTcpSocketCount() uint32 {
 	return this.connPool.Len()
 }
 
-func (this *ClientSocketManager) remove(tempid string) {
-	value := this.GetTaskByTmpID(tempid)
+func (this *ClientConnManager) remove(connectid string) {
+	value := this.GetClientConn(connectid)
 	if value == nil {
 		return
 	}
-	this.connPool.Remove(tempid)
+	this.connPool.Remove(connectid)
 }
 
-func (this *ClientSocketManager) RemoveTaskByTmpID(
-	tempid string) {
-	this.remove(tempid)
+func (this *ClientConnManager) RemoveTaskByTmpID(
+	connectid string) {
+	this.remove(connectid)
 }
 
 // 遍历所有的连接
-func (this *ClientSocketManager) ExecAllUsers(
-	callback func(string, *connect.ClientConn)) {
-	this.connPool.Range(func(value *connect.ClientConn) {
-		callback(value.GetConnectID(), value)
+func (this *ClientConnManager) Range(
+	callback func(string, *connect.ClientConn) bool) {
+	this.connPool.Range(func(value *connect.ClientConn) bool {
+		return callback(value.GetConnectID(), value)
 	})
 }
 
 // 遍历所有的连接，检查需要移除的连接
-func (this *ClientSocketManager) ExecRemove(
+func (this *ClientConnManager) RangeRemove(
 	callback func(*connect.ClientConn) bool) {
 	removelist := make([]string, 0)
-	this.connPool.Range(func(value *connect.ClientConn) {
+	this.connPool.Range(func(value *connect.ClientConn) bool {
 		// 遍历所有的连接
 		if callback(value) {
 			// 该连接需要被移除
 			removelist = append(removelist, value.GetConnectID())
 			value.Terminate()
 		}
+		return true
 	})
 	for _, v := range removelist {
 		this.remove(v)
 	}
 
-	this.Debug("[ClientSocketManager.ExecRemove] "+
+	this.Debug("[ClientConnManager.ExecRemove] "+
 		"条件删除连接数 RemoveSum[%d] 当前连接数量 LinkSum[%d]",
 		len(removelist), this.GetClientTcpSocketCount())
 }
 
-func (this *ClientSocketManager) StartAddClientTcpSocketHandle(addr string) {
+func (this *ClientConnManager) StartAddClientTcpSocketHandle(addr string) {
 	// 由于部分 NAT 主机没有网卡概念，需要自己配置IP
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		this.Error("[ClientSocketManager.StartAddClientTcpSocketHandle] %s",
+		this.Error("[ClientConnManager.StartAddClientTcpSocketHandle] %s",
 			err.Error())
 		return
 	}
-	this.Debug("[ClientSocketManager.StartAddClientTcpSocketHandle] "+
+	this.Debug("[ClientConnManager.StartAddClientTcpSocketHandle] "+
 		"Gateway Client TCP服务启动成功 IPPort[%s]", addr)
 	go func() {
 		for {
@@ -111,12 +112,12 @@ func (this *ClientSocketManager) StartAddClientTcpSocketHandle(addr string) {
 			netConn, err := ln.Accept()
 			if err != nil {
 				// handle error
-				this.Error("[ClientSocketManager.StartAddClientTcpSocketHandle] "+
+				this.Error("[ClientConnManager.StartAddClientTcpSocketHandle] "+
 					"Accept() ERR:%q",
 					err.Error())
 				continue
 			}
-			this.AddClientTcpSocket(netConn)
+			this.addTCPClient(netConn)
 		}
 	}()
 }
