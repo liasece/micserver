@@ -29,6 +29,7 @@ type BaseModule struct {
 	util.TimerManager
 
 	msgHandler
+	clientEventHandler
 
 	ModuleID string
 	Configer *conf.ModuleConfig
@@ -42,6 +43,7 @@ type BaseModule struct {
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.Configer = &configer
 	this.msgHandler.mod = this
+	this.clientEventHandler.mod = this
 	// 初始化logger
 	if this.Configer.HasSetting("logpath") {
 		this.Logger = log.NewLogger(this.Configer.GetModuleSettingMap())
@@ -69,6 +71,9 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 		}
 		this.gateBase.Init(this.GetModuleID())
 		this.gateBase.BindOuterTCP(gateaddr)
+		// 事件监听
+		this.gateBase.RegHandleSocketPackage(this.clientEventHandler.OnRecvMsg)
+		this.gateBase.RegOnNewConn(this.clientEventHandler.OnNewClient)
 	}
 }
 
@@ -228,10 +233,6 @@ func (this *BaseModule) getFarwardFromGateMsgPack(msgid uint16, data []byte,
 	res.Data = make([]byte, size)
 	copy(res.Data, data)
 	return res
-}
-
-func (this *BaseModule) GetGate() *gate.GateBase {
-	return this.gateBase
 }
 
 func (this *BaseModule) GetModuleID() string {
