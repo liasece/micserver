@@ -1,10 +1,10 @@
 package connect
 
 import (
+	"github.com/liasece/micserver/connect/tcpconn"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/tcpconn"
 	"math/rand"
 	"net"
 )
