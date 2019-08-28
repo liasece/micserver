@@ -34,9 +34,6 @@ type SubnetManager struct {
 	// 消息处理相关
 	runningMsgChan   []chan *ConnectMsgQueueStruct
 	maxRunningMsgNum int32
-	// 防止日志频繁
-	lastwarningtime1 uint32
-	lastwarningtime2 uint32
 	// 我的服务器信息
 	myServerInfo *servercomm.SServerInfo
 }
