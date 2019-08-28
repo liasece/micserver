@@ -106,7 +106,7 @@ func (this *ClientConnPool) Remove(tempid string) {
 func (this *ClientConnPool) AddAuto(connct *ClientConn) error {
 	tmpid, err := util.NewUniqueID(this.groupID)
 	if err != nil {
-		log.Error("[ClientConnPool.AddAuto] 生成UUID出错 Error[%s]",
+		log.Error("[ClientConnPool.AddAuto] 生成ConnectID出错 Error[%s]",
 			err.Error())
 		return errors.New("unique id create error: " + err.Error())
 	}

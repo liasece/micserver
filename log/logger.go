@@ -13,6 +13,7 @@ type Logger struct {
 	lastTime    int64
 	lastTimeStr string
 	layout      string
+	topic       string
 }
 
 func NewLogger(settings map[string]string) *Logger {
@@ -134,6 +135,14 @@ func (l *Logger) SetLogLayout(layout string) {
 	l.layout = layout
 }
 
+func (l *Logger) SetTopic(topic string) {
+	if l == nil && l != default_logger {
+		default_logger.SetTopic(topic)
+		return
+	}
+	l.topic = topic
+}
+
 func (l *Logger) Debug(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(DEBUG, fmt, args...)
 }
@@ -173,10 +182,14 @@ func (l *Logger) deliverRecordToWriter(level int32, format string, args ...inter
 		return
 	}
 
+	if l.topic != "" {
+		inf += "[" + l.topic + "] "
+	}
+
 	if format != "" {
-		inf = fmt.Sprintf(format, args...)
+		inf += fmt.Sprintf(format, args...)
 	} else {
-		inf = fmt.Sprint(args...)
+		inf += fmt.Sprint(args...)
 	}
 
 	// format time

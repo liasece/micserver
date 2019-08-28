@@ -23,9 +23,6 @@ type ClientConn struct {
 
 	// 连接的延迟信息
 	ping Ping
-
-	// log 头部
-	loghead string
 }
 
 // 客户端连接发送消息缓冲不宜过大， 10*64KiB*100000连接=64GiB
@@ -175,33 +172,8 @@ func (this *ClientConn) SendBytes(
 	return this.TCPConn.SendBytes(cmdid, protodata)
 }
 
-func (this *ClientConn) GetLogHead() string {
-	this.loghead = fmt.Sprintf("[ClientConn] ConnectID[%s] IPPort[%s] ",
+func (this *ClientConn) GetLogTopic() string {
+	loghead := fmt.Sprintf("ClientConn.CID(%s).IP(%s)",
 		this.GetConnectID(), this.Conn.RemoteAddr().String())
-	return this.loghead
-}
-
-func (this *ClientConn) Debug(fmt string, args ...interface{}) {
-	fmt = this.GetLogHead() + fmt
-	this.Logger.Debug(fmt, args...)
-}
-
-func (this *ClientConn) Warn(fmt string, args ...interface{}) {
-	fmt = this.GetLogHead() + fmt
-	this.Logger.Warn(fmt, args...)
-}
-
-func (this *ClientConn) Info(fmt string, args ...interface{}) {
-	fmt = this.GetLogHead() + fmt
-	this.Logger.Info(fmt, args...)
-}
-
-func (this *ClientConn) Error(fmt string, args ...interface{}) {
-	fmt = this.GetLogHead() + fmt
-	this.Logger.Error(fmt, args...)
-}
-
-func (this *ClientConn) Fatal(fmt string, args ...interface{}) {
-	fmt = this.GetLogHead() + fmt
-	this.Logger.Fatal(fmt, args...)
+	return loghead
 }

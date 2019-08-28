@@ -28,7 +28,9 @@ func (this *ClientSocketManager) AddClientTcpSocket(
 	if err != nil {
 		return nil, err
 	}
-	conn.Logger = this.Logger
+	conn.Logger = this.Logger.Clone()
+	conn.Logger.SetTopic(conn.GetLogTopic())
+
 	this.OnNewConn(conn)
 	curtime := time.Now().Unix()
 	conn.SetTerminateTime(curtime + 20) // 20秒以后还没有验证通过就断开连接
