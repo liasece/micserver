@@ -14,7 +14,6 @@ import (
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/util"
 	"io"
-	"io/ioutil"
 	"net"
 	"sync/atomic"
 	"time"
@@ -40,6 +39,7 @@ const (
 type TCPConn struct {
 	*log.Logger
 	net.Conn
+	handler
 
 	// 尝试关闭一个连接
 	shutdownChan chan struct{}
@@ -58,6 +58,10 @@ type TCPConn struct {
 	recvmsgchan chan *msg.MessageBinary
 	// 接收缓冲区
 	recvBuffer *util.IOBuffer
+
+	// 外部协议提供的发送接收中间状态，在使用 TCP 之上的协议时，
+	// 可以通过该成员提供协议中间状态
+	protocolState interface{}
 }
 
 // 初始化一个TCPConn对象
@@ -82,10 +86,13 @@ func (this *TCPConn) Init(conn net.Conn,
 
 	// 接收
 	this.recvmsgchan = make(chan *msg.MessageBinary, recvChanSize)
-	this.recvBuffer = util.NewIOBuffer(conn, recvBufferSize)
-	go this.recvThread()
+	this.recvBuffer = util.NewIOBuffer(this, recvBufferSize)
 
 	return this.recvmsgchan
+}
+
+func (this *TCPConn) StartRecv() {
+	go this.recvThread()
 }
 
 func (this *TCPConn) IsAlive() bool {
@@ -114,8 +121,26 @@ func (this *TCPConn) Shutdown() {
 	}
 }
 
-func (this *TCPConn) ReadAll() ([]byte, error) {
-	return ioutil.ReadAll(this.Conn)
+func (this *TCPConn) Read(toData []byte) (int, error) {
+	if this.handler.regReadTCPBytes != nil {
+		n, state, err := this.handler.regReadTCPBytes(
+			this.Conn, this.protocolState, toData)
+		this.protocolState = state
+		return n, err
+	} else {
+		return this.Conn.Read(toData)
+	}
+}
+
+func (this *TCPConn) SendTCPBytes(data []byte) (int, error) {
+	if this.handler.regSendTCPBytes != nil {
+		n, state, err := this.handler.regSendTCPBytes(this.Conn,
+			this.protocolState, data)
+		this.protocolState = state
+		return n, err
+	} else {
+		return this.Conn.Write(data)
+	}
 }
 
 // 异步发送一条消息，不带发送完成回调
@@ -330,7 +355,7 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 			"this.sendBuffer.SeekAll() Err[%s]",
 			err.Error())
 	} else {
-		secn, err := this.Conn.Write(bs)
+		secn, err := this.SendTCPBytes(bs)
 		if err != nil {
 			this.Warn("[TCPConn.sendMsgList] "+
 				"缓冲区发送消息异常 Err[%s]",

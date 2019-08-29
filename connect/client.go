@@ -24,6 +24,12 @@ type Client struct {
 
 	// 连接的延迟信息
 	ping Ping
+
+	// 接收消息通道
+	readch chan *msg.MessageBinary
+	// 回调
+	onRecv  func(*Client, *msg.MessageBinary)
+	onClose func(*Client)
 }
 
 // 客户端连接发送消息缓冲不宜过大， 10*64KiB*100000连接=64GiB
@@ -46,12 +52,15 @@ func NewClient(netconn net.Conn,
 	onClose func(*Client)) *Client {
 	// 新建一个客户端连接
 	conn := new(Client)
-	ch := conn.Init(netconn,
+	readch := conn.Init(netconn,
 		ClientConnSendChanSize, ClientConnSendBufferSize,
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
 	conn.CreateTime = int64(time.Now().Unix())
 	conn.Session = make(map[string]string)
-	go conn.recvMsgThread(ch, onRecv, onClose)
+	conn.readch = readch
+	conn.onRecv = onRecv
+	conn.onClose = onClose
+	go conn.recvMsgThread()
 	return conn
 }
 
@@ -62,26 +71,30 @@ func ClientDial(addr string,
 	if err != nil {
 		return nil, err
 	}
-	return NewClient(conn, onRecv, onClose), err
+	client := NewClient(conn, onRecv, onClose)
+	client.StartReadData()
+	return client, err
 }
 
-func (this *Client) recvMsgThread(c chan *msg.MessageBinary,
-	onRecv func(*Client, *msg.MessageBinary),
-	onClose func(*Client)) {
+func (this *Client) StartReadData() {
+	this.TCPConn.StartRecv()
+}
+
+func (this *Client) recvMsgThread() {
 	defer func() {
-		if onClose != nil {
-			onClose(this)
+		if this.onClose != nil {
+			this.onClose(this)
 		}
 	}()
 
 	for {
 		select {
-		case m, ok := <-c:
+		case m, ok := <-this.readch:
 			if !ok || m == nil {
 				return
 			}
-			if onRecv != nil {
-				onRecv(this, m)
+			if this.onRecv != nil {
+				this.onRecv(this, m)
 			}
 		}
 	}
@@ -112,14 +125,6 @@ func (this *Client) Check() bool {
 
 func (this *Client) GetPing() *Ping {
 	return &this.ping
-}
-
-// 读数据
-func (this *Client) Read() (msg []byte, cmdlen int, err error) {
-	msg, err4 := this.ReadAll()
-	this.Debug("[Client.Read] Read N[%d] ", len(msg))
-
-	return msg, len(msg), err4
 }
 
 // 设置过期时间

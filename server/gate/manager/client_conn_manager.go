@@ -37,6 +37,8 @@ func (this *ClientManager) addTCPClient(
 	conn.Debug("[ClientManager.addTCPClient] "+
 		"新增连接数 当前连接数量 NowSum[%d]",
 		this.GetClientTcpSocketCount())
+	// 开始接收数据
+	conn.StartReadData()
 	return conn, nil
 }
 
