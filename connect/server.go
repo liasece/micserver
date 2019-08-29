@@ -66,6 +66,7 @@ func NewServer(sctype TServerSCType, netconn net.Conn,
 	ch := conn.TCPConn.Init(netconn,
 		ServerSendChanSize, ServerSendBufferSize,
 		ServerRecvChanSize, ServerRecvBufferSize)
+	conn.TCPConn.StartRecv()
 	go conn.recvMsgThread(ch, onRecv, onClose)
 	return conn
 }
