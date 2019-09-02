@@ -5,28 +5,28 @@ import (
 )
 
 type SubnetCallback struct {
-	regForwardToServer func(msg *servercomm.SForwardToServer)
-	regForwardFromGate func(msg *servercomm.SForwardFromGate)
-	regForwardToClient func(msg *servercomm.SForwardToClient)
-	regUpdateSession   func(msg *servercomm.SUpdateSession)
+	fonForwardToServer func(msg *servercomm.SForwardToServer)
+	fonForwardFromGate func(msg *servercomm.SForwardFromGate)
+	fonForwardToClient func(msg *servercomm.SForwardToClient)
+	fonUpdateSession   func(msg *servercomm.SUpdateSession)
 }
 
-func (this *SubnetCallback) RegForwardToServer(
+func (this *SubnetCallback) RegOnForwardToServer(
 	cb func(msg *servercomm.SForwardToServer)) {
-	this.regForwardToServer = cb
+	this.fonForwardToServer = cb
 }
 
-func (this *SubnetCallback) RegForwardFromGate(
+func (this *SubnetCallback) RegOnForwardFromGate(
 	cb func(msg *servercomm.SForwardFromGate)) {
-	this.regForwardFromGate = cb
+	this.fonForwardFromGate = cb
 }
 
-func (this *SubnetCallback) RegForwardToClient(
+func (this *SubnetCallback) RegOnForwardToClient(
 	cb func(msg *servercomm.SForwardToClient)) {
-	this.regForwardToClient = cb
+	this.fonForwardToClient = cb
 }
 
-func (this *SubnetCallback) RegUpdateSession(
+func (this *SubnetCallback) RegOnUpdateSession(
 	cb func(msg *servercomm.SUpdateSession)) {
-	this.regUpdateSession = cb
+	this.fonUpdateSession = cb
 }

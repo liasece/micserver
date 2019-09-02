@@ -25,37 +25,37 @@ func (this *SubnetManager) OnRecvTCPMsg(conn *connect.Server,
 	case servercomm.SForwardToServerID:
 		{
 			// 服务器间用户空间消息转发
-			if this.SubnetCallback.regForwardToServer != nil {
+			if this.SubnetCallback.fonForwardToServer != nil {
 				layerMsg := &servercomm.SForwardToServer{}
 				layerMsg.ReadBinary(msgbinary.ProtoData)
-				this.SubnetCallback.regForwardToServer(layerMsg)
+				this.SubnetCallback.fonForwardToServer(layerMsg)
 			}
 		}
 	case servercomm.SForwardFromGateID:
 		{
 			// Gateway 转发过来的客户端消息
-			if this.SubnetCallback.regForwardFromGate != nil {
+			if this.SubnetCallback.fonForwardFromGate != nil {
 				layerMsg := &servercomm.SForwardFromGate{}
 				layerMsg.ReadBinary(msgbinary.ProtoData)
-				this.SubnetCallback.regForwardFromGate(layerMsg)
+				this.SubnetCallback.fonForwardFromGate(layerMsg)
 			}
 		}
 	case servercomm.SForwardToClientID:
 		{
 			// 其他服务器转发过来的，要发送到客户端的消息
-			if this.SubnetCallback.regForwardToClient != nil {
+			if this.SubnetCallback.fonForwardToClient != nil {
 				layerMsg := &servercomm.SForwardToClient{}
 				layerMsg.ReadBinary(msgbinary.ProtoData)
-				this.SubnetCallback.regForwardToClient(layerMsg)
+				this.SubnetCallback.fonForwardToClient(layerMsg)
 			}
 		}
 	case servercomm.SUpdateSessionID:
 		{
 			// 客户端会话更新
-			if this.SubnetCallback.regUpdateSession != nil {
+			if this.SubnetCallback.fonUpdateSession != nil {
 				layerMsg := &servercomm.SUpdateSession{}
 				layerMsg.ReadBinary(msgbinary.ProtoData)
-				this.SubnetCallback.regUpdateSession(layerMsg)
+				this.SubnetCallback.fonUpdateSession(layerMsg)
 			}
 		}
 	case servercomm.SStartMyNotifyCommandID:

@@ -59,9 +59,9 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.subnetManager.Logger = this.Logger
 	// 初始化服务器网络管理器
 	this.subnetManager.InitManager(this.Configer)
-	this.subnetManager.RegForwardToClient(this.msgHandler.onForwardToClient)
-	this.subnetManager.RegUpdateSession(this.msgHandler.onUpdateSession)
-	this.subnetManager.RegForwardFromGate(this.msgHandler.onForwardFromGate)
+	this.subnetManager.RegOnForwardToClient(this.msgHandler.onForwardToClient)
+	this.subnetManager.RegOnUpdateSession(this.msgHandler.onUpdateSession)
+	this.subnetManager.RegOnForwardFromGate(this.msgHandler.onForwardFromGate)
 
 	this.Debug("[BaseModule.InitModule] module initting...")
 	// gateway初始化

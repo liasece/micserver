@@ -7,36 +7,36 @@ import (
 type msgHandler struct {
 	mod *BaseModule
 
-	regForwardToServer func(msg *servercomm.SForwardToServer)
-	regForwardFromGate func(msg *servercomm.SForwardFromGate)
-	regForwardToClient func(msg *servercomm.SForwardToClient)
+	fonForwardToServer func(msg *servercomm.SForwardToServer)
+	fonForwardFromGate func(msg *servercomm.SForwardFromGate)
+	fonForwardToClient func(msg *servercomm.SForwardToClient)
 }
 
-func (this *msgHandler) RegForwardToServer(
+func (this *msgHandler) RegOnForwardToServer(
 	cb func(msg *servercomm.SForwardToServer)) {
-	this.regForwardToServer = cb
+	this.fonForwardToServer = cb
 }
 
 func (this *msgHandler) onForwardToServer(smsg *servercomm.SForwardToServer) {
-	if this.regForwardToServer != nil {
-		this.regForwardToServer(smsg)
+	if this.fonForwardToServer != nil {
+		this.fonForwardToServer(smsg)
 	}
 }
 
-func (this *msgHandler) RegForwardFromGate(
+func (this *msgHandler) RegOnForwardFromGate(
 	cb func(msg *servercomm.SForwardFromGate)) {
-	this.regForwardFromGate = cb
+	this.fonForwardFromGate = cb
 }
 
 func (this *msgHandler) onForwardFromGate(smsg *servercomm.SForwardFromGate) {
-	if this.regForwardFromGate != nil {
-		this.regForwardFromGate(smsg)
+	if this.fonForwardFromGate != nil {
+		this.fonForwardFromGate(smsg)
 	}
 }
 
-func (this *msgHandler) RegForwardToClient(
+func (this *msgHandler) RegOnForwardToClient(
 	cb func(msg *servercomm.SForwardToClient)) {
-	this.regForwardToClient = cb
+	this.fonForwardToClient = cb
 }
 
 func (this *msgHandler) onForwardToClient(smsg *servercomm.SForwardToClient) {
