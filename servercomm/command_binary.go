@@ -215,42 +215,6 @@ func StringToMsgId(msgname string) uint16 {
 		return 0
 	}
 }
-func MsgIdToType(id uint16) rune {
-	switch(id ) {
-		case SServerInfoID: 
-		return rune('S')
-		case STimeTickCommandID: 
-		return rune('S')
-		case STestCommandID: 
-		return rune('S')
-		case SLoginCommandID: 
-		return rune('S')
-		case SLogoutCommandID: 
-		return rune('S')
-		case SSeverStartOKCommandID: 
-		return rune('S')
-		case SLoginRetCommandID: 
-		return rune('S')
-		case SStartRelyNotifyCommandID: 
-		return rune('S')
-		case SStartMyNotifyCommandID: 
-		return rune('S')
-		case SNotifyAllInfoID: 
-		return rune('S')
-		case SNotifySafelyQuitID: 
-		return rune('S')
-		case SUpdateSessionID: 
-		return rune('S')
-		case SForwardToServerID: 
-		return rune('S')
-		case SForwardToClientID: 
-		return rune('S')
-		case SForwardFromGateID: 
-		return rune('S')
-		default:
-		return rune(0)
-	}
-}
 func (this *SServerInfo) GetMsgId() uint16 {
 	return SServerInfoID
 }

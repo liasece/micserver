@@ -44,13 +44,6 @@ v1.1.0
     type ItemMsg struct {
         item int
     }
-v1.2.0
-    可以在go结构体声明中添加 // jsontype:U 来告诉脚本消息的类型，如：
-    // jsonbinary:U
-    type ItemMsg struct {
-        item int
-    }
-    则 MsgIdToType(ItemMsgID) == 'U'
 """
 import re
 import os
@@ -1056,7 +1049,6 @@ def getgoheadfunc(names,types,packname,proto,onlynames):
     constmsgname = 'const (\n'
     MsgIdToString = 'func MsgIdToString(id uint16) string {\nswitch(id){\n'
     StringToMsgId = 'func StringToMsgId(msgname string) uint16 {\nswitch(msgname){\n'
-    MsgIdToType = 'func MsgIdToType(id uint16) rune {\nswitch(id){\n'
     # 消息号
     re,se,leng = getgobybasetypesub("uint16")
     times = 0
@@ -1068,7 +1060,6 @@ def getgoheadfunc(names,types,packname,proto,onlynames):
         return data,offset\n}\n'
         MsgIdToString += ' case '+i+'ID: \nreturn '+i+'Name\n'
         StringToMsgId += 'case '+i+'Name: \nreturn '+i+'ID\n'
-        MsgIdToType += ' case '+i+'ID: \nreturn rune(\''+types[times]+'\')\n'
         if proto == 'protobuf':
             resinterface += 'func (this *'+i+') WriteBinary(data []byte) int {\n\
     this.MarshalTo(data)\nreturn this.ProtoSize()\n}\n\n'
@@ -1108,12 +1099,11 @@ return offset\n}\n\n'
     ressend += 'default:\nreturn data,0\n}\n}\n'
     MsgIdToString += 'default:\nreturn ""\n}\n}\n'
     StringToMsgId += 'default:\nreturn 0\n}\n}\n'
-    MsgIdToType += 'default:\nreturn rune(0)\n}\n}\n'
     constmsgid += ')\n'
     constmsgname += ')\n'
     if onlynames == True :
         return constmsgname+resinterfacegetname
-    return "" + constmsgid + constmsgname  + resinterface+ resinterfaceread + MsgIdToString + StringToMsgId + MsgIdToType + resinterfacegetid + resinterfacegetname + resinterfacegetsize + resinterfacegetjsonstring
+    return "" + constmsgid + constmsgname  + resinterface+ resinterfaceread + MsgIdToString + StringToMsgId + resinterfacegetid + resinterfacegetname + resinterfacegetsize + resinterfacegetjsonstring
 
 def getgocode(packname,gomsgs,proto,onlynames):
     msgNameList = []
