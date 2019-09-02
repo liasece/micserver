@@ -97,7 +97,8 @@ func (this *App) startTestCpuProfile() {
 		"[性能分析] StartTestCpuProfile end")
 }
 
-func (this *App) Run() {
+// 阻塞运行
+func (this *App) RunAndBlock() {
 	this.Debug("[App.Run] ----- Main has started ----- ")
 
 	// 监听系统Signal
@@ -127,4 +128,9 @@ func (this *App) Run() {
 	// 等日志打完
 	// time.Sleep(1 * time.Second)
 	this.Logger.CloseLogger()
+}
+
+// 默认阻塞运行
+func (this *App) Run() {
+	this.RunAndBlock()
 }

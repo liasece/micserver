@@ -31,7 +31,7 @@ type BaseModule struct {
 	msgHandler
 	clientEventHandler
 
-	ModuleID string
+	moduleID string
 	Configer *conf.ModuleConfig
 
 	subnetManager   *subnet.SubnetManager
@@ -47,10 +47,10 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	// 初始化logger
 	if this.Configer.HasSetting("logpath") {
 		this.Logger = log.NewLogger(this.Configer.GetModuleSettingMap())
-		this.SetLogName(this.ModuleID)
+		this.SetLogName(this.moduleID)
 	} else {
 		this.Logger = log.GetDefaultLogger().Clone()
-		this.Logger.SetLogName(this.ModuleID)
+		this.Logger.SetLogName(this.moduleID)
 	}
 	// 申请内存
 	if this.subnetManager == nil {
@@ -140,16 +140,16 @@ func (this *BaseModule) ForwardClientMsgToServer(fromconn *connect.Client,
 func (this *BaseModule) SendBytesToClient(gateid string,
 	to string, msgid uint16, data []byte) error {
 	sec := false
-	if this.ModuleID == gateid {
+	if this.moduleID == gateid {
 		if this.doSendBytesToClient(
-			this.ModuleID, gateid, to, msgid, data) == nil {
+			this.moduleID, gateid, to, msgid, data) == nil {
 			sec = true
 		}
 	} else {
 		conn := this.subnetManager.GetServer(gateid)
 		if conn != nil {
 			forward := &servercomm.SForwardToClient{}
-			forward.FromServerID = this.ModuleID
+			forward.FromServerID = this.moduleID
 			forward.MsgID = msgid
 			forward.ToClientID = to
 			forward.ToGateID = gateid
@@ -206,7 +206,7 @@ func (this *BaseModule) GetBalanceServerID(servertype string) string {
 func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
 	tarconn *connect.Server) msg.MsgStruct {
 	res := &servercomm.SForwardToServer{}
-	res.FromServerID = this.ModuleID
+	res.FromServerID = this.moduleID
 	if tarconn != nil {
 		res.ToServerID = tarconn.Serverinfo.ServerID
 	}
@@ -221,7 +221,7 @@ func (this *BaseModule) getServerMsgPack(msgstr msg.MsgStruct,
 func (this *BaseModule) getFarwardFromGateMsgPack(msgid uint16, data []byte,
 	fromconn *connect.Client, tarconn *connect.Server) msg.MsgStruct {
 	res := &servercomm.SForwardFromGate{}
-	res.FromServerID = this.ModuleID
+	res.FromServerID = this.moduleID
 	if tarconn != nil {
 		res.ToServerID = tarconn.Serverinfo.ServerID
 	}
@@ -237,7 +237,11 @@ func (this *BaseModule) getFarwardFromGateMsgPack(msgid uint16, data []byte,
 }
 
 func (this *BaseModule) GetModuleID() string {
-	return this.ModuleID
+	return this.moduleID
+}
+
+func (this *BaseModule) SetModuleID(id string) {
+	this.moduleID = id
 }
 
 func (this *BaseModule) KillModule() {
@@ -261,5 +265,5 @@ func (this *BaseModule) TopRunner() {
 }
 
 func (this *BaseModule) GetServerType() string {
-	return util.GetServerIDType(this.ModuleID)
+	return util.GetServerIDType(this.moduleID)
 }

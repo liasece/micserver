@@ -21,8 +21,8 @@ func (this *clientEventHandler) RegOnNewClient(
 }
 
 func (this *clientEventHandler) OnNewClient(client *connect.Client) {
-	servertype := util.GetServerIDType(this.mod.ModuleID)
-	client.SetBindServer(servertype, this.mod.ModuleID)
+	servertype := util.GetServerIDType(this.mod.GetModuleID())
+	client.SetBindServer(servertype, this.mod.GetModuleID())
 
 	if this.fonNewClient != nil {
 		this.fonNewClient(client)
