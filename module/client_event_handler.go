@@ -11,7 +11,7 @@ type clientEventHandler struct {
 	mod *BaseModule
 
 	fonNewClient     func(client *connect.Client)
-	fonRecvMsg       func(client *connect.Client, msgbin *msg.MessageBinary)
+	fonRecvClientMsg func(client *connect.Client, msgbin *msg.MessageBinary)
 	fonAcceptConnect func(conn net.Conn)
 }
 
@@ -29,15 +29,15 @@ func (this *clientEventHandler) OnNewClient(client *connect.Client) {
 	}
 }
 
-func (this *clientEventHandler) RegOnRecvMsg(
+func (this *clientEventHandler) RegOnRecvClientMsg(
 	cb func(client *connect.Client, msgbin *msg.MessageBinary)) {
-	this.fonRecvMsg = cb
+	this.fonRecvClientMsg = cb
 }
 
-func (this *clientEventHandler) OnRecvMsg(
+func (this *clientEventHandler) OnRecvClientMsg(
 	client *connect.Client, msgbin *msg.MessageBinary) {
-	if this.fonRecvMsg != nil {
-		this.fonRecvMsg(client, msgbin)
+	if this.fonRecvClientMsg != nil {
+		this.fonRecvClientMsg(client, msgbin)
 	}
 }
 

@@ -13,14 +13,14 @@ type ClientTcpHandler struct {
 	*log.Logger
 
 	Analysiswsmsgcount uint32
-	fonRecvMsg         func(*connect.Client, *msg.MessageBinary)
+	fonRecvClientMsg   func(*connect.Client, *msg.MessageBinary)
 	fonNewClient       func(*connect.Client)
 	fonAcceptConnect   func(net.Conn)
 }
 
-func (this *ClientTcpHandler) RegOnRecvMsg(
+func (this *ClientTcpHandler) RegOnRecvClientMsg(
 	cb func(*connect.Client, *msg.MessageBinary)) {
-	this.fonRecvMsg = cb
+	this.fonRecvClientMsg = cb
 }
 
 func (this *ClientTcpHandler) OnConnectRecv(client *connect.Client,
@@ -41,8 +41,8 @@ func (this *ClientTcpHandler) OnConnectRecv(client *connect.Client,
 	// 设置连接活动过期时间 5分钟
 	client.SetTerminateTime(now + 5*60)
 
-	if this.fonRecvMsg != nil {
-		this.fonRecvMsg(client, msgbin)
+	if this.fonRecvClientMsg != nil {
+		this.fonRecvClientMsg(client, msgbin)
 	}
 }
 
