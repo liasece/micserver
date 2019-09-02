@@ -13,14 +13,14 @@ type ClientTcpHandler struct {
 	*log.Logger
 
 	Analysiswsmsgcount uint32
-	regRecvMsg         func(*connect.Client, *msg.MessageBinary)
-	regNewClient       func(*connect.Client)
-	regAcceptConnect   func(net.Conn)
+	fonRecvMsg         func(*connect.Client, *msg.MessageBinary)
+	fonNewClient       func(*connect.Client)
+	fonAcceptConnect   func(net.Conn)
 }
 
-func (this *ClientTcpHandler) RegRecvMsg(
+func (this *ClientTcpHandler) RegOnRecvMsg(
 	cb func(*connect.Client, *msg.MessageBinary)) {
-	this.regRecvMsg = cb
+	this.fonRecvMsg = cb
 }
 
 func (this *ClientTcpHandler) OnConnectRecv(client *connect.Client,
@@ -41,29 +41,29 @@ func (this *ClientTcpHandler) OnConnectRecv(client *connect.Client,
 	// 设置连接活动过期时间 5分钟
 	client.SetTerminateTime(now + 5*60)
 
-	if this.regRecvMsg != nil {
-		this.regRecvMsg(client, msgbin)
+	if this.fonRecvMsg != nil {
+		this.fonRecvMsg(client, msgbin)
 	}
 }
 
-func (this *ClientTcpHandler) RegNewClient(
+func (this *ClientTcpHandler) RegOnNewClient(
 	cb func(*connect.Client)) {
-	this.regNewClient = cb
+	this.fonNewClient = cb
 }
 
 func (this *ClientTcpHandler) OnNewClient(client *connect.Client) {
-	if this.regNewClient != nil {
-		this.regNewClient(client)
+	if this.fonNewClient != nil {
+		this.fonNewClient(client)
 	}
 }
 
-func (this *ClientTcpHandler) RegAcceptConnect(
+func (this *ClientTcpHandler) RegOnAcceptConnect(
 	cb func(net.Conn)) {
-	this.regAcceptConnect = cb
+	this.fonAcceptConnect = cb
 }
 
 func (this *ClientTcpHandler) OnAcceptConnect(conn net.Conn) {
-	if this.regAcceptConnect != nil {
-		this.regAcceptConnect(conn)
+	if this.fonAcceptConnect != nil {
+		this.fonAcceptConnect(conn)
 	}
 }

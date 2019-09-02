@@ -122,8 +122,8 @@ func (this *TCPConn) Shutdown() {
 }
 
 func (this *TCPConn) Read(toData []byte) (int, error) {
-	if this.handler.regReadTCPBytes != nil {
-		n, state, err := this.handler.regReadTCPBytes(
+	if this.handler.fdoReadTCPBytes != nil {
+		n, state, err := this.handler.fdoReadTCPBytes(
 			this.Conn, this.protocolState, toData)
 		this.protocolState = state
 		return n, err
@@ -132,9 +132,9 @@ func (this *TCPConn) Read(toData []byte) (int, error) {
 	}
 }
 
-func (this *TCPConn) SendTCPBytes(data []byte) (int, error) {
-	if this.handler.regSendTCPBytes != nil {
-		n, state, err := this.handler.regSendTCPBytes(this.Conn,
+func (this *TCPConn) DoSendTCPBytes(data []byte) (int, error) {
+	if this.handler.fdoSendTCPBytes != nil {
+		n, state, err := this.handler.fdoSendTCPBytes(this.Conn,
 			this.protocolState, data)
 		this.protocolState = state
 		return n, err
@@ -354,7 +354,7 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 			"this.sendBuffer.SeekAll() Err[%s]",
 			err.Error())
 	} else {
-		secn, err := this.SendTCPBytes(bs)
+		secn, err := this.DoSendTCPBytes(bs)
 		if err != nil {
 			this.Warn("[TCPConn.sendMsgList] "+
 				"缓冲区发送消息异常 Err[%s]",

@@ -72,9 +72,9 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 		this.gateBase.Init(this.GetModuleID())
 		this.gateBase.BindOuterTCP(gateaddr)
 		// 事件监听
-		this.gateBase.RegRecvMsg(this.clientEventHandler.onRecvMsg)
-		this.gateBase.RegNewClient(this.clientEventHandler.onNewClient)
-		this.gateBase.RegAcceptConnect(this.clientEventHandler.onAcceptConnect)
+		this.gateBase.RegOnRecvMsg(this.clientEventHandler.OnRecvMsg)
+		this.gateBase.RegOnNewClient(this.clientEventHandler.OnNewClient)
+		this.gateBase.RegOnAcceptConnect(this.clientEventHandler.OnAcceptConnect)
 	}
 }
 

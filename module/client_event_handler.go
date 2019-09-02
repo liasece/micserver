@@ -10,43 +10,43 @@ import (
 type clientEventHandler struct {
 	mod *BaseModule
 
-	regNewClient     func(client *connect.Client)
-	regRecvMsg       func(client *connect.Client, msgbin *msg.MessageBinary)
-	regAcceptConnect func(conn net.Conn)
+	fonNewClient     func(client *connect.Client)
+	fonRecvMsg       func(client *connect.Client, msgbin *msg.MessageBinary)
+	fonAcceptConnect func(conn net.Conn)
 }
 
-func (this *clientEventHandler) RegNewClient(
+func (this *clientEventHandler) RegOnNewClient(
 	cb func(client *connect.Client)) {
-	this.regNewClient = cb
+	this.fonNewClient = cb
 }
 
-func (this *clientEventHandler) onNewClient(client *connect.Client) {
+func (this *clientEventHandler) OnNewClient(client *connect.Client) {
 	servertype := util.GetServerIDType(this.mod.ModuleID)
 	client.SetBindServer(servertype, this.mod.ModuleID)
 
-	if this.regNewClient != nil {
-		this.regNewClient(client)
+	if this.fonNewClient != nil {
+		this.fonNewClient(client)
 	}
 }
 
-func (this *clientEventHandler) RegRecvMsg(
+func (this *clientEventHandler) RegOnRecvMsg(
 	cb func(client *connect.Client, msgbin *msg.MessageBinary)) {
-	this.regRecvMsg = cb
+	this.fonRecvMsg = cb
 }
 
-func (this *clientEventHandler) onRecvMsg(
+func (this *clientEventHandler) OnRecvMsg(
 	client *connect.Client, msgbin *msg.MessageBinary) {
-	if this.regRecvMsg != nil {
-		this.regRecvMsg(client, msgbin)
+	if this.fonRecvMsg != nil {
+		this.fonRecvMsg(client, msgbin)
 	}
 }
 
-func (this *clientEventHandler) RegAcceptConnect(cb func(conn net.Conn)) {
-	this.regAcceptConnect = cb
+func (this *clientEventHandler) RegOnAcceptConnect(cb func(conn net.Conn)) {
+	this.fonAcceptConnect = cb
 }
 
-func (this *clientEventHandler) onAcceptConnect(conn net.Conn) {
-	if this.regAcceptConnect != nil {
-		this.regAcceptConnect(conn)
+func (this *clientEventHandler) OnAcceptConnect(conn net.Conn) {
+	if this.fonAcceptConnect != nil {
+		this.fonAcceptConnect(conn)
 	}
 }
