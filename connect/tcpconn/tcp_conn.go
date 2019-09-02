@@ -151,23 +151,22 @@ func (this *TCPConn) SendCmd(v msg.MsgStruct) error {
 		return ErrCloseed
 	}
 
-	msg := msg.MakeMessageByJson(v)
+	msg := msg.MakeMessageByObj(v)
 
 	return this.SendMessageBinary(msg)
 }
 
 // 异步发送一条消息，带发送完成回调
 func (this *TCPConn) SendCmdWithCallback(v msg.MsgStruct,
-	callback func(interface{}), cbarg interface{}) error {
+	cb func(interface{}), cbarg interface{}) error {
 	if this.state >= TCPCONNSTATE_HOLD {
 		this.Warn("[TCPConn.SendCmdWithCallback] 连接已失效，取消发送")
 		return ErrCloseed
 	}
-	msg := msg.MakeMessageByJson(v)
-	msg.OnSendDone = callback
-	msg.OnSendDoneArg = cbarg
+	mb := msg.MakeMessageByObj(v)
+	mb.RegSendDone(cb, cbarg)
 
-	return this.SendMessageBinary(msg)
+	return this.SendMessageBinary(mb)
 }
 
 // 发送 Bytes
@@ -371,9 +370,7 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 	// 遍历已经发送的消息
 	for _, msg := range msglist {
 		// 调用发送回调函数
-		if msg.OnSendDone != nil {
-			msg.OnSendDone(msg.OnSendDoneArg)
-		}
+		msg.OnSendDone()
 		msg.Free()
 	}
 }

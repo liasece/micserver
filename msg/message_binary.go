@@ -7,6 +7,8 @@ import (
 )
 
 const (
+	// 允许的最大消息大小（包括头部大小）
+	// 普通代码中间应留出至少 32 字节提供给消息头部使用
 	MessageMaxSize = 8 * 1024 * 1024
 )
 
@@ -15,14 +17,9 @@ var (
 	defaultBody  MessageBinaryBody
 )
 
-type MsgStruct interface {
-	WriteBinary(data []byte) int
-	GetMsgId() uint16
-	GetMsgName() string
-	GetSize() int
-	GetJson() string
-}
-
+// 灵活对象池的对象大小分割。
+// 从对象池中获取对象时，将会从至少满足需求大小的对象的对象池中获取对象，
+// 有效减少对象池中闲置对象带来的内存占用。
 // 粒度控制 单位：字节
 var sizeControl []int = []int{32, 64, 128, 256, 512, 1024, 2 * 1024,
 	4 * 1024, 6 * 1024, 8 * 1024, 10 * 1024, 15 * 1024, 20 * 1024,
@@ -31,13 +28,15 @@ var sizeControl []int = []int{32, 64, 128, 256, 512, 1024, 2 * 1024,
 	1024 * 1024, 2 * 1024 * 1024, 4 * 1024 * 1024, 8 * 1024 * 1024}
 var pools *util.FlexiblePool
 
+// 初始化灵活对象池
 func init() {
 	pools = util.NewFlexiblePool(sizeControl, newMsgBinaryBySize)
 }
 
+// 根据 MessageBinary.buffer 的大小来创建一个对象池中的对象
 func newMsgBinaryBySize(size int) interface{} {
 	msg := new(MessageBinary)
-	msg.buffers = make([]byte, size)
+	msg.buffer = make([]byte, size)
 	return msg
 }
 
@@ -63,12 +62,25 @@ func getMessageBinaryByProtoDataLength(protoDataSize int) *MessageBinary {
 type MessageBinary struct {
 	MessageBinaryHeadL1
 	MessageBinaryBody
-	buffers []byte
+	buffer []byte
 
-	TmpData       interface{}       // 用于优化的临时数据指针请注意使用！
-	TmpData1      interface{}       // 用于优化的临时数据指针请注意使用！
-	OnSendDone    func(interface{}) // 用于优化的临时数据指针请注意使用！
-	OnSendDoneArg interface{}       // 用于优化的临时数据指针请注意使用！
+	regSendDone *SendCompletedAgent // 用于优化的临时数据指针请注意使用！
+}
+
+func (this *MessageBinary) RegSendDone(cb func(interface{}), argv interface{}) {
+	if cb == nil {
+		return
+	}
+	this.regSendDone = &SendCompletedAgent{
+		F:    cb,
+		Argv: argv,
+	}
+}
+
+func (this *MessageBinary) OnSendDone() {
+	if this.regSendDone != nil {
+		this.regSendDone.F(this.regSendDone.Argv)
+	}
 }
 
 // 将消息对象释放到对象池中
@@ -76,7 +88,7 @@ func (this *MessageBinary) Free() {
 	// 重置本消息各个属性
 	this.Reset()
 	// 根据缓冲区容量归类
-	size := len(this.buffers)
+	size := len(this.buffer)
 	err := pools.Put(this, size)
 	if err != nil {
 		log.Error("[MessageBinary.Free] pools.Put Err[%s]",
@@ -87,12 +99,9 @@ func (this *MessageBinary) Free() {
 // 重置 Message 数据
 func (this *MessageBinary) Reset() {
 	this.MessageBinaryHeadL1 = defaultHead1
-	this.TmpData = nil
-	this.TmpData1 = nil
-	this.OnSendDone = nil
-	this.OnSendDoneArg = nil
+	this.regSendDone = nil
 	this.MessageBinaryBody = defaultBody
-	// 为了减轻GC压力，不应重置buffers字段
+	// 为了减轻GC压力，不应重置buffer字段
 }
 
 // 从二进制流中读取 Message 结构，带消息头
@@ -131,25 +140,27 @@ func (this *MessageBinary) readBinaryNoHeadL1(cmddata []byte) error {
 		return errors.New("消息头标注大小小于整体大小，消息体不完整")
 	}
 	// 检查 buffer
-	if this.buffers == nil || len(this.buffers) < int(this.MessageBinaryHeadL1.CmdLen) {
+	if this.buffer == nil ||
+		len(this.buffer) < int(this.MessageBinaryHeadL1.CmdLen) {
 		tmpmsg := getMessageBinaryByProtoDataLength(
 			int(this.MessageBinaryHeadL1.LowerSize()))
 		if tmpmsg == nil {
 			log.Error("[readBinaryNoHeadL1] "+
-				"无法分配MsgBinary的内存！！！ Head[%+v]", this.MessageBinaryHeadL1)
+				"无法分配MsgBinary的内存！！！ Head[%+v]",
+				this.MessageBinaryHeadL1)
 			return nil
 		}
 		// 重新构建合理的 buffer
-		this.buffers = tmpmsg.buffers
+		this.buffer = tmpmsg.buffer
 	}
 	offset := 0
-	offset += this.MessageBinaryHeadL1.WriteBinary(this.buffers[offset:])
+	offset += this.MessageBinaryHeadL1.WriteBinary(this.buffer[offset:])
 	// 复制 MessageBinaryHeadL2+protodata 数据域
-	copy(this.buffers[offset:this.MessageBinaryHeadL1.CmdLen],
+	copy(this.buffer[offset:this.MessageBinaryHeadL1.CmdLen],
 		cmddata[:int(this.MessageBinaryHeadL1.CmdLen)-offset])
 	// 将数据指针字段指向buffer数据域
 	this.MessageBinaryBody.ProtoData =
-		this.buffers[MSG_HEADSIZE:this.MessageBinaryHeadL1.CmdLen]
+		this.buffer[MSG_HEADSIZE:this.MessageBinaryHeadL1.CmdLen]
 
 	return nil
 }
@@ -157,7 +168,7 @@ func (this *MessageBinary) readBinaryNoHeadL1(cmddata []byte) error {
 func (this *MessageBinary) writeHeadBuffer() int {
 	// 将结构数据填入 buffer
 	offset := 0
-	offset += this.MessageBinaryHeadL1.WriteBinary(this.buffers[offset:])
+	offset += this.MessageBinaryHeadL1.WriteBinary(this.buffer[offset:])
 	return offset
 }
 
@@ -165,19 +176,19 @@ func (this *MessageBinary) writeHeadBuffer() int {
 // 在写入binary之前，必须经过 MakeMessage* 或 ReadBinary*
 func (this *MessageBinary) WriteBinary() ([]byte, int) {
 	// 如果缓冲区大小不合适，说明数据被篡改
-	if this.buffers == nil ||
-		len(this.buffers) < int(this.MessageBinaryHeadL1.CmdLen) {
+	if this.buffer == nil ||
+		len(this.buffer) < int(this.MessageBinaryHeadL1.CmdLen) {
 		log.Error("[MakeMessageByBytes] "+
 			"[WriteBinary] 错误的缓冲区大小，数据被篡改！ "+
 			"BufferLen[%d] CmdLen[%d]",
-			len(this.buffers), this.MessageBinaryHeadL1.CmdLen)
+			len(this.buffer), this.MessageBinaryHeadL1.CmdLen)
 		return make([]byte, 1), 0
 	}
-	return this.buffers[:this.MessageBinaryHeadL1.CmdLen],
+	return this.buffer[:this.MessageBinaryHeadL1.CmdLen],
 		int(this.MessageBinaryHeadL1.CmdLen)
 }
 
-// 通过二进制流创建 Message
+// 通过二进制流创建 MessageBinary
 func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	// 获取基础数据
 	datalen := uint32(len(protodata))
@@ -201,14 +212,14 @@ func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 		return nil
 	}
 	// 将 protodata 拷贝至 buffer 的数据域
-	copy(msgbinary.buffers[MSG_HEADSIZE:totalLength], protodata)
+	copy(msgbinary.buffer[MSG_HEADSIZE:totalLength], protodata)
 
 	// 初始化消息信息
 
 	// MessageBinaryBody
 	// 消息数据字段指针指向 buffer 数据域
 	msgbinary.MessageBinaryBody.ProtoData =
-		msgbinary.buffers[MSG_HEADSIZE:totalLength]
+		msgbinary.buffer[MSG_HEADSIZE:totalLength]
 
 	// MessageBinaryHeadL1
 	msgbinary.MessageBinaryHeadL1.CmdLen = totalLength
@@ -220,8 +231,8 @@ func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	return msgbinary
 }
 
-// 通过结构体创建 Json Message
-func MakeMessageByJson(v MsgStruct) *MessageBinary {
+// 通过结构体创建 MessageBinary
+func MakeMessageByObj(v MsgStruct) *MessageBinary {
 	// 通过结构对象构造 json binary
 	cmdid := v.GetMsgId()
 	// 获取基础数据
@@ -240,7 +251,7 @@ func MakeMessageByJson(v MsgStruct) *MessageBinary {
 	// 从对象池获取消息对象
 	msgbinary := getMessageBinaryByProtoDataLength(int(datalen))
 	if msgbinary == nil {
-		log.Error("[MakeMessageByJson] "+
+		log.Error("[MakeMessageByObj] "+
 			"无法分配MsgBinary的内存！！！ CmdLen[%d] DataLen[%d]",
 			totalLength, datalen)
 		return nil
@@ -248,13 +259,13 @@ func MakeMessageByJson(v MsgStruct) *MessageBinary {
 
 	// MessageBinaryBody
 	// 将 protodata 拷贝至 buffer 的数据域
-	v.WriteBinary(msgbinary.buffers[MSG_HEADSIZE:totalLength])
+	v.WriteBinary(msgbinary.buffer[MSG_HEADSIZE:totalLength])
 
 	// 初始化消息信息
 
 	// 消息数据字段指针指向 buffer 数据域
 	msgbinary.MessageBinaryBody.ProtoData =
-		msgbinary.buffers[MSG_HEADSIZE:totalLength]
+		msgbinary.buffer[MSG_HEADSIZE:totalLength]
 
 	// 初始化消息信息
 	// MessageBinaryHeadL1

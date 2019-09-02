@@ -20,7 +20,7 @@ func NewMessageBinaryReader(netbuffer *util.IOBuffer) *MessageBinaryReader {
 }
 
 func (this *MessageBinaryReader) RangeMsgBinary(
-	callback func(*MessageBinary)) (reerr error) {
+	cb func(*MessageBinary)) (reerr error) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
@@ -72,7 +72,7 @@ func (this *MessageBinaryReader) RangeMsgBinary(
 					return err
 				} else {
 					// 调用回调函数处理消息
-					callback(msgbinary)
+					cb(msgbinary)
 				}
 			} else {
 				log.Error("[MessageBinaryReader.RangeMsgBinary] "+
