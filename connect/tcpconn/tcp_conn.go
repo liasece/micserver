@@ -21,7 +21,7 @@ import (
 
 // 消息合批时，合并的最大消息数量
 const (
-	MaxMsgPackSum = 5000
+	MaxMsgPackSum = 200
 )
 
 // TCPConn 的连接状态枚举
@@ -54,6 +54,9 @@ type TCPConn struct {
 	// 等待发送数据的总大小
 	maxWaitingSendBufferLength int
 
+	// 已合批发送消息缓冲数组
+	sendJoinedMessageBinaryBuffer []*msg.MessageBinary
+
 	// 接收等待通道
 	recvmsgchan chan *msg.MessageBinary
 	// 接收缓冲区
@@ -82,6 +85,8 @@ func (this *TCPConn) Init(conn net.Conn,
 	this.sendmsgchan = make(chan *msg.MessageBinary, sendChanSize)
 	this.maxWaitingSendBufferLength = msg.MessageMaxSize * sendChanSize
 	this.sendBuffer = util.NewIOBuffer(nil, sendBufferSize)
+	this.sendJoinedMessageBinaryBuffer = make([]*msg.MessageBinary,
+		MaxMsgPackSum)
 	go this.sendThread()
 
 	// 接收
@@ -388,7 +393,6 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) []*msg.MessageBinary {
 	// 初始化变量
 	var (
-		msglist   = make([]*msg.MessageBinary, 0)
 		nowpkgsum = int(0)
 		nowpkglen = int(0)
 	)
@@ -405,13 +409,12 @@ func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) []*
 			this.Error("[TCPConn.joinMsgByFunc] "+
 				"this.sendBuffer.Write(sendata) Err:%s", err.Error())
 		}
-		msglist = append(msglist, msg)
-
+		this.sendJoinedMessageBinaryBuffer[nowpkgsum] = msg
 		nowpkgsum++
 		nowpkglen += sendlen
 	}
 
-	return msglist
+	return this.sendJoinedMessageBinaryBuffer[:nowpkgsum]
 }
 
 func (this *TCPConn) recvThread() {
