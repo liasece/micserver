@@ -56,7 +56,6 @@ func NewClient(netconn net.Conn,
 		ClientConnSendChanSize, ClientConnSendBufferSize,
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
 	conn.CreateTime = int64(time.Now().Unix())
-	conn.Session = make(map[string]string)
 	conn.readch = readch
 	conn.onRecv = onRecv
 	conn.onClose = onClose

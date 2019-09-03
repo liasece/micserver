@@ -50,9 +50,7 @@ func (this *msgHandler) onForwardToClient(smsg *servercomm.SForwardToClient) {
 func (this *msgHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 	client := this.mod.GetClient(smsg.ClientConnID)
 	if client != nil {
-		for k, v := range smsg.Session {
-			client.Session[k] = v
-		}
+		client.Session.FromMap(smsg.Session)
 		if client.Session.GetUUID() != "" {
 			this.mod.Info("[gate] 用户登陆成功 %s", smsg.GetJson())
 		}

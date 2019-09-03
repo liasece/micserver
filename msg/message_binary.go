@@ -65,6 +65,7 @@ type MessageBinary struct {
 	buffer []byte
 
 	regSendDone *SendCompletedAgent // 用于优化的临时数据指针请注意使用！
+	MsgObject   interface{}         // 用于优化的临时数据指针请注意使用！
 }
 
 func (this *MessageBinary) RegSendDone(cb func(interface{}), argv interface{}) {
@@ -100,6 +101,7 @@ func (this *MessageBinary) Free() {
 func (this *MessageBinary) Reset() {
 	this.MessageBinaryHeadL1 = defaultHead1
 	this.regSendDone = nil
+	this.MsgObject = nil
 	this.MessageBinaryBody = defaultBody
 	// 为了减轻GC压力，不应重置buffer字段
 }

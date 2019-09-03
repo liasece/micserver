@@ -1,6 +1,7 @@
 package subnet
 
 import (
+	"fmt"
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/servercomm"
@@ -23,55 +24,63 @@ func (this *SubnetManager) OnRecvTCPMsg(conn *connect.Server,
 	msgbinary *msg.MessageBinary) {
 	switch msgbinary.CmdID {
 	case servercomm.SForwardToServerID:
-		{
-			// 服务器间用户空间消息转发
-			if this.SubnetCallback.fonForwardToServer != nil {
-				layerMsg := &servercomm.SForwardToServer{}
-				layerMsg.ReadBinary(msgbinary.ProtoData)
-				this.SubnetCallback.fonForwardToServer(layerMsg)
-			}
+		// 服务器间用户空间消息转发
+		if this.SubnetCallback.fonForwardToServer != nil {
+			layerMsg := &servercomm.SForwardToServer{}
+			layerMsg.ReadBinary(msgbinary.ProtoData)
+			this.SubnetCallback.fonForwardToServer(layerMsg)
 		}
 	case servercomm.SForwardFromGateID:
-		{
-			// Gateway 转发过来的客户端消息
-			if this.SubnetCallback.fonForwardFromGate != nil {
-				layerMsg := &servercomm.SForwardFromGate{}
-				layerMsg.ReadBinary(msgbinary.ProtoData)
-				this.SubnetCallback.fonForwardFromGate(layerMsg)
+		var layerMsg *servercomm.SForwardFromGate
+		if msgbinary.MsgObject != nil {
+			if m, ok := msgbinary.MsgObject.(*servercomm.SForwardFromGate); ok {
+				layerMsg = m
 			}
+		}
+		if layerMsg == nil {
+			layerMsg = &servercomm.SForwardFromGate{}
+			layerMsg.ReadBinary(msgbinary.ProtoData)
+		}
+		// Gateway 转发过来的客户端消息
+		if this.SubnetCallback.fonForwardFromGate != nil {
+			this.SubnetCallback.fonForwardFromGate(layerMsg)
 		}
 	case servercomm.SForwardToClientID:
-		{
-			// 其他服务器转发过来的，要发送到客户端的消息
-			if this.SubnetCallback.fonForwardToClient != nil {
-				layerMsg := &servercomm.SForwardToClient{}
-				layerMsg.ReadBinary(msgbinary.ProtoData)
-				this.SubnetCallback.fonForwardToClient(layerMsg)
-			}
+		// 其他服务器转发过来的，要发送到客户端的消息
+		if this.SubnetCallback.fonForwardToClient != nil {
+			layerMsg := &servercomm.SForwardToClient{}
+			layerMsg.ReadBinary(msgbinary.ProtoData)
+			this.SubnetCallback.fonForwardToClient(layerMsg)
 		}
 	case servercomm.SUpdateSessionID:
-		{
-			// 客户端会话更新
-			if this.SubnetCallback.fonUpdateSession != nil {
-				layerMsg := &servercomm.SUpdateSession{}
-				layerMsg.ReadBinary(msgbinary.ProtoData)
-				this.SubnetCallback.fonUpdateSession(layerMsg)
-			}
+		// 客户端会话更新
+		if this.SubnetCallback.fonUpdateSession != nil {
+			layerMsg := &servercomm.SUpdateSession{}
+			layerMsg.ReadBinary(msgbinary.ProtoData)
+			this.SubnetCallback.fonUpdateSession(layerMsg)
 		}
 	case servercomm.SStartMyNotifyCommandID:
 	default:
-		{
-			msgid := msgbinary.CmdID
-			msgname := servercomm.MsgIdToString(msgid)
-			this.Error("[SubnetManager.OnRecvTCPMsg] 未知消息 %d:%s",
-				msgid, msgname)
-		}
+		msgid := msgbinary.CmdID
+		msgname := servercomm.MsgIdToString(msgid)
+		this.Error("[SubnetManager.OnRecvTCPMsg] 未知消息 %d:%s",
+			msgid, msgname)
 	}
 }
 
 // 获取TCP消息的消息处理通道
 func (this *SubnetManager) OnGetRecvTCPMsgParseChan(conn *connect.Server,
 	maxChan int32, msgbinary *msg.MessageBinary) int32 {
+	if msgbinary.CmdID == servercomm.SForwardFromGateID {
+		layerMsg := &servercomm.SForwardFromGate{}
+		layerMsg.ReadBinary(msgbinary.ProtoData)
+		msgbinary.MsgObject = layerMsg
+		hash := int32(util.GetStringHash(layerMsg.ClientConnID)) % maxChan
+		if hash < 0 {
+			hash = -hash
+		}
+		return hash
+	}
 	return 0
 }
 
@@ -177,6 +186,10 @@ func (this *SubnetManager) MultiQueueControl(
 	}
 	who := this.OnGetRecvTCPMsgParseChan(msgqueues.conn,
 		this.maxRunningMsgNum, msgqueues.msg)
+	if who >= int32(len(this.runningMsgChan)) || who < 0 {
+		panic(fmt.Sprintf("who[%d] >= len(this.runningMsgChan)[%d]", who,
+			len(this.runningMsgChan)))
+	}
 	this.runningMsgChan[who] <- msgqueues
 }
 
@@ -192,12 +205,10 @@ func (this *SubnetManager) InitMsgQueue(sum int32) {
 		this.maxRunningMsgNum)
 	this.Debug("[SubnetManager.InitMsgQueue] "+
 		"Task 消息处理线程数量 ThreadNum[%d]", this.maxRunningMsgNum)
-	i := int32(0)
-	for i < this.maxRunningMsgNum {
+	for i := int32(0); i < this.maxRunningMsgNum; i++ {
 		this.runningMsgChan[i] = make(chan *ConnectMsgQueueStruct,
 			15000)
 		go this.RecvmsgProcess(i)
-		i++
 	}
 }
 
@@ -205,6 +216,7 @@ func (this *SubnetManager) InitMsgQueue(sum int32) {
 func (this *SubnetManager) MultiRecvmsgQueue(
 	index int32) (normalreturn bool) {
 	if this.runningMsgChan == nil || this.runningMsgChan[index] == nil {
+		panic(fmt.Sprintf("this.runningMsgChan[%d] == nil", index))
 		return true
 	}
 	defer func() {

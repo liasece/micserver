@@ -79,7 +79,7 @@ func (this *logWriter) close() {
 		return
 	default:
 		close(this.stopchan)
-		close(this.tunnel)
+		// close(this.tunnel)
 		break
 	}
 	select {
@@ -138,15 +138,15 @@ func (this *logWriter) boostrapLogWriter() {
 				this.c <- true
 				return
 			}
-
 			for _, w := range this.writers {
 				if err := w.Write(r); err != nil {
 					syslog.Println(err)
 				}
 			}
-
 			recordPool.Put(r)
-
+		case <-this.stopchan:
+			this.c <- true
+			return
 		case <-flushTimer.C:
 			for _, w := range this.writers {
 				if f, ok := w.(Flusher); ok {
@@ -156,7 +156,6 @@ func (this *logWriter) boostrapLogWriter() {
 				}
 			}
 			flushTimer.Reset(time.Millisecond * 1000)
-
 		case <-rotateTimer.C:
 			//	fmt.Printf("start rotate file,actions, 1111\n")
 			for _, w := range this.writers {
