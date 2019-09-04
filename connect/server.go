@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
-	"github.com/liasece/micserver/network/tcpconn"
 	"github.com/liasece/micserver/servercomm"
 	"math/rand"
 	"net"
@@ -32,7 +31,8 @@ const ServerRecvBufferSize = msg.MessageMaxSize * 10
 
 type Server struct {
 	*log.Logger
-	TCPConn *tcpconn.TCPConn
+	// 连接实体
+	IConnection
 	// 唯一编号
 	Tempid string
 	// 结束时间 为0表示不结束
@@ -63,12 +63,12 @@ func NewServer(sctype TServerSCType, netconn net.Conn,
 	conn.Serverinfo = &servercomm.SServerInfo{}
 	conn.SetSC(sctype)
 	conn.ConnectPriority = rand.Int63()
-	conn.TCPConn = &tcpconn.TCPConn{}
-	ch := conn.TCPConn.Init(netconn,
+	conn.IConnection = NewTCP(netconn,
 		ServerSendChanSize, ServerSendBufferSize,
 		ServerRecvChanSize, ServerRecvBufferSize)
-	conn.TCPConn.StartRecv()
-	go conn.recvMsgThread(ch, onRecv, onClose)
+	conn.IConnection.StartRecv()
+	go conn.recvMsgThread(conn.IConnection.GetRecvMessageChannel(),
+		onRecv, onClose)
 	return conn
 }
 
@@ -148,7 +148,7 @@ func (this *Server) Terminate() {
 
 // 异步发送一条消息，不带发送完成回调
 func (this *Server) SendCmd(v msg.MsgStruct) error {
-	if !this.TCPConn.IsAlive() {
+	if !this.IConnection.IsAlive() {
 		this.Warn("[Server.SendCmd] 连接已被关闭，取消发送 Msg[%s]",
 			v.GetMsgName())
 		return fmt.Errorf("link has been closed")
@@ -158,13 +158,13 @@ func (this *Server) SendCmd(v msg.MsgStruct) error {
 		this.Error("[Server.SendCmd] msg==nil")
 		return fmt.Errorf("can't get message binary")
 	}
-	return this.TCPConn.SendMessageBinary(msg)
+	return this.IConnection.SendMessageBinary(msg)
 }
 
 // 异步发送一条消息，带发送完成回调
 func (this *Server) SendCmdWithCallback(v msg.MsgStruct,
 	cb func(interface{}), cbarg interface{}) error {
-	if !this.TCPConn.IsAlive() {
+	if !this.IConnection.IsAlive() {
 		this.Warn("[Server.SendCmdWithCallback] 连接已被关闭，取消发送 Msg[%s]",
 			v.GetMsgName())
 		return fmt.Errorf("link has been closed")
@@ -175,7 +175,7 @@ func (this *Server) SendCmdWithCallback(v msg.MsgStruct,
 		return fmt.Errorf("can't get message binary")
 	}
 	msg.RegSendDone(cb, cbarg)
-	return this.TCPConn.SendMessageBinary(msg)
+	return this.IConnection.SendMessageBinary(msg)
 }
 
 func (this *Server) SetSC(sctype TServerSCType) {
@@ -187,13 +187,13 @@ func (this *Server) GetSCType() TServerSCType {
 }
 
 func (this *Server) Shutdown() {
-	this.TCPConn.Shutdown()
+	this.IConnection.Shutdown()
 }
 
 func (this *Server) RemoteAddr() string {
-	return this.TCPConn.RemoteAddr()
+	return this.IConnection.RemoteAddr()
 }
 
-func (this *Server) GetTCPConn() *tcpconn.TCPConn {
-	return this.TCPConn
+func (this *Server) GetIConnection() IConnection {
+	return this.IConnection
 }

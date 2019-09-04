@@ -5,20 +5,20 @@ import (
 )
 
 type handler struct {
-	fdoSendTCPBytes func(writer io.ReadWriter, state interface{},
+	fdoSendBytes func(writer io.ReadWriter, state interface{},
 		data []byte) (int, interface{}, error)
-	fdoReadTCPBytes func(reader io.ReadWriter, state interface{},
+	fdoReadBytes func(reader io.ReadWriter, state interface{},
 		toData []byte) (int, interface{}, error)
 }
 
-func (this *handler) RegDoSendTCPBytes(
+func (this *handler) RegDoSendBytes(
 	cb func(writer io.ReadWriter, state interface{},
 		data []byte) (int, interface{}, error)) {
-	this.fdoSendTCPBytes = cb
+	this.fdoSendBytes = cb
 }
 
-func (this *handler) RegDoReadTCPBytes(
+func (this *handler) RegDoReadBytes(
 	cb func(reader io.ReadWriter, state interface{},
 		toData []byte) (int, interface{}, error)) {
-	this.fdoReadTCPBytes = cb
+	this.fdoReadBytes = cb
 }

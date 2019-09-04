@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
-	"github.com/liasece/micserver/network"
-	"github.com/liasece/micserver/network/tcpconn"
 	"github.com/liasece/micserver/session"
 	"net"
 	"time"
@@ -16,7 +14,7 @@ type Client struct {
 	// 会话信息 可在不同服务器之间同步的
 	session.Session
 	// 连接实体
-	network.IConnection
+	IConnection
 	// 结束时间 为0表示不结束
 	terminate_time int64
 	// 主动断开连接
@@ -54,13 +52,11 @@ func NewClient(netconn net.Conn,
 	onClose func(*Client)) *Client {
 	// 新建一个客户端连接
 	conn := new(Client)
-	tcp := &tcpconn.TCPConn{}
-	readch := tcp.Init(netconn,
+	conn.IConnection = NewTCP(netconn,
 		ClientConnSendChanSize, ClientConnSendBufferSize,
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
-	conn.IConnection = tcp
 	conn.CreateTime = int64(time.Now().Unix())
-	conn.readch = readch
+	conn.readch = conn.IConnection.GetRecvMessageChannel()
 	conn.onRecv = onRecv
 	conn.onClose = onClose
 	go conn.recvMsgThread()

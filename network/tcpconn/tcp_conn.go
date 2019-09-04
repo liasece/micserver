@@ -76,7 +76,7 @@ type TCPConn struct {
 // 返回：接收到的 messagebinary 的对象 chan
 func (this *TCPConn) Init(conn net.Conn,
 	sendChanSize int, sendBufferSize int,
-	recvChanSize int, recvBufferSize int) chan *msg.MessageBinary {
+	recvChanSize int, recvBufferSize int) {
 	this.shutdownChan = make(chan struct{})
 	this.Conn = conn
 	this.state = TCPCONNSTATE_LINKED
@@ -92,12 +92,14 @@ func (this *TCPConn) Init(conn net.Conn,
 	// 接收
 	this.recvmsgchan = make(chan *msg.MessageBinary, recvChanSize)
 	this.recvBuffer = util.NewIOBuffer(this, recvBufferSize)
-
-	return this.recvmsgchan
 }
 
 func (this *TCPConn) StartRecv() {
 	go this.recvThread()
+}
+
+func (this *TCPConn) GetRecvMessageChannel() chan *msg.MessageBinary {
+	return this.recvmsgchan
 }
 
 func (this *TCPConn) IsAlive() bool {
@@ -132,8 +134,8 @@ func (this *TCPConn) Shutdown() error {
 }
 
 func (this *TCPConn) Read(toData []byte) (int, error) {
-	if this.handler.fdoReadTCPBytes != nil {
-		n, state, err := this.handler.fdoReadTCPBytes(
+	if this.handler.fdoReadBytes != nil {
+		n, state, err := this.handler.fdoReadBytes(
 			this.Conn, this.protocolState, toData)
 		this.protocolState = state
 		return n, err
@@ -143,8 +145,8 @@ func (this *TCPConn) Read(toData []byte) (int, error) {
 }
 
 func (this *TCPConn) doSendTCPBytes(data []byte) (int, error) {
-	if this.handler.fdoSendTCPBytes != nil {
-		n, state, err := this.handler.fdoSendTCPBytes(this.Conn,
+	if this.handler.fdoSendBytes != nil {
+		n, state, err := this.handler.fdoSendBytes(this.Conn,
 			this.protocolState, data)
 		this.protocolState = state
 		return n, err
