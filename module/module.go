@@ -38,6 +38,9 @@ type BaseModule struct {
 	gateBase        *gate.GateBase
 	hasKilledModule bool
 	hasStopped      bool
+	// 模块的负载
+	Load          util.Load
+	lastCheckLoad int64
 }
 
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
@@ -76,6 +79,8 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 		this.gateBase.RegOnNewClient(this.clientEventHandler.OnNewClient)
 		this.gateBase.RegOnAcceptConnect(this.clientEventHandler.OnAcceptConnect)
 	}
+
+	this.RegTimer(time.Second*5, 0, false, this.watchLoadToLog)
 }
 
 func (this *BaseModule) AfterInitModule() {
@@ -268,4 +273,14 @@ func (this *BaseModule) TopRunner() {
 
 func (this *BaseModule) GetServerType() string {
 	return util.GetServerIDType(this.moduleID)
+}
+
+func (this *BaseModule) watchLoadToLog(_ time.Duration) bool {
+	load := this.Load.GetLoad()
+	incValue := load - this.lastCheckLoad
+	if incValue > 0 {
+		this.Info("[BaseModule]  Within 5 sec load:[%d]", incValue)
+	}
+	this.lastCheckLoad = load
+	return true
 }
