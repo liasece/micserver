@@ -275,11 +275,12 @@ func (this *BaseModule) GetServerType() string {
 	return util.GetServerIDType(this.moduleID)
 }
 
-func (this *BaseModule) watchLoadToLog(_ time.Duration) bool {
+func (this *BaseModule) watchLoadToLog(dt time.Duration) bool {
 	load := this.Load.GetLoad()
 	incValue := load - this.lastCheckLoad
 	if incValue > 0 {
-		this.Info("[BaseModule]  Within 5 sec load:[%d]", incValue)
+		this.Info("[BaseModule]  Within %d sec load:[%d]",
+			int64(dt.Seconds()), incValue)
 	}
 	this.lastCheckLoad = load
 	return true
