@@ -158,18 +158,40 @@ func (this *Client) Terminate() {
 }
 
 // 异步发送一条消息，不带发送完成回调
-func (this *Client) SendCmd(v msg.MsgStruct) {
+func (this *Client) SendCmd(v msg.MsgStruct) error {
+	if !this.TCPConn.IsAlive() {
+		this.Warn("[Client.SendCmd] 连接已被关闭，取消发送 Msg[%s]",
+			v.GetMsgName())
+		return fmt.Errorf("link has been closed")
+	}
 	this.Debug("[SendCmd] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())
-	this.TCPConn.SendCmd(v)
+
+	msg := msg.MakeMessageByObj(v)
+	if msg == nil {
+		this.Error("[Client.SendCmd] msg==nil")
+		return fmt.Errorf("can't get message binary")
+	}
+	return this.TCPConn.SendMessageBinary(msg)
 }
 
 // 异步发送一条消息，带发送完成回调
 func (this *Client) SendCmdWithCallback(v msg.MsgStruct,
-	callback func(interface{}), cbarg interface{}) {
+	cb func(interface{}), cbarg interface{}) error {
+	if !this.TCPConn.IsAlive() {
+		this.Warn("[Client.SendCmdWithCallback] 连接已被关闭，取消发送 Msg[%s]",
+			v.GetMsgName())
+		return fmt.Errorf("link has been closed")
+	}
 	this.Debug("[SendCmdWithCallback] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())
-	this.TCPConn.SendCmdWithCallback(v, callback, cbarg)
+	msg := msg.MakeMessageByObj(v)
+	if msg == nil {
+		this.Error("[Client.SendCmd] msg==nil")
+		return fmt.Errorf("can't get message binary")
+	}
+	msg.RegSendDone(cb, cbarg)
+	return this.TCPConn.SendMessageBinary(msg)
 }
 
 func (this *Client) SendBytes(

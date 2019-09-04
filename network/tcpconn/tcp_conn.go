@@ -10,6 +10,7 @@
 package tcpconn
 
 import (
+	"fmt"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/util"
@@ -101,14 +102,14 @@ func (this *TCPConn) StartRecv() {
 }
 
 func (this *TCPConn) IsAlive() bool {
-	if this.state == TCPCONNSTATE_LINKED {
+	if atomic.LoadInt32(&this.state) == TCPCONNSTATE_LINKED {
 		return true
 	}
 	return false
 }
 
 // 尝试关闭此连接
-func (this *TCPConn) Shutdown() {
+func (this *TCPConn) Shutdown() error {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
@@ -117,13 +118,14 @@ func (this *TCPConn) Shutdown() {
 		}
 	}()
 	if this.state != TCPCONNSTATE_LINKED {
-		return
+		return fmt.Errorf("isn't linked")
 	}
 	sec := atomic.CompareAndSwapInt32(&this.state,
 		TCPCONNSTATE_LINKED, TCPCONNSTATE_HOLD)
 	if sec {
 		close(this.shutdownChan)
 	}
+	return nil
 }
 
 func (this *TCPConn) Read(toData []byte) (int, error) {
@@ -137,7 +139,7 @@ func (this *TCPConn) Read(toData []byte) (int, error) {
 	}
 }
 
-func (this *TCPConn) DoSendTCPBytes(data []byte) (int, error) {
+func (this *TCPConn) doSendTCPBytes(data []byte) (int, error) {
 	if this.handler.fdoSendTCPBytes != nil {
 		n, state, err := this.handler.fdoSendTCPBytes(this.Conn,
 			this.protocolState, data)
@@ -146,32 +148,6 @@ func (this *TCPConn) DoSendTCPBytes(data []byte) (int, error) {
 	} else {
 		return this.Conn.Write(data)
 	}
-}
-
-// 异步发送一条消息，不带发送完成回调
-func (this *TCPConn) SendCmd(v msg.MsgStruct) error {
-	if this.state >= TCPCONNSTATE_HOLD {
-		this.Warn("[TCPConn.SendCmd] 连接已被关闭，取消发送 Msg[%s]",
-			v.GetMsgName())
-		return ErrCloseed
-	}
-
-	msg := msg.MakeMessageByObj(v)
-
-	return this.SendMessageBinary(msg)
-}
-
-// 异步发送一条消息，带发送完成回调
-func (this *TCPConn) SendCmdWithCallback(v msg.MsgStruct,
-	cb func(interface{}), cbarg interface{}) error {
-	if this.state >= TCPCONNSTATE_HOLD {
-		this.Warn("[TCPConn.SendCmdWithCallback] 连接已失效，取消发送")
-		return ErrCloseed
-	}
-	mb := msg.MakeMessageByObj(v)
-	mb.RegSendDone(cb, cbarg)
-
-	return this.SendMessageBinary(mb)
 }
 
 // 发送 Bytes
@@ -359,7 +335,7 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 			"this.sendBuffer.SeekAll() Err[%s]",
 			err.Error())
 	} else {
-		secn, err := this.DoSendTCPBytes(bs)
+		secn, err := this.doSendTCPBytes(bs)
 		if err != nil {
 			this.Warn("[TCPConn.sendMsgList] "+
 				"缓冲区发送消息异常 Err[%s]",

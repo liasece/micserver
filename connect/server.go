@@ -1,6 +1,7 @@
 package connect
 
 import (
+	"fmt"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/network/tcpconn"
@@ -147,13 +148,34 @@ func (this *Server) Terminate() {
 
 // 异步发送一条消息，不带发送完成回调
 func (this *Server) SendCmd(v msg.MsgStruct) error {
-	return this.TCPConn.SendCmd(v)
+	if !this.TCPConn.IsAlive() {
+		this.Warn("[Server.SendCmd] 连接已被关闭，取消发送 Msg[%s]",
+			v.GetMsgName())
+		return fmt.Errorf("link has been closed")
+	}
+	msg := msg.MakeMessageByObj(v)
+	if msg == nil {
+		this.Error("[Server.SendCmd] msg==nil")
+		return fmt.Errorf("can't get message binary")
+	}
+	return this.TCPConn.SendMessageBinary(msg)
 }
 
 // 异步发送一条消息，带发送完成回调
 func (this *Server) SendCmdWithCallback(v msg.MsgStruct,
-	callback func(interface{}), cbarg interface{}) error {
-	return this.TCPConn.SendCmdWithCallback(v, callback, cbarg)
+	cb func(interface{}), cbarg interface{}) error {
+	if !this.TCPConn.IsAlive() {
+		this.Warn("[Server.SendCmdWithCallback] 连接已被关闭，取消发送 Msg[%s]",
+			v.GetMsgName())
+		return fmt.Errorf("link has been closed")
+	}
+	msg := msg.MakeMessageByObj(v)
+	if msg == nil {
+		this.Error("[Server.SendCmd] msg==nil")
+		return fmt.Errorf("can't get message binary")
+	}
+	msg.RegSendDone(cb, cbarg)
+	return this.TCPConn.SendMessageBinary(msg)
 }
 
 func (this *Server) SetSC(sctype TServerSCType) {
