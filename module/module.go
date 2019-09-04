@@ -260,8 +260,9 @@ func (this *BaseModule) IsStopped() bool {
 }
 
 func (this *BaseModule) TopRunner() {
-	this.RegTimer(time.Minute, 0, false, func(t time.Duration) {
+	this.RegTimer(time.Minute, 0, false, func(t time.Duration) bool {
 		this.Debug("Timer 1 Minute...")
+		return true
 	})
 }
 

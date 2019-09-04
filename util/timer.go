@@ -5,7 +5,8 @@ import (
 	"time"
 )
 
-type TimerCallback func(time.Duration)
+// 返回是否还将定时
+type TimerCallback func(time.Duration) bool
 
 type Timer struct {
 	cb              TimerCallback
@@ -14,6 +15,7 @@ type Timer struct {
 	hasTriggerTimes int64
 	hasKilled       bool
 	killChan        chan struct{}
+	mutex           sync.Mutex
 }
 
 func (this *Timer) IsStop() bool {
@@ -27,7 +29,10 @@ func (this *Timer) IsStop() bool {
 }
 
 func (this *Timer) Select(exChan chan *Timer) {
-	this.killChan = make(chan struct{})
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
+	this.killChan = make(chan struct{}, 1)
 	t := time.NewTimer(this.timeDuration)
 	for !this.IsStop() {
 		select {
@@ -39,7 +44,9 @@ func (this *Timer) Select(exChan chan *Timer) {
 			if exChan != nil {
 				exChan <- this
 			} else {
-				this.cb(this.timeDuration)
+				if !this.cb(this.timeDuration) {
+					this.killTimer()
+				}
 			}
 		case <-this.killChan:
 			break
@@ -48,6 +55,15 @@ func (this *Timer) Select(exChan chan *Timer) {
 }
 
 func (this *Timer) KillTimer() {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+	this.killTimer()
+}
+
+func (this *Timer) killTimer() {
+	if this.hasKilled || this.killChan == nil {
+		return
+	}
 	this.hasKilled = true
 	this.killChan <- struct{}{}
 }
@@ -65,7 +81,7 @@ type TimerManager struct {
 // 如果一个定时操作很耗时，你应该将它作为一个单独的协程去处理，但是这样你可能
 // 要考虑并行执行带来的问题
 func (this *TimerManager) RegTimer(duration time.Duration, limitTimes int64,
-	engross bool, cb func(time.Duration)) {
+	engross bool, cb func(time.Duration) bool) *Timer {
 	timer := &Timer{
 		cb:           cb,
 		timeDuration: duration,
@@ -91,6 +107,7 @@ func (this *TimerManager) RegTimer(duration time.Duration, limitTimes int64,
 			go timer.Select(this.timeTriggerChan)
 		}
 	}
+	return timer
 }
 
 func (this *TimerManager) KillRegister() {
