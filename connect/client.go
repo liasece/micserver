@@ -2,9 +2,9 @@ package connect
 
 import (
 	"fmt"
-	"github.com/liasece/micserver/connect/tcpconn"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/network/tcpconn"
 	"github.com/liasece/micserver/session"
 	"net"
 	"time"
