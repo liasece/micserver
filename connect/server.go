@@ -190,7 +190,7 @@ func (this *Server) Shutdown() {
 	this.TCPConn.Shutdown()
 }
 
-func (this *Server) RemoteAddr() net.Addr {
+func (this *Server) RemoteAddr() string {
 	return this.TCPConn.RemoteAddr()
 }
 

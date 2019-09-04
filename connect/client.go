@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/network"
 	"github.com/liasece/micserver/network/tcpconn"
 	"github.com/liasece/micserver/session"
 	"net"
@@ -11,10 +12,11 @@ import (
 )
 
 type Client struct {
+	*log.Logger
 	// 会话信息 可在不同服务器之间同步的
 	session.Session
 	// 连接实体
-	tcpconn.TCPConn
+	network.IConnection
 	// 结束时间 为0表示不结束
 	terminate_time int64
 	// 主动断开连接
@@ -52,9 +54,11 @@ func NewClient(netconn net.Conn,
 	onClose func(*Client)) *Client {
 	// 新建一个客户端连接
 	conn := new(Client)
-	readch := conn.Init(netconn,
+	tcp := &tcpconn.TCPConn{}
+	readch := tcp.Init(netconn,
 		ClientConnSendChanSize, ClientConnSendBufferSize,
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
+	conn.IConnection = tcp
 	conn.CreateTime = int64(time.Now().Unix())
 	conn.readch = readch
 	conn.onRecv = onRecv
@@ -76,7 +80,7 @@ func ClientDial(addr string,
 }
 
 func (this *Client) StartReadData() {
-	this.TCPConn.StartRecv()
+	this.IConnection.StartRecv()
 }
 
 func (this *Client) recvMsgThread() {
@@ -159,7 +163,7 @@ func (this *Client) Terminate() {
 
 // 异步发送一条消息，不带发送完成回调
 func (this *Client) SendCmd(v msg.MsgStruct) error {
-	if !this.TCPConn.IsAlive() {
+	if !this.IConnection.IsAlive() {
 		this.Warn("[Client.SendCmd] 连接已被关闭，取消发送 Msg[%s]",
 			v.GetMsgName())
 		return fmt.Errorf("link has been closed")
@@ -172,13 +176,13 @@ func (this *Client) SendCmd(v msg.MsgStruct) error {
 		this.Error("[Client.SendCmd] msg==nil")
 		return fmt.Errorf("can't get message binary")
 	}
-	return this.TCPConn.SendMessageBinary(msg)
+	return this.IConnection.SendMessageBinary(msg)
 }
 
 // 异步发送一条消息，带发送完成回调
 func (this *Client) SendCmdWithCallback(v msg.MsgStruct,
 	cb func(interface{}), cbarg interface{}) error {
-	if !this.TCPConn.IsAlive() {
+	if !this.IConnection.IsAlive() {
 		this.Warn("[Client.SendCmdWithCallback] 连接已被关闭，取消发送 Msg[%s]",
 			v.GetMsgName())
 		return fmt.Errorf("link has been closed")
@@ -191,16 +195,16 @@ func (this *Client) SendCmdWithCallback(v msg.MsgStruct,
 		return fmt.Errorf("can't get message binary")
 	}
 	msg.RegSendDone(cb, cbarg)
-	return this.TCPConn.SendMessageBinary(msg)
+	return this.IConnection.SendMessageBinary(msg)
 }
 
 func (this *Client) SendBytes(
 	cmdid uint16, protodata []byte) error {
-	return this.TCPConn.SendBytes(cmdid, protodata)
+	return this.IConnection.SendBytes(cmdid, protodata)
 }
 
 func (this *Client) SetLogger(logger *log.Logger) {
 	this.Logger = logger.Clone()
 	this.Logger.SetTopic(fmt.Sprintf("Client.CID(%s).IP(%s)",
-		this.GetConnectID(), this.Conn.RemoteAddr().String()))
+		this.GetConnectID(), this.IConnection.RemoteAddr()))
 }

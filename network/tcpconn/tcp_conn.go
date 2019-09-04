@@ -38,7 +38,6 @@ const (
 )
 
 type TCPConn struct {
-	*log.Logger
 	net.Conn
 	handler
 
@@ -108,12 +107,16 @@ func (this *TCPConn) IsAlive() bool {
 	return false
 }
 
+func (this *TCPConn) RemoteAddr() string {
+	return this.Conn.RemoteAddr().String()
+}
+
 // 尝试关闭此连接
 func (this *TCPConn) Shutdown() error {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			this.Warn("[TCPConn.shutdownThread] "+
+			log.Warn("[TCPConn.shutdownThread] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -154,7 +157,7 @@ func (this *TCPConn) doSendTCPBytes(data []byte) (int, error) {
 func (this *TCPConn) SendBytes(
 	cmdid uint16, protodata []byte) error {
 	if this.state >= TCPCONNSTATE_HOLD {
-		this.Warn("[TCPConn.SendBytes] 连接已失效，取消发送")
+		log.Warn("[TCPConn.SendBytes] 连接已失效，取消发送")
 		return ErrCloseed
 	}
 	msgbinary := msg.MakeMessageByBytes(cmdid, protodata)
@@ -168,44 +171,44 @@ func (this *TCPConn) SendMessageBinary(
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			this.Warn("[TCPConn.SendMessageBinary] "+
+			log.Warn("[TCPConn.SendMessageBinary] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
 	// 检查连接是否已死亡
 	if this.state >= TCPCONNSTATE_HOLD {
-		this.Warn("[TCPConn.SendMessageBinary] 连接已失效，取消发送")
+		log.Warn("[TCPConn.SendMessageBinary] 连接已失效，取消发送")
 		return ErrCloseed
 	}
 	// 如果发送数据为空
 	if msgbinary == nil {
-		this.Debug("[TCPConn.SendMessageBinary] 发送消息为空，取消发送")
+		log.Debug("[TCPConn.SendMessageBinary] 发送消息为空，取消发送")
 		return ErrSendNilData
 	}
 
 	// 检查发送channel是否已经关闭
 	select {
 	case <-this.shutdownChan:
-		this.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
+		log.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
 		return ErrCloseed
 	default:
 	}
 
 	// 检查等待缓冲区数据是否已满
 	if this.waitingSendBufferLength > int64(this.maxWaitingSendBufferLength) {
-		this.Error("[TCPConn.SendMessageBinary] 等待发送缓冲区满")
+		log.Error("[TCPConn.SendMessageBinary] 等待发送缓冲区满")
 		return ErrBufferFull
 	}
 
 	// 确认发送channel是否已经关闭
 	select {
 	case <-this.shutdownChan:
-		this.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
+		log.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
 		return ErrCloseed
 	case this.sendmsgchan <- msgbinary:
 		atomic.AddInt64(&this.waitingSendBufferLength, int64(msgbinary.CmdLen))
 	default:
-		this.Warn("[TCPConn.SendMessageBinary] 发送Channel缓冲区满，阻塞超时")
+		log.Warn("[TCPConn.SendMessageBinary] 发送Channel缓冲区满，阻塞超时")
 		return ErrBufferFull
 	}
 	return nil
@@ -220,11 +223,11 @@ func (this *TCPConn) sendThread() {
 		}
 	}
 	// 用于通知发送线程，发送channel已关闭
-	this.Debug("[TCPConn.sendThread] 发送线程已关闭")
+	log.Debug("[TCPConn.sendThread] 发送线程已关闭")
 	// close(this.stopChan)
 	err := this.closeSocket()
 	if err != nil {
-		this.Error("[TCPConn.sendThread] closeSocket Err[%s]",
+		log.Error("[TCPConn.sendThread] closeSocket Err[%s]",
 			err.Error())
 	}
 }
@@ -240,7 +243,7 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			this.Error("[TCPConn.asyncSendCmd] "+
+			log.Error("[TCPConn.asyncSendCmd] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 			normalreturn = false
 		}
@@ -251,7 +254,7 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 		select {
 		case msg, ok := <-this.sendmsgchan:
 			if msg == nil || !ok {
-				this.Warn("[TCPConn.asyncSendCmd] " +
+				log.Warn("[TCPConn.asyncSendCmd] " +
 					"Channle已关闭，发送行为终止")
 				break
 			}
@@ -270,7 +273,7 @@ func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 		case msg, ok := <-this.sendmsgchan:
 			// 从发送chan中获取一条消息
 			if msg == nil || !ok {
-				this.Warn("[TCPConn.asyncSendCmd] " +
+				log.Warn("[TCPConn.asyncSendCmd] " +
 					"Channle已关闭，发送行为终止")
 				break
 			}
@@ -310,7 +313,7 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 				// 取到了数据
 				if msg == nil || !ok {
 					// 通道中的数据不合法
-					this.Warn("[TCPConn.sendMsgList] " +
+					log.Warn("[TCPConn.sendMsgList] " +
 						"Channle已关闭，发送行为终止")
 					return nil
 				}
@@ -331,13 +334,13 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 
 	bs, err := this.sendBuffer.SeekAll()
 	if err != nil {
-		this.Error("[TCPConn.sendMsgList] "+
+		log.Error("[TCPConn.sendMsgList] "+
 			"this.sendBuffer.SeekAll() Err[%s]",
 			err.Error())
 	} else {
 		secn, err := this.doSendTCPBytes(bs)
 		if err != nil {
-			this.Warn("[TCPConn.sendMsgList] "+
+			log.Warn("[TCPConn.sendMsgList] "+
 				"缓冲区发送消息异常 Err[%s]",
 				err.Error())
 		} else {
@@ -382,7 +385,7 @@ func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) []*
 		sendata, sendlen := msg.WriteBinary()
 		err := this.sendBuffer.Write(sendata)
 		if err != nil {
-			this.Error("[TCPConn.joinMsgByFunc] "+
+			log.Error("[TCPConn.joinMsgByFunc] "+
 				"this.sendBuffer.Write(sendata) Err:%s", err.Error())
 		}
 		this.sendJoinedMessageBinaryBuffer[nowpkgsum] = msg
@@ -397,7 +400,7 @@ func (this *TCPConn) recvThread() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
-			this.Error("[TCPConn.recvThread] "+
+			log.Error("[TCPConn.recvThread] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 		close(this.recvmsgchan)
@@ -436,7 +439,7 @@ func (this *TCPConn) recvThread() {
 			this.recvmsgchan <- msgbinary
 		})
 		if err != nil {
-			this.Error("[TCPConn.recvThread] "+
+			log.Error("[TCPConn.recvThread] "+
 				"RangeMsgBinary读消息失败，断开连接 Err[%s]", err.Error())
 			return
 		}
