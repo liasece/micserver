@@ -18,13 +18,13 @@ const (
 )
 
 // 服务器连接发送消息缓冲要考虑到服务器处理消息的能力
-const ServerSendChanSize = 10000
+const ServerSendChanSize = 100000
 
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
 const ServerSendBufferSize = msg.MessageMaxSize * 10
 
 // 服务器连接发送消息缓冲要考虑到服务器处理消息的能力
-const ServerRecvChanSize = 10000
+const ServerRecvChanSize = 100000
 
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
 const ServerRecvBufferSize = msg.MessageMaxSize * 10

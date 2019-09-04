@@ -197,10 +197,10 @@ func (this *TCPConn) SendMessageBinary(
 	}
 
 	// 检查等待缓冲区数据是否已满
-	if this.waitingSendBufferLength > int64(this.maxWaitingSendBufferLength) {
-		log.Error("[TCPConn.SendMessageBinary] 等待发送缓冲区满")
-		return ErrBufferFull
-	}
+	// if this.waitingSendBufferLength > int64(this.maxWaitingSendBufferLength) {
+	// 	log.Error("[TCPConn.SendMessageBinary] 等待发送缓冲区满")
+	// 	return ErrBufferFull
+	// }
 
 	// 确认发送channel是否已经关闭
 	select {
@@ -209,9 +209,9 @@ func (this *TCPConn) SendMessageBinary(
 		return ErrCloseed
 	case this.sendmsgchan <- msgbinary:
 		atomic.AddInt64(&this.waitingSendBufferLength, int64(msgbinary.CmdLen))
-	default:
-		log.Warn("[TCPConn.SendMessageBinary] 发送Channel缓冲区满，阻塞超时")
-		return ErrBufferFull
+		// default:
+		// 	log.Warn("[TCPConn.SendMessageBinary] 发送Channel缓冲区满，阻塞超时")
+		// 	return ErrBufferFull
 	}
 	return nil
 }
