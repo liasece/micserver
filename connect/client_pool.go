@@ -13,7 +13,7 @@ import (
 const mClientPoolGroupSum = 10
 
 type stringToClient struct {
-	*util.MapPool
+	util.MapPool
 }
 
 // 加载或存储
@@ -35,7 +35,7 @@ func (this *stringToClient) Load(k string) (*Client, bool) {
 
 // 遍历所有
 func (this *stringToClient) Range(callback func(string, *Client) bool) {
-	this.MapPool.RangeAll(func(tk interface{}, tv interface{}) bool {
+	this.MapPool.Range(func(tk interface{}, tv interface{}) bool {
 		if tk == nil || tv == nil {
 			return true
 		}
@@ -47,8 +47,8 @@ func (this *stringToClient) Range(callback func(string, *Client) bool) {
 }
 
 // 初始化
-func (this *stringToClient) InitMapPool(gsum uint32) {
-	this.MapPool = util.NewMapPool(gsum)
+func (this *stringToClient) InitMapPool(gsum int) {
+	this.MapPool.Init(gsum)
 }
 
 type ClientPool struct {

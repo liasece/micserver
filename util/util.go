@@ -382,3 +382,10 @@ func GetServerIDType(id string) string {
 	}
 	return res
 }
+
+func MustInterfaceToString(v interface{}) string {
+	if v, ok := v.(string); ok {
+		return v
+	}
+	return ""
+}

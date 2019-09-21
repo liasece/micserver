@@ -6,6 +6,7 @@ import (
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/roc"
 	"github.com/liasece/micserver/server/gate"
 	"github.com/liasece/micserver/server/subnet"
 	"github.com/liasece/micserver/servercomm"
@@ -41,6 +42,9 @@ type BaseModule struct {
 	// 模块的负载
 	Load          util.Load
 	lastCheckLoad int64
+
+	// 远程对象调用支持
+	rocManager roc.ROCManager
 }
 
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
