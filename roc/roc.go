@@ -6,15 +6,16 @@ import (
 )
 
 const (
-	POOL_GROUP_SUM = 8
+	ROC_POOL_GROUP_SUM = 8
 )
 
 type ROC struct {
 	objPool util.MapPool
+	catch   Catch
 }
 
 func (this *ROC) Init() {
-	this.objPool.Init(POOL_GROUP_SUM)
+	this.objPool.Init(ROC_POOL_GROUP_SUM)
 }
 
 // 在使用远程对象调用前，需要先注册

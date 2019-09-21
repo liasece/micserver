@@ -81,9 +81,11 @@ func (this *ROCManager) Call(callstr string, arg []byte) {
 	if len(strs) < 1 {
 		return
 	}
-	obj, ok := this.getObj(strs[0])
+	path := NewROCPath(strs)
+	obj, ok := this.getObj(path.Move())
 	if !ok || obj == nil {
 		return
 	}
-	obj.ROCCall(strs[1:], arg)
+	path.Reset()
+	obj.ROCCall(path, arg)
 }
