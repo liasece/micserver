@@ -12,8 +12,8 @@ type ROCManager struct {
 
 func (this *ROCManager) NewObjectType(objtype string) {
 	newroc := &ROC{}
-	_, isnew := this.rocs.LoadOrStore(objtype, newroc)
-	if isnew {
+	_, isLoad := this.rocs.LoadOrStore(objtype, newroc)
+	if !isLoad {
 		newroc.Init()
 	}
 }

@@ -44,7 +44,7 @@ type BaseModule struct {
 	lastCheckLoad int64
 
 	// 远程对象调用支持
-	rocManager roc.ROCManager
+	ROCManager roc.ROCManager
 }
 
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
