@@ -107,3 +107,22 @@ type SForwardFromGate struct {
 	MsgID        uint16
 	Data         []byte
 }
+
+type SROCRequest struct {
+	// 请求信息
+	FromServerID string
+	ToServerID   string
+	Seq          int64
+	// 调用信息
+	CallStr string
+	CallArg []byte
+}
+
+type SROCResponse struct {
+	// 响应信息
+	FromServerID string
+	ToServerID   string
+	ReqSeq       int64
+	// 响应数据
+	ResData []byte
+}

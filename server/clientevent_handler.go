@@ -1,4 +1,4 @@
-package module
+package server
 
 import (
 	"github.com/liasece/micserver/connect"
@@ -8,7 +8,7 @@ import (
 )
 
 type clientEventHandler struct {
-	mod *BaseModule
+	server *Server
 
 	fonNewClient     func(client *connect.Client)
 	fonRecvClientMsg func(client *connect.Client, msgbin *msg.MessageBinary)
@@ -21,8 +21,8 @@ func (this *clientEventHandler) RegOnNewClient(
 }
 
 func (this *clientEventHandler) OnNewClient(client *connect.Client) {
-	servertype := util.GetServerIDType(this.mod.GetModuleID())
-	client.SetBindServer(servertype, this.mod.GetModuleID())
+	servertype := util.GetServerIDType(this.server.serverid)
+	client.SetBindServer(servertype, this.server.serverid)
 
 	if this.fonNewClient != nil {
 		this.fonNewClient(client)

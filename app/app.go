@@ -58,7 +58,7 @@ func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 
 	subnetTCPAddrMap := this.Configer.AppConfig.GetSubnetTCPAddrMap()
 	for _, m := range this.modules {
-		m.InitSubnet(subnetTCPAddrMap)
+		m.BindSubnet(subnetTCPAddrMap)
 	}
 
 	this.Debug("[App.Init] App 初始化成功！")

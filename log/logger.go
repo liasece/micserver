@@ -56,6 +56,9 @@ func NewLogger(settings map[string]string) *Logger {
 
 // 浅拷贝出一个 Logger ，他们具备相同的底层写入接口
 func (l *Logger) Clone() *Logger {
+	if l == nil && l != default_logger {
+		return default_logger.Clone()
+	}
 	res := *l
 	return &res
 }
