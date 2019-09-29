@@ -14,11 +14,16 @@ import (
 
 type Server struct {
 	*log.Logger
+
+	// server info
 	serverid string
+
+	// event libs
 	serverCmdHandler
+	clientEventHandler
+
 	subnetManager *subnet.SubnetManager
 	gateBase      *gate.GateBase
-	clientEventHandler
 }
 
 func (this *Server) Init(serverid string) {
@@ -33,9 +38,7 @@ func (this *Server) InitSubnet(conf *conf.ModuleConfig) {
 	this.serverCmdHandler.server = this
 	this.subnetManager.Logger = this.Logger.Clone()
 	this.subnetManager.InitManager(conf)
-	this.subnetManager.RegOnForwardToClient(this.serverCmdHandler.onForwardToClient)
-	this.subnetManager.RegOnUpdateSession(this.serverCmdHandler.onUpdateSession)
-	this.subnetManager.RegOnForwardFromGate(this.serverCmdHandler.onForwardFromGate)
+	this.subnetManager.RegOnRecvMsg(this.serverCmdHandler.onRecvMsg)
 }
 
 func (this *Server) BindSubnet(subnetAddrMap map[string]string) {
@@ -55,9 +58,9 @@ func (this *Server) InitGate(gateaddr string) {
 	this.gateBase.BindOuterTCP(gateaddr)
 
 	// 事件监听
-	this.gateBase.RegOnRecvClientMsg(this.clientEventHandler.OnRecvClientMsg)
-	this.gateBase.RegOnNewClient(this.clientEventHandler.OnNewClient)
 	this.gateBase.RegOnAcceptConnect(this.clientEventHandler.OnAcceptConnect)
+	this.gateBase.RegOnNewClient(this.clientEventHandler.OnNewClient)
+	this.gateBase.RegOnRecvClientMsg(this.clientEventHandler.OnRecvClientMsg)
 }
 
 func (this *Server) SetLogger(source *log.Logger) {

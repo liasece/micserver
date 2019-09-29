@@ -1,6 +1,8 @@
 package server
 
 import (
+	"github.com/liasece/micserver/connect"
+	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/servercomm"
 )
 
@@ -34,11 +36,6 @@ func (this *serverCmdHandler) onForwardFromGate(smsg *servercomm.SForwardFromGat
 	}
 }
 
-func (this *serverCmdHandler) RegOnForwardToClient(
-	cb func(msg *servercomm.SForwardToClient)) {
-	this.fonForwardToClient = cb
-}
-
 func (this *serverCmdHandler) onForwardToClient(smsg *servercomm.SForwardToClient) {
 	err := this.server.DoSendBytesToClient(smsg.FromServerID, smsg.ToGateID,
 		smsg.ToClientID, smsg.MsgID, smsg.Data)
@@ -57,5 +54,49 @@ func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 	} else {
 		this.server.Warn("serverCmdHandler.OnUpdateSession client == nil[%s]",
 			smsg.ClientConnID)
+	}
+}
+
+func (this *serverCmdHandler) onRecvMsg(conn *connect.Server,
+	msgbinary *msg.MessageBinary) {
+	switch msgbinary.CmdID {
+	case servercomm.SForwardToServerID:
+		// 服务器间用户空间消息转发
+		if this.fonForwardToServer != nil {
+			layerMsg := &servercomm.SForwardToServer{}
+			layerMsg.ReadBinary(msgbinary.ProtoData)
+			this.fonForwardToServer(layerMsg)
+		}
+	case servercomm.SForwardFromGateID:
+		var layerMsg *servercomm.SForwardFromGate
+		if msgbinary.MsgObject != nil {
+			if m, ok := msgbinary.MsgObject.(*servercomm.SForwardFromGate); ok {
+				layerMsg = m
+			}
+		}
+		if layerMsg == nil {
+			layerMsg = &servercomm.SForwardFromGate{}
+			layerMsg.ReadBinary(msgbinary.ProtoData)
+		}
+		// Gateway 转发过来的客户端消息
+		if this.fonForwardFromGate != nil {
+			this.fonForwardFromGate(layerMsg)
+		}
+	case servercomm.SForwardToClientID:
+		// 其他服务器转发过来的，要发送到客户端的消息
+		layerMsg := &servercomm.SForwardToClient{}
+		layerMsg.ReadBinary(msgbinary.ProtoData)
+		this.onForwardToClient(layerMsg)
+	case servercomm.SUpdateSessionID:
+		// 客户端会话更新
+		layerMsg := &servercomm.SUpdateSession{}
+		layerMsg.ReadBinary(msgbinary.ProtoData)
+		this.onUpdateSession(layerMsg)
+	case servercomm.SStartMyNotifyCommandID:
+	default:
+		msgid := msgbinary.CmdID
+		msgname := servercomm.MsgIdToString(msgid)
+		this.server.Error("[SubnetManager.OnRecvTCPMsg] 未知消息 %d:%s",
+			msgid, msgname)
 	}
 }

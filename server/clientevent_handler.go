@@ -15,6 +15,18 @@ type clientEventHandler struct {
 	fonAcceptConnect func(conn net.Conn)
 }
 
+// 接受到客户端tcp连接
+func (this *clientEventHandler) RegOnAcceptConnect(cb func(conn net.Conn)) {
+	this.fonAcceptConnect = cb
+}
+
+func (this *clientEventHandler) OnAcceptConnect(conn net.Conn) {
+	if this.fonAcceptConnect != nil {
+		this.fonAcceptConnect(conn)
+	}
+}
+
+// 新的客户端连接对象
 func (this *clientEventHandler) RegOnNewClient(
 	cb func(client *connect.Client)) {
 	this.fonNewClient = cb
@@ -29,6 +41,7 @@ func (this *clientEventHandler) OnNewClient(client *connect.Client) {
 	}
 }
 
+// 收到客户端消息
 func (this *clientEventHandler) RegOnRecvClientMsg(
 	cb func(client *connect.Client, msgbin *msg.MessageBinary)) {
 	this.fonRecvClientMsg = cb
@@ -38,15 +51,5 @@ func (this *clientEventHandler) OnRecvClientMsg(
 	client *connect.Client, msgbin *msg.MessageBinary) {
 	if this.fonRecvClientMsg != nil {
 		this.fonRecvClientMsg(client, msgbin)
-	}
-}
-
-func (this *clientEventHandler) RegOnAcceptConnect(cb func(conn net.Conn)) {
-	this.fonAcceptConnect = cb
-}
-
-func (this *clientEventHandler) OnAcceptConnect(conn net.Conn) {
-	if this.fonAcceptConnect != nil {
-		this.fonAcceptConnect(conn)
 	}
 }

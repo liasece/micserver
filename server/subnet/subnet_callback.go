@@ -1,32 +1,15 @@
 package subnet
 
 import (
-	"github.com/liasece/micserver/servercomm"
+	"github.com/liasece/micserver/connect"
+	"github.com/liasece/micserver/msg"
 )
 
 type SubnetCallback struct {
-	fonForwardToServer func(msg *servercomm.SForwardToServer)
-	fonForwardFromGate func(msg *servercomm.SForwardFromGate)
-	fonForwardToClient func(msg *servercomm.SForwardToClient)
-	fonUpdateSession   func(msg *servercomm.SUpdateSession)
+	fonRecvMsg func(conn *connect.Server, msgbinary *msg.MessageBinary)
 }
 
-func (this *SubnetCallback) RegOnForwardToServer(
-	cb func(msg *servercomm.SForwardToServer)) {
-	this.fonForwardToServer = cb
-}
-
-func (this *SubnetCallback) RegOnForwardFromGate(
-	cb func(msg *servercomm.SForwardFromGate)) {
-	this.fonForwardFromGate = cb
-}
-
-func (this *SubnetCallback) RegOnForwardToClient(
-	cb func(msg *servercomm.SForwardToClient)) {
-	this.fonForwardToClient = cb
-}
-
-func (this *SubnetCallback) RegOnUpdateSession(
-	cb func(msg *servercomm.SUpdateSession)) {
-	this.fonUpdateSession = cb
+func (this *SubnetCallback) RegOnRecvMsg(
+	cb func(conn *connect.Server, msgbinary *msg.MessageBinary)) {
+	this.fonRecvMsg = cb
 }
