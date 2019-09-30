@@ -47,63 +47,37 @@ func (this *ROCManager) GetROC(objtype string) *ROC {
 	return vi.(*ROC)
 }
 
-// kstr的格式必须为 ROC 远程对象调用那样定义的格式，如：
-// 对象类型[对象的键]
-func (this *ROCManager) kstrDecode(kstr string) (string, string) {
-	t := ""
-	key := ""
-	inkey := false
-	for _, k := range kstr {
-		if k == '[' {
-			inkey = true
-		} else if k == ']' {
-			inkey = false
-		} else if k == '.' {
-			break
-		} else {
-			if key == "" && !inkey {
-				t = t + fmt.Sprintf("%c", k)
-			} else if t != "" && inkey {
-				key = key + fmt.Sprintf("%c", k)
-			} else {
-				return "", ""
-			}
-		}
-	}
-	return t, key
-}
-
 func (this *ROCManager) CallPathDecode(kstr string) (string, string) {
-	return this.kstrDecode(kstr)
+	return kstrDecode(kstr)
 }
 
 // kstr的格式必须为 ROC 远程对象调用那样定义的格式
 // (对象类型)([对象的键])
-func (this *ROCManager) getObj(kstr string) (IObj, bool) {
-	t, k := this.kstrDecode(kstr)
-	roc := this.GetROC(t)
+func (this *ROCManager) getObj(objType string, objID string) (IObj, bool) {
+	roc := this.GetROC(objType)
 	if roc == nil {
 		return nil, false
 	}
-	return roc.GetObj(k)
+	return roc.GetObj(objID)
 }
 
 // kstr的格式必须为 ROC 远程对象调用那样定义的格式
 // (对象类型)([对象的键])
-func (this *ROCManager) GetObj(kstr string) (IObj, bool) {
-	return this.getObj(kstr)
+func (this *ROCManager) GetObj(objType string, objID string) (IObj, bool) {
+	return this.getObj(objType, objID)
 }
 
-func (this *ROCManager) Call(callstr string, arg []byte) {
+func (this *ROCManager) Call(callstr string, arg []byte) ([]byte, error) {
 	strs := strings.Split(callstr, ".")
 	if len(strs) < 1 {
-		return
+		return nil, fmt.Errorf("callstr split on . is length == 0")
 	}
 	path := NewROCPath(strs)
-	obj, ok := this.getObj(path.Move())
+	obj, ok := this.getObj(path.GetObjType(), path.GetObjID())
 	if !ok || obj == nil {
-		return
+		path.Reset()
+		return nil, fmt.Errorf("has't this object:%+v,%+v", path, path.Move())
 	}
 	path.Reset()
-	obj.ROCCall(path, arg)
+	return obj.ROCCall(path, arg)
 }

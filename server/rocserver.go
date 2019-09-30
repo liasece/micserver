@@ -91,6 +91,12 @@ func (this *ROCServer) rocCallProcess() {
 		case agent := <-this.rocCallChan:
 			// 处理ROC请求
 			this.server.Info("ROCServer.rocCallProcess %+v", agent)
+			res, err := this.ROCManager.Call(agent.callpath, agent.callarg)
+			if err != nil {
+				this.server.Error("ROCManager.Call err:%s", err.Error())
+			} else {
+				this.server.Info("ROC调用成功 res:%+v", res)
+			}
 		case <-tm.C:
 			tm.Reset(time.Millisecond * 300)
 			break
