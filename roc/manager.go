@@ -7,7 +7,8 @@ import (
 )
 
 type ROCManager struct {
-	rocs sync.Map
+	rocs      sync.Map
+	onfRegObj func(IObj)
 }
 
 func (this *ROCManager) NewObjectType(objtype string) {
@@ -15,6 +16,17 @@ func (this *ROCManager) NewObjectType(objtype string) {
 	_, isLoad := this.rocs.LoadOrStore(objtype, newroc)
 	if !isLoad {
 		newroc.Init()
+		newroc.RegOnRegObj(this.onRegROCObj)
+	}
+}
+
+func (this *ROCManager) RegOnRegObj(cb func(IObj)) {
+	this.onfRegObj = cb
+}
+
+func (this *ROCManager) onRegROCObj(obj IObj) {
+	if this.onfRegObj != nil {
+		this.onfRegObj(obj)
 	}
 }
 
@@ -46,6 +58,8 @@ func (this *ROCManager) kstrDecode(kstr string) (string, string) {
 			inkey = true
 		} else if k == ']' {
 			inkey = false
+		} else if k == '.' {
+			break
 		} else {
 			if key == "" && !inkey {
 				t = t + fmt.Sprintf("%c", k)
@@ -57,6 +71,10 @@ func (this *ROCManager) kstrDecode(kstr string) (string, string) {
 		}
 	}
 	return t, key
+}
+
+func (this *ROCManager) CallPathDecode(kstr string) (string, string) {
+	return this.kstrDecode(kstr)
 }
 
 // kstr的格式必须为 ROC 远程对象调用那样定义的格式

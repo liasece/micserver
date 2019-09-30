@@ -93,6 +93,14 @@ func (this *serverCmdHandler) onRecvMsg(conn *connect.Server,
 		layerMsg.ReadBinary(msgbinary.ProtoData)
 		this.onUpdateSession(layerMsg)
 	case servercomm.SStartMyNotifyCommandID:
+	case servercomm.SROCBindID:
+		layerMsg := &servercomm.SROCBind{}
+		layerMsg.ReadBinary(msgbinary.ProtoData)
+		this.server.ROCServer.onMsgROCBind(layerMsg)
+	case servercomm.SROCRequestID:
+		layerMsg := &servercomm.SROCRequest{}
+		layerMsg.ReadBinary(msgbinary.ProtoData)
+		this.server.ROCServer.onMsgROCRequest(layerMsg)
 	default:
 		msgid := msgbinary.CmdID
 		msgname := servercomm.MsgIdToString(msgid)

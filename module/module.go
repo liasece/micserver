@@ -2,9 +2,7 @@ package module
 
 import (
 	"github.com/liasece/micserver/conf"
-	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/roc"
 	"github.com/liasece/micserver/server"
 	"github.com/liasece/micserver/util"
 	"time"
@@ -34,9 +32,6 @@ type BaseModule struct {
 	// 模块的负载
 	Load          util.Load
 	lastCheckLoad int64
-
-	// 远程对象调用支持
-	ROCManager roc.ROCManager
 }
 
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
@@ -71,16 +66,6 @@ func (this *BaseModule) GetConfiger() *conf.ModuleConfig {
 	return this.Configer
 }
 
-// 获取一个客户端连接
-func (this *BaseModule) GetClient(tmpid string) *connect.Client {
-	return this.Server.GetClient(tmpid)
-}
-
-// 初始化服务器集群网络
-func (this *BaseModule) BindSubnet(subnetAddrMap map[string]string) {
-	this.Server.BindSubnet(subnetAddrMap)
-}
-
 func (this *BaseModule) GetModuleID() string {
 	return this.moduleID
 }
@@ -91,6 +76,7 @@ func (this *BaseModule) SetModuleID(id string) {
 
 func (this *BaseModule) KillModule() {
 	this.Debug("KillModule...")
+	this.Server.Stop()
 	this.hasKilledModule = true
 	this.KillRegister()
 

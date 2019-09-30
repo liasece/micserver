@@ -14,20 +14,25 @@ import (
 
 type Server struct {
 	*log.Logger
-
-	// server info
-	serverid string
-
 	// event libs
 	serverCmdHandler
 	clientEventHandler
+	ROCServer
+
+	isStop   bool
+	stopChan chan bool
 
 	subnetManager *subnet.SubnetManager
 	gateBase      *gate.GateBase
+
+	// server info
+	serverid string
 }
 
 func (this *Server) Init(serverid string) {
 	this.serverid = serverid
+	this.stopChan = make(chan bool)
+	this.ROCServer.Init(this)
 }
 
 func (this *Server) InitSubnet(conf *conf.ModuleConfig) {
@@ -210,4 +215,8 @@ func (this *Server) getFarwardFromGateMsgPack(msgid uint16, data []byte,
 	res.Data = make([]byte, size)
 	copy(res.Data, data)
 	return res
+}
+
+func (this *Server) Stop() {
+	this.isStop = true
 }

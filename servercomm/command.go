@@ -108,16 +108,19 @@ type SForwardFromGate struct {
 	Data         []byte
 }
 
+// ROC调用请求
 type SROCRequest struct {
 	// 请求信息
 	FromServerID string
 	ToServerID   string
 	Seq          int64
 	// 调用信息
-	CallStr string
-	CallArg []byte
+	CallStr    string
+	CallArg    []byte
+	NeedReturn bool
 }
 
+// ROC调用响应
 type SROCResponse struct {
 	// 响应信息
 	FromServerID string
@@ -125,4 +128,12 @@ type SROCResponse struct {
 	ReqSeq       int64
 	// 响应数据
 	ResData []byte
+}
+
+// ROC绑定信息
+type SROCBind struct {
+	HostServerID string
+	IsDelete     bool
+	ObjType      string
+	ObjIDHashs   []uint32
 }

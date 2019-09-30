@@ -20,6 +20,9 @@ const (
 	SForwardToServerID = 48
 	SForwardToClientID = 49
 	SForwardFromGateID = 50
+	SROCRequestID = 51
+	SROCResponseID = 52
+	SROCBindID = 53
 )
 const (
 	SServerInfoName = "servercomm.SServerInfo"
@@ -37,6 +40,9 @@ const (
 	SForwardToServerName = "servercomm.SForwardToServer"
 	SForwardToClientName = "servercomm.SForwardToClient"
 	SForwardFromGateName = "servercomm.SForwardFromGate"
+	SROCRequestName = "servercomm.SROCRequest"
+	SROCResponseName = "servercomm.SROCResponse"
+	SROCBindName = "servercomm.SROCBind"
 )
 func (this *SServerInfo) WriteBinary(data []byte) int {
 	return WriteMsgSServerInfoByObj(data,this)
@@ -82,6 +88,15 @@ func (this *SForwardToClient) WriteBinary(data []byte) int {
 }
 func (this *SForwardFromGate) WriteBinary(data []byte) int {
 	return WriteMsgSForwardFromGateByObj(data,this)
+}
+func (this *SROCRequest) WriteBinary(data []byte) int {
+	return WriteMsgSROCRequestByObj(data,this)
+}
+func (this *SROCResponse) WriteBinary(data []byte) int {
+	return WriteMsgSROCResponseByObj(data,this)
+}
+func (this *SROCBind) WriteBinary(data []byte) int {
+	return WriteMsgSROCBindByObj(data,this)
 }
 func (this *SServerInfo) ReadBinary(data []byte) int {
 	size,_ := ReadMsgSServerInfoByBytes(data, this)
@@ -143,6 +158,18 @@ func (this *SForwardFromGate) ReadBinary(data []byte) int {
 	size,_ := ReadMsgSForwardFromGateByBytes(data, this)
 	return size
 }
+func (this *SROCRequest) ReadBinary(data []byte) int {
+	size,_ := ReadMsgSROCRequestByBytes(data, this)
+	return size
+}
+func (this *SROCResponse) ReadBinary(data []byte) int {
+	size,_ := ReadMsgSROCResponseByBytes(data, this)
+	return size
+}
+func (this *SROCBind) ReadBinary(data []byte) int {
+	size,_ := ReadMsgSROCBindByBytes(data, this)
+	return size
+}
 func MsgIdToString(id uint16) string {
 	switch(id ) {
 		case SServerInfoID: 
@@ -175,6 +202,12 @@ func MsgIdToString(id uint16) string {
 		return SForwardToClientName
 		case SForwardFromGateID: 
 		return SForwardFromGateName
+		case SROCRequestID: 
+		return SROCRequestName
+		case SROCResponseID: 
+		return SROCResponseName
+		case SROCBindID: 
+		return SROCBindName
 		default:
 		return ""
 	}
@@ -211,6 +244,12 @@ func StringToMsgId(msgname string) uint16 {
 		return SForwardToClientID
 		case SForwardFromGateName: 
 		return SForwardFromGateID
+		case SROCRequestName: 
+		return SROCRequestID
+		case SROCResponseName: 
+		return SROCResponseID
+		case SROCBindName: 
+		return SROCBindID
 		default:
 		return 0
 	}
@@ -260,6 +299,15 @@ func (this *SForwardToClient) GetMsgId() uint16 {
 func (this *SForwardFromGate) GetMsgId() uint16 {
 	return SForwardFromGateID
 }
+func (this *SROCRequest) GetMsgId() uint16 {
+	return SROCRequestID
+}
+func (this *SROCResponse) GetMsgId() uint16 {
+	return SROCResponseID
+}
+func (this *SROCBind) GetMsgId() uint16 {
+	return SROCBindID
+}
 func (this *SServerInfo) GetMsgName() string {
 	return SServerInfoName
 }
@@ -305,6 +353,15 @@ func (this *SForwardToClient) GetMsgName() string {
 func (this *SForwardFromGate) GetMsgName() string {
 	return SForwardFromGateName
 }
+func (this *SROCRequest) GetMsgName() string {
+	return SROCRequestName
+}
+func (this *SROCResponse) GetMsgName() string {
+	return SROCResponseName
+}
+func (this *SROCBind) GetMsgName() string {
+	return SROCBindName
+}
 func (this *SServerInfo) GetSize() int {
 	return GetSizeSServerInfo(this)
 }
@@ -349,6 +406,15 @@ func (this *SForwardToClient) GetSize() int {
 }
 func (this *SForwardFromGate) GetSize() int {
 	return GetSizeSForwardFromGate(this)
+}
+func (this *SROCRequest) GetSize() int {
+	return GetSizeSROCRequest(this)
+}
+func (this *SROCResponse) GetSize() int {
+	return GetSizeSROCResponse(this)
+}
+func (this *SROCBind) GetSize() int {
+	return GetSizeSROCBind(this)
 }
 func (this *SServerInfo) GetJson() string {
 	json,_ := json.Marshal(this)
@@ -407,6 +473,18 @@ func (this *SForwardToClient) GetJson() string {
 	return string(json)
 }
 func (this *SForwardFromGate) GetJson() string {
+	json,_ := json.Marshal(this)
+	return string(json)
+}
+func (this *SROCRequest) GetJson() string {
+	json,_ := json.Marshal(this)
+	return string(json)
+}
+func (this *SROCResponse) GetJson() string {
+	json,_ := json.Marshal(this)
+	return string(json)
+}
+func (this *SROCBind) GetJson() string {
 	json,_ := json.Marshal(this)
 	return string(json)
 }
@@ -1536,4 +1614,262 @@ func GetSizeSForwardFromGate(obj *SForwardFromGate) int {
 	}
 	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 4 + len(obj.ClientConnID) + 4 + sizerelystring4 + 
 	2 + 4 + len(obj.Data) * 1
+}
+func ReadMsgSROCRequestByBytes(indata []byte, obj *SROCRequest) (int,*SROCRequest ) {
+	offset := 0
+	if len(indata) < 4 {
+		return 0,nil
+	}
+	objsize := int(binary.BigEndian.Uint32(indata))
+	offset += 4
+	if objsize == 0 {
+		return 4,nil
+	}
+	if obj == nil{
+		obj=&SROCRequest{}
+	}
+	if offset + objsize > len(indata ) {
+		return offset,obj
+	}
+	endpos := offset+objsize
+	data := indata[offset:offset+objsize]
+	offset = 0
+	data__len := len(data)
+	if offset + 4 + len(obj.FromServerID) > data__len{
+		return endpos,obj
+	}
+	obj.FromServerID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.FromServerID)
+	if offset + 4 + len(obj.ToServerID) > data__len{
+		return endpos,obj
+	}
+	obj.ToServerID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.ToServerID)
+	if offset + 8 > data__len{
+		return endpos,obj
+	}
+	obj.Seq = readBinaryInt64(data[offset:offset+8])
+	offset+=8
+	if offset + 4 + len(obj.CallStr) > data__len{
+		return endpos,obj
+	}
+	obj.CallStr = readBinaryString(data[offset:])
+	offset += 4 + len(obj.CallStr)
+	if offset + 4 > data__len{
+		return endpos,obj
+	}
+	CallArg_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	offset += 4
+	if CallArg_slen != 0xffffffff {
+		if offset + CallArg_slen > data__len {
+			return endpos,obj
+		}
+		obj.CallArg = make([]byte,CallArg_slen)
+		copy(obj.CallArg, data[offset:offset+CallArg_slen])
+		offset += CallArg_slen
+	}
+	return endpos,obj
+}
+func WriteMsgSROCRequestByObj(data []byte, obj *SROCRequest) int {
+	if obj == nil {
+		binary.BigEndian.PutUint32(data[0:4],0)
+		return 4
+	}
+	objsize := obj.GetSize() - 4
+	offset := 0
+	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	offset += 4
+	writeBinaryString(data[offset:],obj.FromServerID)
+	offset += 4 + len(obj.FromServerID)
+	writeBinaryString(data[offset:],obj.ToServerID)
+	offset += 4 + len(obj.ToServerID)
+	writeBinaryInt64(data[offset:offset+8], obj.Seq)
+	offset+=8
+	writeBinaryString(data[offset:],obj.CallStr)
+	offset += 4 + len(obj.CallStr)
+	if obj.CallArg == nil {
+		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+	} else {
+		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.CallArg)))
+	}
+	offset += 4
+	CallArg_slen := len(obj.CallArg)
+	copy(data[offset:offset+CallArg_slen], obj.CallArg)
+	offset += CallArg_slen
+	return offset
+}
+func GetSizeSROCRequest(obj *SROCRequest) int {
+	if obj == nil {
+		return 4
+	}
+	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 8 + 4 + len(obj.CallStr) + 
+	4 + len(obj.CallArg) * 1
+}
+func ReadMsgSROCResponseByBytes(indata []byte, obj *SROCResponse) (int,*SROCResponse ) {
+	offset := 0
+	if len(indata) < 4 {
+		return 0,nil
+	}
+	objsize := int(binary.BigEndian.Uint32(indata))
+	offset += 4
+	if objsize == 0 {
+		return 4,nil
+	}
+	if obj == nil{
+		obj=&SROCResponse{}
+	}
+	if offset + objsize > len(indata ) {
+		return offset,obj
+	}
+	endpos := offset+objsize
+	data := indata[offset:offset+objsize]
+	offset = 0
+	data__len := len(data)
+	if offset + 4 + len(obj.FromServerID) > data__len{
+		return endpos,obj
+	}
+	obj.FromServerID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.FromServerID)
+	if offset + 4 + len(obj.ToServerID) > data__len{
+		return endpos,obj
+	}
+	obj.ToServerID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.ToServerID)
+	if offset + 8 > data__len{
+		return endpos,obj
+	}
+	obj.ReqSeq = readBinaryInt64(data[offset:offset+8])
+	offset+=8
+	if offset + 4 > data__len{
+		return endpos,obj
+	}
+	ResData_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	offset += 4
+	if ResData_slen != 0xffffffff {
+		if offset + ResData_slen > data__len {
+			return endpos,obj
+		}
+		obj.ResData = make([]byte,ResData_slen)
+		copy(obj.ResData, data[offset:offset+ResData_slen])
+		offset += ResData_slen
+	}
+	return endpos,obj
+}
+func WriteMsgSROCResponseByObj(data []byte, obj *SROCResponse) int {
+	if obj == nil {
+		binary.BigEndian.PutUint32(data[0:4],0)
+		return 4
+	}
+	objsize := obj.GetSize() - 4
+	offset := 0
+	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	offset += 4
+	writeBinaryString(data[offset:],obj.FromServerID)
+	offset += 4 + len(obj.FromServerID)
+	writeBinaryString(data[offset:],obj.ToServerID)
+	offset += 4 + len(obj.ToServerID)
+	writeBinaryInt64(data[offset:offset+8], obj.ReqSeq)
+	offset+=8
+	if obj.ResData == nil {
+		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+	} else {
+		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.ResData)))
+	}
+	offset += 4
+	ResData_slen := len(obj.ResData)
+	copy(data[offset:offset+ResData_slen], obj.ResData)
+	offset += ResData_slen
+	return offset
+}
+func GetSizeSROCResponse(obj *SROCResponse) int {
+	if obj == nil {
+		return 4
+	}
+	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 8 + 4 + len(obj.ResData) * 1
+}
+func ReadMsgSROCBindByBytes(indata []byte, obj *SROCBind) (int,*SROCBind ) {
+	offset := 0
+	if len(indata) < 4 {
+		return 0,nil
+	}
+	objsize := int(binary.BigEndian.Uint32(indata))
+	offset += 4
+	if objsize == 0 {
+		return 4,nil
+	}
+	if obj == nil{
+		obj=&SROCBind{}
+	}
+	if offset + objsize > len(indata ) {
+		return offset,obj
+	}
+	endpos := offset+objsize
+	data := indata[offset:offset+objsize]
+	offset = 0
+	data__len := len(data)
+	if offset + 4 + len(obj.HostServerID) > data__len{
+		return endpos,obj
+	}
+	obj.HostServerID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.HostServerID)
+	if offset + 1 > data__len{
+		return endpos,obj
+	}
+	obj.IsDelete = uint8(data[offset]) != 0
+	offset += 1
+	if offset + 4 + len(obj.ObjType) > data__len{
+		return endpos,obj
+	}
+	obj.ObjType = readBinaryString(data[offset:])
+	offset += 4 + len(obj.ObjType)
+	if offset + 4 > data__len{
+		return endpos,obj
+	}
+	ObjIDHashs_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	offset += 4
+	if ObjIDHashs_slen != 0xffffffff {
+		if offset+(ObjIDHashs_slen*4) > data__len {
+			return endpos,obj
+		}
+		obj.ObjIDHashs = make([]uint32,ObjIDHashs_slen)
+		for i4i := 0; ObjIDHashs_slen > i4i; i4i++ {
+			obj.ObjIDHashs[i4i] = uint32(binary.BigEndian.Uint32(data[offset:offset+4]))
+			offset += 4
+		}
+	}
+	return endpos,obj
+}
+func WriteMsgSROCBindByObj(data []byte, obj *SROCBind) int {
+	if obj == nil {
+		binary.BigEndian.PutUint32(data[0:4],0)
+		return 4
+	}
+	objsize := obj.GetSize() - 4
+	offset := 0
+	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	offset += 4
+	writeBinaryString(data[offset:],obj.HostServerID)
+	offset += 4 + len(obj.HostServerID)
+	data[offset] = uint8(bool2int(obj.IsDelete))
+	offset += 1
+	writeBinaryString(data[offset:],obj.ObjType)
+	offset += 4 + len(obj.ObjType)
+	if obj.ObjIDHashs == nil {
+		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+	} else {
+		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.ObjIDHashs)))
+	}
+	offset += 4
+	ObjIDHashs_slen := len(obj.ObjIDHashs)
+	for i4i := 0; ObjIDHashs_slen > i4i; i4i++ {
+		binary.BigEndian.PutUint32(data[offset:offset+4],obj.ObjIDHashs[i4i])
+		offset += 4
+	}
+	return offset
+}
+func GetSizeSROCBind(obj *SROCBind) int {
+	if obj == nil {
+		return 4
+	}
+	return 4 + 4 + len(obj.HostServerID) + 1 + 4 + len(obj.ObjType) + 4 + len(obj.ObjIDHashs) * 4
 }
