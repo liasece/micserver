@@ -128,6 +128,7 @@ type SROCResponse struct {
 	ReqSeq       int64
 	// 响应数据
 	ResData []byte
+	Error   string
 }
 
 // ROC绑定信息

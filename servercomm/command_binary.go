@@ -1,256 +1,259 @@
 package servercomm
+
 import (
 	"encoding/binary"
-	"math"
 	"encoding/json"
+	"math"
 )
+
 const (
-	SServerInfoID = 36
-	STimeTickCommandID = 37
-	STestCommandID = 38
-	SLoginCommandID = 39
-	SLogoutCommandID = 40
-	SSeverStartOKCommandID = 41
-	SLoginRetCommandID = 42
+	SServerInfoID             = 36
+	STimeTickCommandID        = 37
+	STestCommandID            = 38
+	SLoginCommandID           = 39
+	SLogoutCommandID          = 40
+	SSeverStartOKCommandID    = 41
+	SLoginRetCommandID        = 42
 	SStartRelyNotifyCommandID = 43
-	SStartMyNotifyCommandID = 44
-	SNotifyAllInfoID = 45
-	SNotifySafelyQuitID = 46
-	SUpdateSessionID = 47
-	SForwardToServerID = 48
-	SForwardToClientID = 49
-	SForwardFromGateID = 50
-	SROCRequestID = 51
-	SROCResponseID = 52
-	SROCBindID = 53
+	SStartMyNotifyCommandID   = 44
+	SNotifyAllInfoID          = 45
+	SNotifySafelyQuitID       = 46
+	SUpdateSessionID          = 47
+	SForwardToServerID        = 48
+	SForwardToClientID        = 49
+	SForwardFromGateID        = 50
+	SROCRequestID             = 51
+	SROCResponseID            = 52
+	SROCBindID                = 53
 )
 const (
-	SServerInfoName = "servercomm.SServerInfo"
-	STimeTickCommandName = "servercomm.STimeTickCommand"
-	STestCommandName = "servercomm.STestCommand"
-	SLoginCommandName = "servercomm.SLoginCommand"
-	SLogoutCommandName = "servercomm.SLogoutCommand"
-	SSeverStartOKCommandName = "servercomm.SSeverStartOKCommand"
-	SLoginRetCommandName = "servercomm.SLoginRetCommand"
+	SServerInfoName             = "servercomm.SServerInfo"
+	STimeTickCommandName        = "servercomm.STimeTickCommand"
+	STestCommandName            = "servercomm.STestCommand"
+	SLoginCommandName           = "servercomm.SLoginCommand"
+	SLogoutCommandName          = "servercomm.SLogoutCommand"
+	SSeverStartOKCommandName    = "servercomm.SSeverStartOKCommand"
+	SLoginRetCommandName        = "servercomm.SLoginRetCommand"
 	SStartRelyNotifyCommandName = "servercomm.SStartRelyNotifyCommand"
-	SStartMyNotifyCommandName = "servercomm.SStartMyNotifyCommand"
-	SNotifyAllInfoName = "servercomm.SNotifyAllInfo"
-	SNotifySafelyQuitName = "servercomm.SNotifySafelyQuit"
-	SUpdateSessionName = "servercomm.SUpdateSession"
-	SForwardToServerName = "servercomm.SForwardToServer"
-	SForwardToClientName = "servercomm.SForwardToClient"
-	SForwardFromGateName = "servercomm.SForwardFromGate"
-	SROCRequestName = "servercomm.SROCRequest"
-	SROCResponseName = "servercomm.SROCResponse"
-	SROCBindName = "servercomm.SROCBind"
+	SStartMyNotifyCommandName   = "servercomm.SStartMyNotifyCommand"
+	SNotifyAllInfoName          = "servercomm.SNotifyAllInfo"
+	SNotifySafelyQuitName       = "servercomm.SNotifySafelyQuit"
+	SUpdateSessionName          = "servercomm.SUpdateSession"
+	SForwardToServerName        = "servercomm.SForwardToServer"
+	SForwardToClientName        = "servercomm.SForwardToClient"
+	SForwardFromGateName        = "servercomm.SForwardFromGate"
+	SROCRequestName             = "servercomm.SROCRequest"
+	SROCResponseName            = "servercomm.SROCResponse"
+	SROCBindName                = "servercomm.SROCBind"
 )
+
 func (this *SServerInfo) WriteBinary(data []byte) int {
-	return WriteMsgSServerInfoByObj(data,this)
+	return WriteMsgSServerInfoByObj(data, this)
 }
 func (this *STimeTickCommand) WriteBinary(data []byte) int {
-	return WriteMsgSTimeTickCommandByObj(data,this)
+	return WriteMsgSTimeTickCommandByObj(data, this)
 }
 func (this *STestCommand) WriteBinary(data []byte) int {
-	return WriteMsgSTestCommandByObj(data,this)
+	return WriteMsgSTestCommandByObj(data, this)
 }
 func (this *SLoginCommand) WriteBinary(data []byte) int {
-	return WriteMsgSLoginCommandByObj(data,this)
+	return WriteMsgSLoginCommandByObj(data, this)
 }
 func (this *SLogoutCommand) WriteBinary(data []byte) int {
-	return WriteMsgSLogoutCommandByObj(data,this)
+	return WriteMsgSLogoutCommandByObj(data, this)
 }
 func (this *SSeverStartOKCommand) WriteBinary(data []byte) int {
-	return WriteMsgSSeverStartOKCommandByObj(data,this)
+	return WriteMsgSSeverStartOKCommandByObj(data, this)
 }
 func (this *SLoginRetCommand) WriteBinary(data []byte) int {
-	return WriteMsgSLoginRetCommandByObj(data,this)
+	return WriteMsgSLoginRetCommandByObj(data, this)
 }
 func (this *SStartRelyNotifyCommand) WriteBinary(data []byte) int {
-	return WriteMsgSStartRelyNotifyCommandByObj(data,this)
+	return WriteMsgSStartRelyNotifyCommandByObj(data, this)
 }
 func (this *SStartMyNotifyCommand) WriteBinary(data []byte) int {
-	return WriteMsgSStartMyNotifyCommandByObj(data,this)
+	return WriteMsgSStartMyNotifyCommandByObj(data, this)
 }
 func (this *SNotifyAllInfo) WriteBinary(data []byte) int {
-	return WriteMsgSNotifyAllInfoByObj(data,this)
+	return WriteMsgSNotifyAllInfoByObj(data, this)
 }
 func (this *SNotifySafelyQuit) WriteBinary(data []byte) int {
-	return WriteMsgSNotifySafelyQuitByObj(data,this)
+	return WriteMsgSNotifySafelyQuitByObj(data, this)
 }
 func (this *SUpdateSession) WriteBinary(data []byte) int {
-	return WriteMsgSUpdateSessionByObj(data,this)
+	return WriteMsgSUpdateSessionByObj(data, this)
 }
 func (this *SForwardToServer) WriteBinary(data []byte) int {
-	return WriteMsgSForwardToServerByObj(data,this)
+	return WriteMsgSForwardToServerByObj(data, this)
 }
 func (this *SForwardToClient) WriteBinary(data []byte) int {
-	return WriteMsgSForwardToClientByObj(data,this)
+	return WriteMsgSForwardToClientByObj(data, this)
 }
 func (this *SForwardFromGate) WriteBinary(data []byte) int {
-	return WriteMsgSForwardFromGateByObj(data,this)
+	return WriteMsgSForwardFromGateByObj(data, this)
 }
 func (this *SROCRequest) WriteBinary(data []byte) int {
-	return WriteMsgSROCRequestByObj(data,this)
+	return WriteMsgSROCRequestByObj(data, this)
 }
 func (this *SROCResponse) WriteBinary(data []byte) int {
-	return WriteMsgSROCResponseByObj(data,this)
+	return WriteMsgSROCResponseByObj(data, this)
 }
 func (this *SROCBind) WriteBinary(data []byte) int {
-	return WriteMsgSROCBindByObj(data,this)
+	return WriteMsgSROCBindByObj(data, this)
 }
 func (this *SServerInfo) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSServerInfoByBytes(data, this)
+	size, _ := ReadMsgSServerInfoByBytes(data, this)
 	return size
 }
 func (this *STimeTickCommand) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSTimeTickCommandByBytes(data, this)
+	size, _ := ReadMsgSTimeTickCommandByBytes(data, this)
 	return size
 }
 func (this *STestCommand) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSTestCommandByBytes(data, this)
+	size, _ := ReadMsgSTestCommandByBytes(data, this)
 	return size
 }
 func (this *SLoginCommand) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSLoginCommandByBytes(data, this)
+	size, _ := ReadMsgSLoginCommandByBytes(data, this)
 	return size
 }
 func (this *SLogoutCommand) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSLogoutCommandByBytes(data, this)
+	size, _ := ReadMsgSLogoutCommandByBytes(data, this)
 	return size
 }
 func (this *SSeverStartOKCommand) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSSeverStartOKCommandByBytes(data, this)
+	size, _ := ReadMsgSSeverStartOKCommandByBytes(data, this)
 	return size
 }
 func (this *SLoginRetCommand) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSLoginRetCommandByBytes(data, this)
+	size, _ := ReadMsgSLoginRetCommandByBytes(data, this)
 	return size
 }
 func (this *SStartRelyNotifyCommand) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSStartRelyNotifyCommandByBytes(data, this)
+	size, _ := ReadMsgSStartRelyNotifyCommandByBytes(data, this)
 	return size
 }
 func (this *SStartMyNotifyCommand) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSStartMyNotifyCommandByBytes(data, this)
+	size, _ := ReadMsgSStartMyNotifyCommandByBytes(data, this)
 	return size
 }
 func (this *SNotifyAllInfo) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSNotifyAllInfoByBytes(data, this)
+	size, _ := ReadMsgSNotifyAllInfoByBytes(data, this)
 	return size
 }
 func (this *SNotifySafelyQuit) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSNotifySafelyQuitByBytes(data, this)
+	size, _ := ReadMsgSNotifySafelyQuitByBytes(data, this)
 	return size
 }
 func (this *SUpdateSession) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSUpdateSessionByBytes(data, this)
+	size, _ := ReadMsgSUpdateSessionByBytes(data, this)
 	return size
 }
 func (this *SForwardToServer) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSForwardToServerByBytes(data, this)
+	size, _ := ReadMsgSForwardToServerByBytes(data, this)
 	return size
 }
 func (this *SForwardToClient) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSForwardToClientByBytes(data, this)
+	size, _ := ReadMsgSForwardToClientByBytes(data, this)
 	return size
 }
 func (this *SForwardFromGate) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSForwardFromGateByBytes(data, this)
+	size, _ := ReadMsgSForwardFromGateByBytes(data, this)
 	return size
 }
 func (this *SROCRequest) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSROCRequestByBytes(data, this)
+	size, _ := ReadMsgSROCRequestByBytes(data, this)
 	return size
 }
 func (this *SROCResponse) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSROCResponseByBytes(data, this)
+	size, _ := ReadMsgSROCResponseByBytes(data, this)
 	return size
 }
 func (this *SROCBind) ReadBinary(data []byte) int {
-	size,_ := ReadMsgSROCBindByBytes(data, this)
+	size, _ := ReadMsgSROCBindByBytes(data, this)
 	return size
 }
 func MsgIdToString(id uint16) string {
-	switch(id ) {
-		case SServerInfoID: 
+	switch id {
+	case SServerInfoID:
 		return SServerInfoName
-		case STimeTickCommandID: 
+	case STimeTickCommandID:
 		return STimeTickCommandName
-		case STestCommandID: 
+	case STestCommandID:
 		return STestCommandName
-		case SLoginCommandID: 
+	case SLoginCommandID:
 		return SLoginCommandName
-		case SLogoutCommandID: 
+	case SLogoutCommandID:
 		return SLogoutCommandName
-		case SSeverStartOKCommandID: 
+	case SSeverStartOKCommandID:
 		return SSeverStartOKCommandName
-		case SLoginRetCommandID: 
+	case SLoginRetCommandID:
 		return SLoginRetCommandName
-		case SStartRelyNotifyCommandID: 
+	case SStartRelyNotifyCommandID:
 		return SStartRelyNotifyCommandName
-		case SStartMyNotifyCommandID: 
+	case SStartMyNotifyCommandID:
 		return SStartMyNotifyCommandName
-		case SNotifyAllInfoID: 
+	case SNotifyAllInfoID:
 		return SNotifyAllInfoName
-		case SNotifySafelyQuitID: 
+	case SNotifySafelyQuitID:
 		return SNotifySafelyQuitName
-		case SUpdateSessionID: 
+	case SUpdateSessionID:
 		return SUpdateSessionName
-		case SForwardToServerID: 
+	case SForwardToServerID:
 		return SForwardToServerName
-		case SForwardToClientID: 
+	case SForwardToClientID:
 		return SForwardToClientName
-		case SForwardFromGateID: 
+	case SForwardFromGateID:
 		return SForwardFromGateName
-		case SROCRequestID: 
+	case SROCRequestID:
 		return SROCRequestName
-		case SROCResponseID: 
+	case SROCResponseID:
 		return SROCResponseName
-		case SROCBindID: 
+	case SROCBindID:
 		return SROCBindName
-		default:
+	default:
 		return ""
 	}
 }
 func StringToMsgId(msgname string) uint16 {
-	switch(msgname ) {
-		case SServerInfoName: 
+	switch msgname {
+	case SServerInfoName:
 		return SServerInfoID
-		case STimeTickCommandName: 
+	case STimeTickCommandName:
 		return STimeTickCommandID
-		case STestCommandName: 
+	case STestCommandName:
 		return STestCommandID
-		case SLoginCommandName: 
+	case SLoginCommandName:
 		return SLoginCommandID
-		case SLogoutCommandName: 
+	case SLogoutCommandName:
 		return SLogoutCommandID
-		case SSeverStartOKCommandName: 
+	case SSeverStartOKCommandName:
 		return SSeverStartOKCommandID
-		case SLoginRetCommandName: 
+	case SLoginRetCommandName:
 		return SLoginRetCommandID
-		case SStartRelyNotifyCommandName: 
+	case SStartRelyNotifyCommandName:
 		return SStartRelyNotifyCommandID
-		case SStartMyNotifyCommandName: 
+	case SStartMyNotifyCommandName:
 		return SStartMyNotifyCommandID
-		case SNotifyAllInfoName: 
+	case SNotifyAllInfoName:
 		return SNotifyAllInfoID
-		case SNotifySafelyQuitName: 
+	case SNotifySafelyQuitName:
 		return SNotifySafelyQuitID
-		case SUpdateSessionName: 
+	case SUpdateSessionName:
 		return SUpdateSessionID
-		case SForwardToServerName: 
+	case SForwardToServerName:
 		return SForwardToServerID
-		case SForwardToClientName: 
+	case SForwardToClientName:
 		return SForwardToClientID
-		case SForwardFromGateName: 
+	case SForwardFromGateName:
 		return SForwardFromGateID
-		case SROCRequestName: 
+	case SROCRequestName:
 		return SROCRequestID
-		case SROCResponseName: 
+	case SROCResponseName:
 		return SROCResponseID
-		case SROCBindName: 
+	case SROCBindName:
 		return SROCBindID
-		default:
+	default:
 		return 0
 	}
 }
@@ -417,89 +420,89 @@ func (this *SROCBind) GetSize() int {
 	return GetSizeSROCBind(this)
 }
 func (this *SServerInfo) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *STimeTickCommand) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *STestCommand) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SLoginCommand) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SLogoutCommand) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SSeverStartOKCommand) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SLoginRetCommand) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SStartRelyNotifyCommand) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SStartMyNotifyCommand) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SNotifyAllInfo) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SNotifySafelyQuit) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SUpdateSession) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SForwardToServer) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SForwardToClient) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SForwardFromGate) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SROCRequest) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SROCResponse) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func (this *SROCBind) GetJson() string {
-	json,_ := json.Marshal(this)
+	json, _ := json.Marshal(this)
 	return string(json)
 }
 func readBinaryString(data []byte) string {
 	strfunclen := binary.BigEndian.Uint32(data[:4])
-	if int(strfunclen) + 4 > len(data ) {
+	if int(strfunclen)+4 > len(data) {
 		return ""
 	}
-	return string(data[4:4+strfunclen])
+	return string(data[4 : 4+strfunclen])
 }
-func writeBinaryString(data []byte,obj string) int {
+func writeBinaryString(data []byte, obj string) int {
 	objlen := len(obj)
-	binary.BigEndian.PutUint32(data[:4],uint32(objlen))
+	binary.BigEndian.PutUint32(data[:4], uint32(objlen))
 	copy(data[4:4+objlen], obj)
-	return 4+objlen
+	return 4 + objlen
 }
 func bool2int(value bool) int {
 	if value {
@@ -520,7 +523,7 @@ func readBinaryInt64(data []byte) int64 {
 	num |= int64(data[0]) << 56
 	return num
 }
-func writeBinaryInt64(data []byte, num int64 ) {
+func writeBinaryInt64(data []byte, num int64) {
 	// 大端模式
 	data[7] = byte((num >> 0) & 0xff)
 	data[6] = byte((num >> 8) & 0xff)
@@ -540,7 +543,7 @@ func readBinaryInt32(data []byte) int32 {
 	num |= int32(data[0]) << 24
 	return num
 }
-func writeBinaryInt32(data []byte, num int32 ) {
+func writeBinaryInt32(data []byte, num int32) {
 	// 大端模式
 	data[3] = byte((num >> 0) & 0xff)
 	data[2] = byte((num >> 8) & 0xff)
@@ -550,8 +553,8 @@ func writeBinaryInt32(data []byte, num int32 ) {
 func readBinaryInt(data []byte) int {
 	return int(readBinaryInt32(data))
 }
-func writeBinaryInt(data []byte, num int ) {
-	writeBinaryInt32(data,int32(num))
+func writeBinaryInt(data []byte, num int) {
+	writeBinaryInt32(data, int32(num))
 }
 func readBinaryInt16(data []byte) int16 {
 	// 大端模式
@@ -560,7 +563,7 @@ func readBinaryInt16(data []byte) int16 {
 	num |= int16(data[0]) << 8
 	return num
 }
-func writeBinaryInt16(data []byte, num int16 ) {
+func writeBinaryInt16(data []byte, num int16) {
 	// 大端模式
 	data[1] = byte((num >> 0) & 0xff)
 	data[0] = byte((num >> 8) & 0xff)
@@ -571,7 +574,7 @@ func readBinaryInt8(data []byte) int8 {
 	num |= int8(data[0]) << 0
 	return num
 }
-func writeBinaryInt8(data []byte, num int8 ) {
+func writeBinaryInt8(data []byte, num int8) {
 	// 大端模式
 	data[0] = byte(num)
 }
@@ -579,9 +582,9 @@ func readBinaryBool(data []byte) bool {
 	// 大端模式
 	num := int8(0)
 	num |= int8(data[0]) << 0
-	return num>0
+	return num > 0
 }
-func writeBinaryBool(data []byte, num bool ) {
+func writeBinaryBool(data []byte, num bool) {
 	// 大端模式
 	if num == true {
 		data[0] = byte(1)
@@ -592,90 +595,90 @@ func writeBinaryBool(data []byte, num bool ) {
 func readBinaryUint8(data []byte) uint8 {
 	return uint8(data[0])
 }
-func writeBinaryUint8(data []byte, num uint8 ) {
+func writeBinaryUint8(data []byte, num uint8) {
 	data[0] = byte(num)
 }
 func readBinaryUint(data []byte) uint {
 	return uint(binary.BigEndian.Uint32(data))
 }
-func writeBinaryUint(data []byte, num uint ) {
-	binary.BigEndian.PutUint32(data,uint32(num))
+func writeBinaryUint(data []byte, num uint) {
+	binary.BigEndian.PutUint32(data, uint32(num))
 }
-func writeBinaryFloat32(data []byte, num float32 ) {
+func writeBinaryFloat32(data []byte, num float32) {
 	bits := math.Float32bits(num)
-	binary.BigEndian.PutUint32(data,bits)
+	binary.BigEndian.PutUint32(data, bits)
 }
 func readBinaryFloat32(data []byte) float32 {
 	bits := binary.BigEndian.Uint32(data)
 	return math.Float32frombits(bits)
 }
-func writeBinaryFloat64(data []byte, num float64 ) {
+func writeBinaryFloat64(data []byte, num float64) {
 	bits := math.Float64bits(num)
-	binary.BigEndian.PutUint64(data,bits)
+	binary.BigEndian.PutUint64(data, bits)
 }
 func readBinaryFloat64(data []byte) float64 {
 	bits := binary.BigEndian.Uint64(data)
 	return math.Float64frombits(bits)
 }
-func ReadMsgSServerInfoByBytes(indata []byte, obj *SServerInfo) (int,*SServerInfo ) {
+func ReadMsgSServerInfoByBytes(indata []byte, obj *SServerInfo) (int, *SServerInfo) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SServerInfo{}
+	if obj == nil {
+		obj = &SServerInfo{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 + len(obj.ServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ServerID) > data__len {
+		return endpos, obj
 	}
 	obj.ServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ServerID)
-	if offset + 4 + len(obj.ServerAddr) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ServerAddr) > data__len {
+		return endpos, obj
 	}
 	obj.ServerAddr = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ServerAddr)
-	if offset + 4 > data__len{
-		return endpos,obj
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	obj.ServerNumber = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 8 > data__len{
-		return endpos,obj
+	obj.ServerNumber = binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+	if offset+8 > data__len {
+		return endpos, obj
 	}
-	obj.Version = binary.BigEndian.Uint64(data[offset:offset+8])
-	offset+=8
-	return endpos,obj
+	obj.Version = binary.BigEndian.Uint64(data[offset : offset+8])
+	offset += 8
+	return endpos, obj
 }
 func WriteMsgSServerInfoByObj(data []byte, obj *SServerInfo) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	writeBinaryString(data[offset:],obj.ServerID)
+	writeBinaryString(data[offset:], obj.ServerID)
 	offset += 4 + len(obj.ServerID)
-	writeBinaryString(data[offset:],obj.ServerAddr)
+	writeBinaryString(data[offset:], obj.ServerAddr)
 	offset += 4 + len(obj.ServerAddr)
 	binary.BigEndian.PutUint32(data[offset:offset+4], obj.ServerNumber)
-	offset+=4
+	offset += 4
 	binary.BigEndian.PutUint64(data[offset:offset+8], obj.Version)
-	offset+=8
+	offset += 8
 	return offset
 }
 func GetSizeSServerInfo(obj *SServerInfo) int {
@@ -684,44 +687,44 @@ func GetSizeSServerInfo(obj *SServerInfo) int {
 	}
 	return 4 + 4 + len(obj.ServerID) + 4 + len(obj.ServerAddr) + 4 + 8
 }
-func ReadMsgSTimeTickCommandByBytes(indata []byte, obj *STimeTickCommand) (int,*STimeTickCommand ) {
+func ReadMsgSTimeTickCommandByBytes(indata []byte, obj *STimeTickCommand) (int, *STimeTickCommand) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&STimeTickCommand{}
+	if obj == nil {
+		obj = &STimeTickCommand{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 > data__len{
-		return endpos,obj
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	obj.Testno = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	return endpos,obj
+	obj.Testno = binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+	return endpos, obj
 }
 func WriteMsgSTimeTickCommandByObj(data []byte, obj *STimeTickCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Testno)
-	offset+=4
+	offset += 4
 	return offset
 }
 func GetSizeSTimeTickCommand(obj *STimeTickCommand) int {
@@ -730,50 +733,50 @@ func GetSizeSTimeTickCommand(obj *STimeTickCommand) int {
 	}
 	return 4 + 4
 }
-func ReadMsgSTestCommandByBytes(indata []byte, obj *STestCommand) (int,*STestCommand ) {
+func ReadMsgSTestCommandByBytes(indata []byte, obj *STestCommand) (int, *STestCommand) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&STestCommand{}
+	if obj == nil {
+		obj = &STestCommand{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 > data__len{
-		return endpos,obj
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	obj.Testno = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 4 + len(obj.Testttring) > data__len{
-		return endpos,obj
+	obj.Testno = binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+	if offset+4+len(obj.Testttring) > data__len {
+		return endpos, obj
 	}
 	obj.Testttring = readBinaryString(data[offset:])
 	offset += 4 + len(obj.Testttring)
-	return endpos,obj
+	return endpos, obj
 }
 func WriteMsgSTestCommandByObj(data []byte, obj *STestCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Testno)
-	offset+=4
-	writeBinaryString(data[offset:],obj.Testttring)
+	offset += 4
+	writeBinaryString(data[offset:], obj.Testttring)
 	offset += 4 + len(obj.Testttring)
 	return offset
 }
@@ -783,108 +786,108 @@ func GetSizeSTestCommand(obj *STestCommand) int {
 	}
 	return 4 + 4 + 4 + len(obj.Testttring)
 }
-func ReadMsgSLoginCommandByBytes(indata []byte, obj *SLoginCommand) (int,*SLoginCommand ) {
+func ReadMsgSLoginCommandByBytes(indata []byte, obj *SLoginCommand) (int, *SLoginCommand) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SLoginCommand{}
+	if obj == nil {
+		obj = &SLoginCommand{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 + len(obj.ServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ServerID) > data__len {
+		return endpos, obj
 	}
 	obj.ServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ServerID)
-	if offset + 4 + len(obj.ServerAddr) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ServerAddr) > data__len {
+		return endpos, obj
 	}
 	obj.ServerAddr = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ServerAddr)
-	if offset + 8 > data__len{
-		return endpos,obj
+	if offset+8 > data__len {
+		return endpos, obj
 	}
-	obj.ConnectPriority = readBinaryInt64(data[offset:offset+8])
-	offset+=8
-	if offset + 4 > data__len{
-		return endpos,obj
+	obj.ConnectPriority = readBinaryInt64(data[offset : offset+8])
+	offset += 8
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	obj.ServerNumber = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + 8 > data__len{
-		return endpos,obj
+	obj.ServerNumber = binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+	if offset+8 > data__len {
+		return endpos, obj
 	}
-	obj.Version = binary.BigEndian.Uint64(data[offset:offset+8])
-	offset+=8
-	return endpos,obj
+	obj.Version = binary.BigEndian.Uint64(data[offset : offset+8])
+	offset += 8
+	return endpos, obj
 }
 func WriteMsgSLoginCommandByObj(data []byte, obj *SLoginCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	writeBinaryString(data[offset:],obj.ServerID)
+	writeBinaryString(data[offset:], obj.ServerID)
 	offset += 4 + len(obj.ServerID)
-	writeBinaryString(data[offset:],obj.ServerAddr)
+	writeBinaryString(data[offset:], obj.ServerAddr)
 	offset += 4 + len(obj.ServerAddr)
 	writeBinaryInt64(data[offset:offset+8], obj.ConnectPriority)
-	offset+=8
+	offset += 8
 	binary.BigEndian.PutUint32(data[offset:offset+4], obj.ServerNumber)
-	offset+=4
+	offset += 4
 	binary.BigEndian.PutUint64(data[offset:offset+8], obj.Version)
-	offset+=8
+	offset += 8
 	return offset
 }
 func GetSizeSLoginCommand(obj *SLoginCommand) int {
 	if obj == nil {
 		return 4
 	}
-	return 4 + 4 + len(obj.ServerID) + 4 + len(obj.ServerAddr) + 8 + 4 + 
-	8
+	return 4 + 4 + len(obj.ServerID) + 4 + len(obj.ServerAddr) + 8 + 4 +
+		8
 }
-func ReadMsgSLogoutCommandByBytes(indata []byte, obj *SLogoutCommand) (int,*SLogoutCommand ) {
+func ReadMsgSLogoutCommandByBytes(indata []byte, obj *SLogoutCommand) (int, *SLogoutCommand) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SLogoutCommand{}
+	if obj == nil {
+		obj = &SLogoutCommand{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	return endpos,obj
+	endpos := offset + objsize
+	return endpos, obj
 }
 func WriteMsgSLogoutCommandByObj(data []byte, obj *SLogoutCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	return offset
 }
@@ -894,44 +897,44 @@ func GetSizeSLogoutCommand(obj *SLogoutCommand) int {
 	}
 	return 4 + 0
 }
-func ReadMsgSSeverStartOKCommandByBytes(indata []byte, obj *SSeverStartOKCommand) (int,*SSeverStartOKCommand ) {
+func ReadMsgSSeverStartOKCommandByBytes(indata []byte, obj *SSeverStartOKCommand) (int, *SSeverStartOKCommand) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SSeverStartOKCommand{}
+	if obj == nil {
+		obj = &SSeverStartOKCommand{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 > data__len{
-		return endpos,obj
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	obj.Serverid = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	return endpos,obj
+	obj.Serverid = binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+	return endpos, obj
 }
 func WriteMsgSSeverStartOKCommandByObj(data []byte, obj *SSeverStartOKCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Serverid)
-	offset+=4
+	offset += 4
 	return offset
 }
 func GetSizeSSeverStartOKCommand(obj *SSeverStartOKCommand) int {
@@ -940,50 +943,50 @@ func GetSizeSSeverStartOKCommand(obj *SSeverStartOKCommand) int {
 	}
 	return 4 + 4
 }
-func ReadMsgSLoginRetCommandByBytes(indata []byte, obj *SLoginRetCommand) (int,*SLoginRetCommand ) {
+func ReadMsgSLoginRetCommandByBytes(indata []byte, obj *SLoginRetCommand) (int, *SLoginRetCommand) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SLoginRetCommand{}
+	if obj == nil {
+		obj = &SLoginRetCommand{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 > data__len{
-		return endpos,obj
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	obj.Loginfailed = binary.BigEndian.Uint32(data[offset:offset+4])
-	offset+=4
-	if offset + obj.Destination.GetSize() > data__len{
-		return endpos,obj
+	obj.Loginfailed = binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+	if offset+obj.Destination.GetSize() > data__len {
+		return endpos, obj
 	}
 	rsize_Destination := 0
-	rsize_Destination,obj.Destination = ReadMsgSServerInfoByBytes(data[offset:], nil)
+	rsize_Destination, obj.Destination = ReadMsgSServerInfoByBytes(data[offset:], nil)
 	offset += rsize_Destination
-	return endpos,obj
+	return endpos, obj
 }
 func WriteMsgSLoginRetCommandByObj(data []byte, obj *SLoginRetCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Loginfailed)
-	offset+=4
+	offset += 4
 	offset += WriteMsgSServerInfoByObj(data[offset:], obj.Destination)
 	return offset
 }
@@ -993,60 +996,60 @@ func GetSizeSLoginRetCommand(obj *SLoginRetCommand) int {
 	}
 	return 4 + 4 + obj.Destination.GetSize()
 }
-func ReadMsgSStartRelyNotifyCommandByBytes(indata []byte, obj *SStartRelyNotifyCommand) (int,*SStartRelyNotifyCommand ) {
+func ReadMsgSStartRelyNotifyCommandByBytes(indata []byte, obj *SStartRelyNotifyCommand) (int, *SStartRelyNotifyCommand) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SStartRelyNotifyCommand{}
+	if obj == nil {
+		obj = &SStartRelyNotifyCommand{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 > data__len{
-		return endpos,obj
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	Serverinfos_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	Serverinfos_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if Serverinfos_slen != 0xffffffff {
-		obj.Serverinfos = make([]*SServerInfo,Serverinfos_slen)
+		obj.Serverinfos = make([]*SServerInfo, Serverinfos_slen)
 		for i1i := 0; Serverinfos_slen > i1i; i1i++ {
 			rsize_Serverinfos := 0
-			rsize_Serverinfos,obj.Serverinfos[i1i] = ReadMsgSServerInfoByBytes(data[offset:],nil)
+			rsize_Serverinfos, obj.Serverinfos[i1i] = ReadMsgSServerInfoByBytes(data[offset:], nil)
 			offset += rsize_Serverinfos
 		}
 	}
-	return endpos,obj
+	return endpos, obj
 }
 func WriteMsgSStartRelyNotifyCommandByObj(data []byte, obj *SStartRelyNotifyCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	if obj.Serverinfos == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.Serverinfos)))
+		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Serverinfos)))
 	}
 	offset += 4
 	i1i := 0
 	Serverinfos_slen := len(obj.Serverinfos)
 	for Serverinfos_slen > i1i {
-		offset += WriteMsgSServerInfoByObj(data[offset:],obj.Serverinfos[i1i])
+		offset += WriteMsgSServerInfoByObj(data[offset:], obj.Serverinfos[i1i])
 		i1i++
 	}
 	return offset
@@ -1064,42 +1067,42 @@ func GetSizeSStartRelyNotifyCommand(obj *SStartRelyNotifyCommand) int {
 	}
 	return 4 + 4 + sizerelySServerInfo1
 }
-func ReadMsgSStartMyNotifyCommandByBytes(indata []byte, obj *SStartMyNotifyCommand) (int,*SStartMyNotifyCommand ) {
+func ReadMsgSStartMyNotifyCommandByBytes(indata []byte, obj *SStartMyNotifyCommand) (int, *SStartMyNotifyCommand) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SStartMyNotifyCommand{}
+	if obj == nil {
+		obj = &SStartMyNotifyCommand{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + obj.Serverinfo.GetSize() > data__len{
-		return endpos,obj
+	if offset+obj.Serverinfo.GetSize() > data__len {
+		return endpos, obj
 	}
 	rsize_Serverinfo := 0
-	rsize_Serverinfo,obj.Serverinfo = ReadMsgSServerInfoByBytes(data[offset:], nil)
+	rsize_Serverinfo, obj.Serverinfo = ReadMsgSServerInfoByBytes(data[offset:], nil)
 	offset += rsize_Serverinfo
-	return endpos,obj
+	return endpos, obj
 }
 func WriteMsgSStartMyNotifyCommandByObj(data []byte, obj *SStartMyNotifyCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	offset += WriteMsgSServerInfoByObj(data[offset:], obj.Serverinfo)
 	return offset
@@ -1110,60 +1113,60 @@ func GetSizeSStartMyNotifyCommand(obj *SStartMyNotifyCommand) int {
 	}
 	return 4 + obj.Serverinfo.GetSize()
 }
-func ReadMsgSNotifyAllInfoByBytes(indata []byte, obj *SNotifyAllInfo) (int,*SNotifyAllInfo ) {
+func ReadMsgSNotifyAllInfoByBytes(indata []byte, obj *SNotifyAllInfo) (int, *SNotifyAllInfo) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SNotifyAllInfo{}
+	if obj == nil {
+		obj = &SNotifyAllInfo{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 > data__len{
-		return endpos,obj
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	Serverinfos_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	Serverinfos_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if Serverinfos_slen != 0xffffffff {
-		obj.Serverinfos = make([]*SServerInfo,Serverinfos_slen)
+		obj.Serverinfos = make([]*SServerInfo, Serverinfos_slen)
 		for i1i := 0; Serverinfos_slen > i1i; i1i++ {
 			rsize_Serverinfos := 0
-			rsize_Serverinfos,obj.Serverinfos[i1i] = ReadMsgSServerInfoByBytes(data[offset:],nil)
+			rsize_Serverinfos, obj.Serverinfos[i1i] = ReadMsgSServerInfoByBytes(data[offset:], nil)
 			offset += rsize_Serverinfos
 		}
 	}
-	return endpos,obj
+	return endpos, obj
 }
 func WriteMsgSNotifyAllInfoByObj(data []byte, obj *SNotifyAllInfo) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	if obj.Serverinfos == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.Serverinfos)))
+		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Serverinfos)))
 	}
 	offset += 4
 	i1i := 0
 	Serverinfos_slen := len(obj.Serverinfos)
 	for Serverinfos_slen > i1i {
-		offset += WriteMsgSServerInfoByObj(data[offset:],obj.Serverinfos[i1i])
+		offset += WriteMsgSServerInfoByObj(data[offset:], obj.Serverinfos[i1i])
 		i1i++
 	}
 	return offset
@@ -1181,42 +1184,42 @@ func GetSizeSNotifyAllInfo(obj *SNotifyAllInfo) int {
 	}
 	return 4 + 4 + sizerelySServerInfo1
 }
-func ReadMsgSNotifySafelyQuitByBytes(indata []byte, obj *SNotifySafelyQuit) (int,*SNotifySafelyQuit ) {
+func ReadMsgSNotifySafelyQuitByBytes(indata []byte, obj *SNotifySafelyQuit) (int, *SNotifySafelyQuit) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SNotifySafelyQuit{}
+	if obj == nil {
+		obj = &SNotifySafelyQuit{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + obj.TargetServerInfo.GetSize() > data__len{
-		return endpos,obj
+	if offset+obj.TargetServerInfo.GetSize() > data__len {
+		return endpos, obj
 	}
 	rsize_TargetServerInfo := 0
-	rsize_TargetServerInfo,obj.TargetServerInfo = ReadMsgSServerInfoByBytes(data[offset:], nil)
+	rsize_TargetServerInfo, obj.TargetServerInfo = ReadMsgSServerInfoByBytes(data[offset:], nil)
 	offset += rsize_TargetServerInfo
-	return endpos,obj
+	return endpos, obj
 }
 func WriteMsgSNotifySafelyQuitByObj(data []byte, obj *SNotifySafelyQuit) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	offset += WriteMsgSServerInfoByObj(data[offset:], obj.TargetServerInfo)
 	return offset
@@ -1227,47 +1230,47 @@ func GetSizeSNotifySafelyQuit(obj *SNotifySafelyQuit) int {
 	}
 	return 4 + obj.TargetServerInfo.GetSize()
 }
-func ReadMsgSUpdateSessionByBytes(indata []byte, obj *SUpdateSession) (int,*SUpdateSession ) {
+func ReadMsgSUpdateSessionByBytes(indata []byte, obj *SUpdateSession) (int, *SUpdateSession) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SUpdateSession{}
+	if obj == nil {
+		obj = &SUpdateSession{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 + len(obj.ClientConnID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ClientConnID) > data__len {
+		return endpos, obj
 	}
 	obj.ClientConnID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ClientConnID)
-	if offset + 4 > data__len{
-		return endpos,obj
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	Session_slen := binary.BigEndian.Uint32(data[offset:offset+4])
+	Session_slen := binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if Session_slen != 0xffffffff {
 		obj.Session = make(map[string]string)
 		for i2i := uint32(0); i2i < Session_slen; i2i++ {
-			if offset + 0 > data__len{
-				return endpos,obj
+			if offset+0 > data__len {
+				return endpos, obj
 			}
 			keySession := readBinaryString(data[offset:])
 			Session_kcatlen := len(keySession)
 			offset += Session_kcatlen + 4
-			if offset + 2 > data__len{
-				return endpos,obj
+			if offset+2 > data__len {
+				return endpos, obj
 			}
 			valueSession := readBinaryString(data[offset:])
 			Session_vcatlen := len(valueSession)
@@ -1275,29 +1278,29 @@ func ReadMsgSUpdateSessionByBytes(indata []byte, obj *SUpdateSession) (int,*SUpd
 			obj.Session[keySession] = valueSession
 		}
 	}
-	return endpos,obj
+	return endpos, obj
 }
 func WriteMsgSUpdateSessionByObj(data []byte, obj *SUpdateSession) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	writeBinaryString(data[offset:],obj.ClientConnID)
+	writeBinaryString(data[offset:], obj.ClientConnID)
 	offset += 4 + len(obj.ClientConnID)
 	if obj.Session == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.Session)))
+		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Session)))
 	}
 	offset += 4
-	for Sessionkey,Sessionvalue := range obj.Session {
-		Session_kcatlen := writeBinaryString(data[offset:],Sessionkey)
+	for Sessionkey, Sessionvalue := range obj.Session {
+		Session_kcatlen := writeBinaryString(data[offset:], Sessionkey)
 		offset += Session_kcatlen
-		Session_vcatlen := writeBinaryString(data[offset:],Sessionvalue)
+		Session_vcatlen := writeBinaryString(data[offset:], Sessionvalue)
 		offset += Session_vcatlen
 	}
 	return offset
@@ -1307,81 +1310,81 @@ func GetSizeSUpdateSession(obj *SUpdateSession) int {
 		return 4
 	}
 	sizerelystring2 := 0
-	for Sessionvalue,Sessionkey := range obj.Session {
+	for Sessionvalue, Sessionkey := range obj.Session {
 		sizerelystring2 += len(Sessionvalue) + 4
 		sizerelystring2 += len(Sessionkey) + 4
 	}
 	return 4 + 4 + len(obj.ClientConnID) + 4 + sizerelystring2
 }
-func ReadMsgSForwardToServerByBytes(indata []byte, obj *SForwardToServer) (int,*SForwardToServer ) {
+func ReadMsgSForwardToServerByBytes(indata []byte, obj *SForwardToServer) (int, *SForwardToServer) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SForwardToServer{}
+	if obj == nil {
+		obj = &SForwardToServer{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 + len(obj.FromServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.FromServerID) > data__len {
+		return endpos, obj
 	}
 	obj.FromServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.FromServerID)
-	if offset + 4 + len(obj.ToServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ToServerID) > data__len {
+		return endpos, obj
 	}
 	obj.ToServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ToServerID)
-	if offset + 2 > data__len{
-		return endpos,obj
+	if offset+2 > data__len {
+		return endpos, obj
 	}
-	obj.MsgID = binary.BigEndian.Uint16(data[offset:offset+2])
-	offset+=2
-	if offset + 4 > data__len{
-		return endpos,obj
+	obj.MsgID = binary.BigEndian.Uint16(data[offset : offset+2])
+	offset += 2
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	Data_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	Data_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if Data_slen != 0xffffffff {
-		if offset + Data_slen > data__len {
-			return endpos,obj
+		if offset+Data_slen > data__len {
+			return endpos, obj
 		}
-		obj.Data = make([]byte,Data_slen)
+		obj.Data = make([]byte, Data_slen)
 		copy(obj.Data, data[offset:offset+Data_slen])
 		offset += Data_slen
 	}
-	return endpos,obj
+	return endpos, obj
 }
 func WriteMsgSForwardToServerByObj(data []byte, obj *SForwardToServer) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	writeBinaryString(data[offset:],obj.FromServerID)
+	writeBinaryString(data[offset:], obj.FromServerID)
 	offset += 4 + len(obj.FromServerID)
-	writeBinaryString(data[offset:],obj.ToServerID)
+	writeBinaryString(data[offset:], obj.ToServerID)
 	offset += 4 + len(obj.ToServerID)
 	binary.BigEndian.PutUint16(data[offset:offset+2], obj.MsgID)
-	offset+=2
+	offset += 2
 	if obj.Data == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.Data)))
+		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
 	}
 	offset += 4
 	Data_slen := len(obj.Data)
@@ -1393,84 +1396,84 @@ func GetSizeSForwardToServer(obj *SForwardToServer) int {
 	if obj == nil {
 		return 4
 	}
-	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 2 + 4 + len(obj.Data) * 1
+	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 2 + 4 + len(obj.Data)*1
 }
-func ReadMsgSForwardToClientByBytes(indata []byte, obj *SForwardToClient) (int,*SForwardToClient ) {
+func ReadMsgSForwardToClientByBytes(indata []byte, obj *SForwardToClient) (int, *SForwardToClient) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SForwardToClient{}
+	if obj == nil {
+		obj = &SForwardToClient{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 + len(obj.FromServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.FromServerID) > data__len {
+		return endpos, obj
 	}
 	obj.FromServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.FromServerID)
-	if offset + 4 + len(obj.ToGateID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ToGateID) > data__len {
+		return endpos, obj
 	}
 	obj.ToGateID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ToGateID)
-	if offset + 4 + len(obj.ToClientID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ToClientID) > data__len {
+		return endpos, obj
 	}
 	obj.ToClientID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ToClientID)
-	if offset + 2 > data__len{
-		return endpos,obj
+	if offset+2 > data__len {
+		return endpos, obj
 	}
-	obj.MsgID = binary.BigEndian.Uint16(data[offset:offset+2])
-	offset+=2
-	if offset + 4 > data__len{
-		return endpos,obj
+	obj.MsgID = binary.BigEndian.Uint16(data[offset : offset+2])
+	offset += 2
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	Data_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	Data_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if Data_slen != 0xffffffff {
-		if offset + Data_slen > data__len {
-			return endpos,obj
+		if offset+Data_slen > data__len {
+			return endpos, obj
 		}
-		obj.Data = make([]byte,Data_slen)
+		obj.Data = make([]byte, Data_slen)
 		copy(obj.Data, data[offset:offset+Data_slen])
 		offset += Data_slen
 	}
-	return endpos,obj
+	return endpos, obj
 }
 func WriteMsgSForwardToClientByObj(data []byte, obj *SForwardToClient) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	writeBinaryString(data[offset:],obj.FromServerID)
+	writeBinaryString(data[offset:], obj.FromServerID)
 	offset += 4 + len(obj.FromServerID)
-	writeBinaryString(data[offset:],obj.ToGateID)
+	writeBinaryString(data[offset:], obj.ToGateID)
 	offset += 4 + len(obj.ToGateID)
-	writeBinaryString(data[offset:],obj.ToClientID)
+	writeBinaryString(data[offset:], obj.ToClientID)
 	offset += 4 + len(obj.ToClientID)
 	binary.BigEndian.PutUint16(data[offset:offset+2], obj.MsgID)
-	offset+=2
+	offset += 2
 	if obj.Data == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.Data)))
+		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
 	}
 	offset += 4
 	Data_slen := len(obj.Data)
@@ -1482,60 +1485,60 @@ func GetSizeSForwardToClient(obj *SForwardToClient) int {
 	if obj == nil {
 		return 4
 	}
-	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToGateID) + 4 + len(obj.ToClientID) + 2 + 
-	4 + len(obj.Data) * 1
+	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToGateID) + 4 + len(obj.ToClientID) + 2 +
+		4 + len(obj.Data)*1
 }
-func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int,*SForwardFromGate ) {
+func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int, *SForwardFromGate) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SForwardFromGate{}
+	if obj == nil {
+		obj = &SForwardFromGate{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 + len(obj.FromServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.FromServerID) > data__len {
+		return endpos, obj
 	}
 	obj.FromServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.FromServerID)
-	if offset + 4 + len(obj.ToServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ToServerID) > data__len {
+		return endpos, obj
 	}
 	obj.ToServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ToServerID)
-	if offset + 4 + len(obj.ClientConnID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ClientConnID) > data__len {
+		return endpos, obj
 	}
 	obj.ClientConnID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ClientConnID)
-	if offset + 4 > data__len{
-		return endpos,obj
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	Session_slen := binary.BigEndian.Uint32(data[offset:offset+4])
+	Session_slen := binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if Session_slen != 0xffffffff {
 		obj.Session = make(map[string]string)
 		for i4i := uint32(0); i4i < Session_slen; i4i++ {
-			if offset + 0 > data__len{
-				return endpos,obj
+			if offset+0 > data__len {
+				return endpos, obj
 			}
 			keySession := readBinaryString(data[offset:])
 			Session_kcatlen := len(keySession)
 			offset += Session_kcatlen + 4
-			if offset + 2 > data__len{
-				return endpos,obj
+			if offset+2 > data__len {
+				return endpos, obj
 			}
 			valueSession := readBinaryString(data[offset:])
 			Session_vcatlen := len(valueSession)
@@ -1543,59 +1546,59 @@ func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int,*
 			obj.Session[keySession] = valueSession
 		}
 	}
-	if offset + 2 > data__len{
-		return endpos,obj
+	if offset+2 > data__len {
+		return endpos, obj
 	}
-	obj.MsgID = binary.BigEndian.Uint16(data[offset:offset+2])
-	offset+=2
-	if offset + 4 > data__len{
-		return endpos,obj
+	obj.MsgID = binary.BigEndian.Uint16(data[offset : offset+2])
+	offset += 2
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	Data_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	Data_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if Data_slen != 0xffffffff {
-		if offset + Data_slen > data__len {
-			return endpos,obj
+		if offset+Data_slen > data__len {
+			return endpos, obj
 		}
-		obj.Data = make([]byte,Data_slen)
+		obj.Data = make([]byte, Data_slen)
 		copy(obj.Data, data[offset:offset+Data_slen])
 		offset += Data_slen
 	}
-	return endpos,obj
+	return endpos, obj
 }
 func WriteMsgSForwardFromGateByObj(data []byte, obj *SForwardFromGate) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	writeBinaryString(data[offset:],obj.FromServerID)
+	writeBinaryString(data[offset:], obj.FromServerID)
 	offset += 4 + len(obj.FromServerID)
-	writeBinaryString(data[offset:],obj.ToServerID)
+	writeBinaryString(data[offset:], obj.ToServerID)
 	offset += 4 + len(obj.ToServerID)
-	writeBinaryString(data[offset:],obj.ClientConnID)
+	writeBinaryString(data[offset:], obj.ClientConnID)
 	offset += 4 + len(obj.ClientConnID)
 	if obj.Session == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.Session)))
+		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Session)))
 	}
 	offset += 4
-	for Sessionkey,Sessionvalue := range obj.Session {
-		Session_kcatlen := writeBinaryString(data[offset:],Sessionkey)
+	for Sessionkey, Sessionvalue := range obj.Session {
+		Session_kcatlen := writeBinaryString(data[offset:], Sessionkey)
 		offset += Session_kcatlen
-		Session_vcatlen := writeBinaryString(data[offset:],Sessionvalue)
+		Session_vcatlen := writeBinaryString(data[offset:], Sessionvalue)
 		offset += Session_vcatlen
 	}
 	binary.BigEndian.PutUint16(data[offset:offset+2], obj.MsgID)
-	offset+=2
+	offset += 2
 	if obj.Data == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.Data)))
+		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
 	}
 	offset += 4
 	Data_slen := len(obj.Data)
@@ -1608,261 +1611,276 @@ func GetSizeSForwardFromGate(obj *SForwardFromGate) int {
 		return 4
 	}
 	sizerelystring4 := 0
-	for Sessionvalue,Sessionkey := range obj.Session {
+	for Sessionvalue, Sessionkey := range obj.Session {
 		sizerelystring4 += len(Sessionvalue) + 4
 		sizerelystring4 += len(Sessionkey) + 4
 	}
-	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 4 + len(obj.ClientConnID) + 4 + sizerelystring4 + 
-	2 + 4 + len(obj.Data) * 1
+	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 4 + len(obj.ClientConnID) + 4 + sizerelystring4 +
+		2 + 4 + len(obj.Data)*1
 }
-func ReadMsgSROCRequestByBytes(indata []byte, obj *SROCRequest) (int,*SROCRequest ) {
+func ReadMsgSROCRequestByBytes(indata []byte, obj *SROCRequest) (int, *SROCRequest) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SROCRequest{}
+	if obj == nil {
+		obj = &SROCRequest{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 + len(obj.FromServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.FromServerID) > data__len {
+		return endpos, obj
 	}
 	obj.FromServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.FromServerID)
-	if offset + 4 + len(obj.ToServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ToServerID) > data__len {
+		return endpos, obj
 	}
 	obj.ToServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ToServerID)
-	if offset + 8 > data__len{
-		return endpos,obj
+	if offset+8 > data__len {
+		return endpos, obj
 	}
-	obj.Seq = readBinaryInt64(data[offset:offset+8])
-	offset+=8
-	if offset + 4 + len(obj.CallStr) > data__len{
-		return endpos,obj
+	obj.Seq = readBinaryInt64(data[offset : offset+8])
+	offset += 8
+	if offset+4+len(obj.CallStr) > data__len {
+		return endpos, obj
 	}
 	obj.CallStr = readBinaryString(data[offset:])
 	offset += 4 + len(obj.CallStr)
-	if offset + 4 > data__len{
-		return endpos,obj
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	CallArg_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	CallArg_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if CallArg_slen != 0xffffffff {
-		if offset + CallArg_slen > data__len {
-			return endpos,obj
+		if offset+CallArg_slen > data__len {
+			return endpos, obj
 		}
-		obj.CallArg = make([]byte,CallArg_slen)
+		obj.CallArg = make([]byte, CallArg_slen)
 		copy(obj.CallArg, data[offset:offset+CallArg_slen])
 		offset += CallArg_slen
 	}
-	return endpos,obj
+	if offset+1 > data__len {
+		return endpos, obj
+	}
+	obj.NeedReturn = uint8(data[offset]) != 0
+	offset += 1
+	return endpos, obj
 }
 func WriteMsgSROCRequestByObj(data []byte, obj *SROCRequest) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	writeBinaryString(data[offset:],obj.FromServerID)
+	writeBinaryString(data[offset:], obj.FromServerID)
 	offset += 4 + len(obj.FromServerID)
-	writeBinaryString(data[offset:],obj.ToServerID)
+	writeBinaryString(data[offset:], obj.ToServerID)
 	offset += 4 + len(obj.ToServerID)
 	writeBinaryInt64(data[offset:offset+8], obj.Seq)
-	offset+=8
-	writeBinaryString(data[offset:],obj.CallStr)
+	offset += 8
+	writeBinaryString(data[offset:], obj.CallStr)
 	offset += 4 + len(obj.CallStr)
 	if obj.CallArg == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.CallArg)))
+		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.CallArg)))
 	}
 	offset += 4
 	CallArg_slen := len(obj.CallArg)
 	copy(data[offset:offset+CallArg_slen], obj.CallArg)
 	offset += CallArg_slen
+	data[offset] = uint8(bool2int(obj.NeedReturn))
+	offset += 1
 	return offset
 }
 func GetSizeSROCRequest(obj *SROCRequest) int {
 	if obj == nil {
 		return 4
 	}
-	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 8 + 4 + len(obj.CallStr) + 
-	4 + len(obj.CallArg) * 1
+	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 8 + 4 + len(obj.CallStr) +
+		4 + len(obj.CallArg)*1 + 1
 }
-func ReadMsgSROCResponseByBytes(indata []byte, obj *SROCResponse) (int,*SROCResponse ) {
+func ReadMsgSROCResponseByBytes(indata []byte, obj *SROCResponse) (int, *SROCResponse) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SROCResponse{}
+	if obj == nil {
+		obj = &SROCResponse{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 + len(obj.FromServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.FromServerID) > data__len {
+		return endpos, obj
 	}
 	obj.FromServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.FromServerID)
-	if offset + 4 + len(obj.ToServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ToServerID) > data__len {
+		return endpos, obj
 	}
 	obj.ToServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ToServerID)
-	if offset + 8 > data__len{
-		return endpos,obj
+	if offset+8 > data__len {
+		return endpos, obj
 	}
-	obj.ReqSeq = readBinaryInt64(data[offset:offset+8])
-	offset+=8
-	if offset + 4 > data__len{
-		return endpos,obj
+	obj.ReqSeq = readBinaryInt64(data[offset : offset+8])
+	offset += 8
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	ResData_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	ResData_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if ResData_slen != 0xffffffff {
-		if offset + ResData_slen > data__len {
-			return endpos,obj
+		if offset+ResData_slen > data__len {
+			return endpos, obj
 		}
-		obj.ResData = make([]byte,ResData_slen)
+		obj.ResData = make([]byte, ResData_slen)
 		copy(obj.ResData, data[offset:offset+ResData_slen])
 		offset += ResData_slen
 	}
-	return endpos,obj
+	if offset+4+len(obj.Error) > data__len {
+		return endpos, obj
+	}
+	obj.Error = readBinaryString(data[offset:])
+	offset += 4 + len(obj.Error)
+	return endpos, obj
 }
 func WriteMsgSROCResponseByObj(data []byte, obj *SROCResponse) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	writeBinaryString(data[offset:],obj.FromServerID)
+	writeBinaryString(data[offset:], obj.FromServerID)
 	offset += 4 + len(obj.FromServerID)
-	writeBinaryString(data[offset:],obj.ToServerID)
+	writeBinaryString(data[offset:], obj.ToServerID)
 	offset += 4 + len(obj.ToServerID)
 	writeBinaryInt64(data[offset:offset+8], obj.ReqSeq)
-	offset+=8
+	offset += 8
 	if obj.ResData == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.ResData)))
+		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ResData)))
 	}
 	offset += 4
 	ResData_slen := len(obj.ResData)
 	copy(data[offset:offset+ResData_slen], obj.ResData)
 	offset += ResData_slen
+	writeBinaryString(data[offset:], obj.Error)
+	offset += 4 + len(obj.Error)
 	return offset
 }
 func GetSizeSROCResponse(obj *SROCResponse) int {
 	if obj == nil {
 		return 4
 	}
-	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 8 + 4 + len(obj.ResData) * 1
+	return 4 + 4 + len(obj.FromServerID) + 4 + len(obj.ToServerID) + 8 + 4 + len(obj.ResData)*1 +
+		4 + len(obj.Error)
 }
-func ReadMsgSROCBindByBytes(indata []byte, obj *SROCBind) (int,*SROCBind ) {
+func ReadMsgSROCBindByBytes(indata []byte, obj *SROCBind) (int, *SROCBind) {
 	offset := 0
 	if len(indata) < 4 {
-		return 0,nil
+		return 0, nil
 	}
 	objsize := int(binary.BigEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
-		return 4,nil
+		return 4, nil
 	}
-	if obj == nil{
-		obj=&SROCBind{}
+	if obj == nil {
+		obj = &SROCBind{}
 	}
-	if offset + objsize > len(indata ) {
-		return offset,obj
+	if offset+objsize > len(indata) {
+		return offset, obj
 	}
-	endpos := offset+objsize
-	data := indata[offset:offset+objsize]
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
 	offset = 0
 	data__len := len(data)
-	if offset + 4 + len(obj.HostServerID) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.HostServerID) > data__len {
+		return endpos, obj
 	}
 	obj.HostServerID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.HostServerID)
-	if offset + 1 > data__len{
-		return endpos,obj
+	if offset+1 > data__len {
+		return endpos, obj
 	}
 	obj.IsDelete = uint8(data[offset]) != 0
 	offset += 1
-	if offset + 4 + len(obj.ObjType) > data__len{
-		return endpos,obj
+	if offset+4+len(obj.ObjType) > data__len {
+		return endpos, obj
 	}
 	obj.ObjType = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ObjType)
-	if offset + 4 > data__len{
-		return endpos,obj
+	if offset+4 > data__len {
+		return endpos, obj
 	}
-	ObjIDHashs_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))
+	ObjIDHashs_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if ObjIDHashs_slen != 0xffffffff {
 		if offset+(ObjIDHashs_slen*4) > data__len {
-			return endpos,obj
+			return endpos, obj
 		}
-		obj.ObjIDHashs = make([]uint32,ObjIDHashs_slen)
+		obj.ObjIDHashs = make([]uint32, ObjIDHashs_slen)
 		for i4i := 0; ObjIDHashs_slen > i4i; i4i++ {
-			obj.ObjIDHashs[i4i] = uint32(binary.BigEndian.Uint32(data[offset:offset+4]))
+			obj.ObjIDHashs[i4i] = uint32(binary.BigEndian.Uint32(data[offset : offset+4]))
 			offset += 4
 		}
 	}
-	return endpos,obj
+	return endpos, obj
 }
 func WriteMsgSROCBindByObj(data []byte, obj *SROCBind) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4],0)
+		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))
+	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	writeBinaryString(data[offset:],obj.HostServerID)
+	writeBinaryString(data[offset:], obj.HostServerID)
 	offset += 4 + len(obj.HostServerID)
 	data[offset] = uint8(bool2int(obj.IsDelete))
 	offset += 1
-	writeBinaryString(data[offset:],obj.ObjType)
+	writeBinaryString(data[offset:], obj.ObjType)
 	offset += 4 + len(obj.ObjType)
 	if obj.ObjIDHashs == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)
+		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.ObjIDHashs)))
+		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ObjIDHashs)))
 	}
 	offset += 4
 	ObjIDHashs_slen := len(obj.ObjIDHashs)
 	for i4i := 0; ObjIDHashs_slen > i4i; i4i++ {
-		binary.BigEndian.PutUint32(data[offset:offset+4],obj.ObjIDHashs[i4i])
+		binary.BigEndian.PutUint32(data[offset:offset+4], obj.ObjIDHashs[i4i])
 		offset += 4
 	}
 	return offset
@@ -1871,5 +1889,5 @@ func GetSizeSROCBind(obj *SROCBind) int {
 	if obj == nil {
 		return 4
 	}
-	return 4 + 4 + len(obj.HostServerID) + 1 + 4 + len(obj.ObjType) + 4 + len(obj.ObjIDHashs) * 4
+	return 4 + 4 + len(obj.HostServerID) + 1 + 4 + len(obj.ObjType) + 4 + len(obj.ObjIDHashs)*4
 }
