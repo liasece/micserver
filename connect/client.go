@@ -167,7 +167,7 @@ func (this *Client) SendCmd(v msg.MsgStruct) error {
 	this.Debug("[SendCmd] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())
 
-	msg := msg.MakeMessageByObj(v)
+	msg := msg.GetByObj(v)
 	if msg == nil {
 		this.Error("[Client.SendCmd] msg==nil")
 		return fmt.Errorf("can't get message binary")
@@ -185,12 +185,12 @@ func (this *Client) SendCmdWithCallback(v msg.MsgStruct,
 	}
 	this.Debug("[SendCmdWithCallback] 发送 MsgID[%d] MsgName[%s] DataLen[%d]",
 		v.GetMsgId(), v.GetMsgName(), v.GetSize())
-	msg := msg.MakeMessageByObj(v)
+	msg := msg.GetByObj(v)
 	if msg == nil {
 		this.Error("[Client.SendCmd] msg==nil")
 		return fmt.Errorf("can't get message binary")
 	}
-	msg.RegSendDone(cb, cbarg)
+	msg.RegSendFinish(cb, cbarg)
 	return this.IConnection.SendMessageBinary(msg)
 }
 

@@ -162,7 +162,7 @@ func (this *TCPConn) SendBytes(
 		log.Warn("[TCPConn.SendBytes] 连接已失效，取消发送")
 		return ErrCloseed
 	}
-	msgbinary := msg.MakeMessageByBytes(cmdid, protodata)
+	msgbinary := msg.GetByBytes(cmdid, protodata)
 
 	return this.SendMessageBinary(msgbinary)
 }
@@ -356,7 +356,7 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 	// 遍历已经发送的消息
 	for _, msg := range msglist {
 		// 调用发送回调函数
-		msg.OnSendDone()
+		msg.OnSendFinish()
 		msg.Free()
 	}
 }

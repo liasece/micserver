@@ -153,7 +153,7 @@ func (this *Server) SendCmd(v msg.MsgStruct) error {
 			v.GetMsgName())
 		return fmt.Errorf("link has been closed")
 	}
-	msg := msg.MakeMessageByObj(v)
+	msg := msg.GetByObj(v)
 	if msg == nil {
 		this.Error("[Server.SendCmd] msg==nil")
 		return fmt.Errorf("can't get message binary")
@@ -169,12 +169,12 @@ func (this *Server) SendCmdWithCallback(v msg.MsgStruct,
 			v.GetMsgName())
 		return fmt.Errorf("link has been closed")
 	}
-	msg := msg.MakeMessageByObj(v)
+	msg := msg.GetByObj(v)
 	if msg == nil {
 		this.Error("[Server.SendCmd] msg==nil")
 		return fmt.Errorf("can't get message binary")
 	}
-	msg.RegSendDone(cb, cbarg)
+	msg.RegSendFinish(cb, cbarg)
 	return this.IConnection.SendMessageBinary(msg)
 }
 

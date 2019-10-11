@@ -36,7 +36,7 @@ func (this *SubnetManager) OnGetRecvTCPMsgParseChan(conn *connect.Server,
 	if msgbinary.CmdID == servercomm.SForwardFromGateID {
 		layerMsg := &servercomm.SForwardFromGate{}
 		layerMsg.ReadBinary(msgbinary.ProtoData)
-		msgbinary.MsgObject = layerMsg
+		msgbinary.SetObj(layerMsg)
 		hash := int32(util.GetStringHash(layerMsg.ClientConnID)) % maxChan
 		if hash < 0 {
 			hash = -hash

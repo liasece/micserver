@@ -69,8 +69,8 @@ func (this *serverCmdHandler) onRecvMsg(conn *connect.Server,
 		}
 	case servercomm.SForwardFromGateID:
 		var layerMsg *servercomm.SForwardFromGate
-		if msgbinary.MsgObject != nil {
-			if m, ok := msgbinary.MsgObject.(*servercomm.SForwardFromGate); ok {
+		if obj := msgbinary.GetObj(); obj != nil {
+			if m, ok := obj.(*servercomm.SForwardFromGate); ok {
 				layerMsg = m
 			}
 		}

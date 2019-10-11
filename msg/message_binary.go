@@ -3,6 +3,7 @@ package msg
 import (
 	"errors"
 	"github.com/liasece/micserver/log"
+	msgbase "github.com/liasece/micserver/msg/base"
 	"github.com/liasece/micserver/util"
 )
 
@@ -14,7 +15,6 @@ const (
 
 var (
 	defaultHead1 MessageBinaryHeadL1
-	defaultBody  MessageBinaryBody
 )
 
 // 灵活对象池的对象大小分割。
@@ -60,28 +60,12 @@ func getMessageBinaryByProtoDataLength(protoDataSize int) *MessageBinary {
 }
 
 type MessageBinary struct {
+	msgbase.MessageBase
+
 	MessageBinaryHeadL1
-	MessageBinaryBody
-	buffer []byte
 
-	regSendDone *SendCompletedAgent // 用于优化的临时数据指针请注意使用！
-	MsgObject   interface{}         // 用于优化的临时数据指针请注意使用！
-}
-
-func (this *MessageBinary) RegSendDone(cb func(interface{}), argv interface{}) {
-	if cb == nil {
-		return
-	}
-	this.regSendDone = &SendCompletedAgent{
-		F:    cb,
-		Argv: argv,
-	}
-}
-
-func (this *MessageBinary) OnSendDone() {
-	if this.regSendDone != nil {
-		this.regSendDone.F(this.regSendDone.Argv)
-	}
+	ProtoData []byte
+	buffer    []byte
 }
 
 // 将消息对象释放到对象池中
@@ -99,10 +83,10 @@ func (this *MessageBinary) Free() {
 
 // 重置 Message 数据
 func (this *MessageBinary) Reset() {
+	this.MessageBase.Reset()
+
 	this.MessageBinaryHeadL1 = defaultHead1
-	this.regSendDone = nil
-	this.MsgObject = nil
-	this.MessageBinaryBody = defaultBody
+	this.ProtoData = nil
 	// 为了减轻GC压力，不应重置buffer字段
 }
 
@@ -161,7 +145,7 @@ func (this *MessageBinary) readBinaryNoHeadL1(cmddata []byte) error {
 	copy(this.buffer[offset:this.MessageBinaryHeadL1.CmdLen],
 		cmddata[:int(this.MessageBinaryHeadL1.CmdLen)-offset])
 	// 将数据指针字段指向buffer数据域
-	this.MessageBinaryBody.ProtoData =
+	this.ProtoData =
 		this.buffer[MSG_HEADSIZE:this.MessageBinaryHeadL1.CmdLen]
 
 	return nil
@@ -180,8 +164,7 @@ func (this *MessageBinary) WriteBinary() ([]byte, int) {
 	// 如果缓冲区大小不合适，说明数据被篡改
 	if this.buffer == nil ||
 		len(this.buffer) < int(this.MessageBinaryHeadL1.CmdLen) {
-		log.Error("[MakeMessageByBytes] "+
-			"[WriteBinary] 错误的缓冲区大小，数据被篡改！ "+
+		log.Error("[MessageBinary.WriteBinary] 错误的缓冲区大小，数据被篡改！ "+
 			"BufferLen[%d] CmdLen[%d]",
 			len(this.buffer), this.MessageBinaryHeadL1.CmdLen)
 		return make([]byte, 1), 0
@@ -191,13 +174,13 @@ func (this *MessageBinary) WriteBinary() ([]byte, int) {
 }
 
 // 通过二进制流创建 MessageBinary
-func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
+func GetByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	// 获取基础数据
 	datalen := uint32(len(protodata))
 	totalLength := uint32(MSG_HEADSIZE + datalen)
 	// 判断数据合法性
 	if totalLength >= MessageMaxSize {
-		log.Error("[MakeMessageByBytes] "+
+		log.Error("[GetByBytes] "+
 			"[缓冲区溢出] 发送消息数据过大 CmdID[%d] CmdLen[%d]",
 			cmdid, totalLength)
 		// 返回一个没有内容的消息
@@ -208,7 +191,7 @@ func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	// 从对象池获取消息对象
 	msgbinary := getMessageBinaryByProtoDataLength(int(datalen))
 	if msgbinary == nil {
-		log.Error("[MakeMessageByBytes] "+
+		log.Error("[GetByBytes] "+
 			"无法分配MsgBinary的内存！！！ CmdID[%d] Len[%d]",
 			cmdid, totalLength)
 		return nil
@@ -220,7 +203,7 @@ func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 
 	// MessageBinaryBody
 	// 消息数据字段指针指向 buffer 数据域
-	msgbinary.MessageBinaryBody.ProtoData =
+	msgbinary.ProtoData =
 		msgbinary.buffer[MSG_HEADSIZE:totalLength]
 
 	// MessageBinaryHeadL1
@@ -234,7 +217,7 @@ func MakeMessageByBytes(cmdid uint16, protodata []byte) *MessageBinary {
 }
 
 // 通过结构体创建 MessageBinary
-func MakeMessageByObj(v MsgStruct) *MessageBinary {
+func GetByObj(v MsgStruct) *MessageBinary {
 	// 通过结构对象构造 json binary
 	cmdid := v.GetMsgId()
 	// 获取基础数据
@@ -253,7 +236,7 @@ func MakeMessageByObj(v MsgStruct) *MessageBinary {
 	// 从对象池获取消息对象
 	msgbinary := getMessageBinaryByProtoDataLength(int(datalen))
 	if msgbinary == nil {
-		log.Error("[MakeMessageByObj] "+
+		log.Error("[GetByObj] "+
 			"无法分配MsgBinary的内存！！！ CmdLen[%d] DataLen[%d]",
 			totalLength, datalen)
 		return nil
@@ -266,7 +249,7 @@ func MakeMessageByObj(v MsgStruct) *MessageBinary {
 	// 初始化消息信息
 
 	// 消息数据字段指针指向 buffer 数据域
-	msgbinary.MessageBinaryBody.ProtoData =
+	msgbinary.ProtoData =
 		msgbinary.buffer[MSG_HEADSIZE:totalLength]
 
 	// 初始化消息信息

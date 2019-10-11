@@ -8,8 +8,3 @@ type MsgStruct interface {
 	GetSize() int
 	GetJson() string
 }
-
-type SendCompletedAgent struct {
-	F    func(interface{}) // 用于优化的临时数据指针请注意使用！
-	Argv interface{}       // 用于优化的临时数据指针请注意使用！
-}
