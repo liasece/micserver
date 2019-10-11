@@ -46,3 +46,93 @@ func getMessageBinaryByProtoDataLength(protoDataSize int) *MessageBinary {
 	}
 	return msg.(*MessageBinary)
 }
+
+// 通过二进制流创建 MessageBinary
+func GetByBytes(cmdid uint16, protodata []byte) *MessageBinary {
+	// 获取基础数据
+	datalen := uint32(len(protodata))
+	totalLength := uint32(MSG_HEADSIZE + datalen)
+	// 判断数据合法性
+	if totalLength >= MessageMaxSize {
+		log.Error("[GetByBytes] "+
+			"[缓冲区溢出] 发送消息数据过大 CmdID[%d] CmdLen[%d]",
+			cmdid, totalLength)
+		// 返回一个没有内容的消息
+		msgbinary := getMessageBinaryByProtoDataLength(0)
+		msgbinary.Reset()
+		return msgbinary
+	}
+	// 从对象池获取消息对象
+	msgbinary := getMessageBinaryByProtoDataLength(int(datalen))
+	if msgbinary == nil {
+		log.Error("[GetByBytes] "+
+			"无法分配MsgBinary的内存！！！ CmdID[%d] Len[%d]",
+			cmdid, totalLength)
+		return nil
+	}
+	// 将 protodata 拷贝至 buffer 的数据域
+	copy(msgbinary.buffer[MSG_HEADSIZE:totalLength], protodata)
+
+	// 初始化消息信息
+
+	// MessageBinaryBody
+	// 消息数据字段指针指向 buffer 数据域
+	msgbinary.ProtoData =
+		msgbinary.buffer[MSG_HEADSIZE:totalLength]
+
+	// MessageBinaryHeadL1
+	msgbinary.MessageBinaryHeadL1.CmdLen = totalLength
+	msgbinary.MessageBinaryHeadL1.CmdID = cmdid
+
+	// 将结构数据填入 buffer
+	msgbinary.writeHeadBuffer()
+
+	return msgbinary
+}
+
+// 通过结构体创建 MessageBinary
+func GetByObj(v MsgStruct) *MessageBinary {
+	// 通过结构对象构造 json binary
+	cmdid := v.GetMsgId()
+	// 获取基础数据
+	datalen := v.GetSize()
+	totalLength := uint32(MSG_HEADSIZE + datalen)
+	// 判断数据合法性
+	if totalLength >= MessageMaxSize {
+		log.Error("[MakeMessageByBytes] "+
+			"[缓冲区溢出] 发送消息数据过大 MsgID[%d] CmdLen[%d] MaxSize[%d]",
+			cmdid, totalLength, MessageMaxSize)
+		// 返回一个没有内容的消息
+		msgbinary := getMessageBinaryByProtoDataLength(0)
+		msgbinary.Reset()
+		return msgbinary
+	}
+	// 从对象池获取消息对象
+	msgbinary := getMessageBinaryByProtoDataLength(int(datalen))
+	if msgbinary == nil {
+		log.Error("[GetByObj] "+
+			"无法分配MsgBinary的内存！！！ CmdLen[%d] DataLen[%d]",
+			totalLength, datalen)
+		return nil
+	}
+
+	// MessageBinaryBody
+	// 将 protodata 拷贝至 buffer 的数据域
+	v.WriteBinary(msgbinary.buffer[MSG_HEADSIZE:totalLength])
+
+	// 初始化消息信息
+
+	// 消息数据字段指针指向 buffer 数据域
+	msgbinary.ProtoData =
+		msgbinary.buffer[MSG_HEADSIZE:totalLength]
+
+	// 初始化消息信息
+	// MessageBinaryHeadL1
+	msgbinary.MessageBinaryHeadL1.CmdLen = totalLength
+	msgbinary.MessageBinaryHeadL1.CmdID = cmdid
+
+	// 将结构数据填入 buffer
+	msgbinary.writeHeadBuffer()
+
+	return msgbinary
+}
