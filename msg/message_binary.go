@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/liasece/micserver/log"
 	msgbase "github.com/liasece/micserver/msg/base"
-	"github.com/liasece/micserver/util"
 )
 
 const (
@@ -16,48 +15,6 @@ const (
 var (
 	defaultHead1 MessageBinaryHeadL1
 )
-
-// 灵活对象池的对象大小分割。
-// 从对象池中获取对象时，将会从至少满足需求大小的对象的对象池中获取对象，
-// 有效减少对象池中闲置对象带来的内存占用。
-// 粒度控制 单位：字节
-var sizeControl []int = []int{32, 64, 128, 256, 512, 1024, 2 * 1024,
-	4 * 1024, 6 * 1024, 8 * 1024, 10 * 1024, 15 * 1024, 20 * 1024,
-	25 * 1024, 30 * 1024, 35 * 1024, 40 * 1024, 45 * 1024, 50 * 1024,
-	55 * 1024, 60 * 1024, 64 * 1024, 128 * 1024, 256 * 1024, 512 * 1024,
-	1024 * 1024, 2 * 1024 * 1024, 4 * 1024 * 1024, 8 * 1024 * 1024}
-var pools *util.FlexiblePool
-
-// 初始化灵活对象池
-func init() {
-	pools = util.NewFlexiblePool(sizeControl, newMsgBinaryBySize)
-}
-
-// 根据 MessageBinary.buffer 的大小来创建一个对象池中的对象
-func newMsgBinaryBySize(size int) interface{} {
-	msg := new(MessageBinary)
-	msg.buffer = make([]byte, size)
-	return msg
-}
-
-// 根据消息内容大小从对象池获取对应的消息对象
-func getMessageBinaryByProtoDataLength(protoDataSize int) *MessageBinary {
-	totalSize := protoDataSize + MSG_HEADSIZE // 加上协议头长度
-	msg, err := pools.Get(totalSize)
-	if err != nil {
-		log.Error("[MakeMessageByBytes] "+
-			"[getMessageBinaryByProtoDataLength] CmdLen[%d] Err[%s]",
-			totalSize, err.Error())
-		return nil
-	}
-	if msg == nil {
-		log.Error("[MakeMessageByBytes] "+
-			"[getMessageBinaryByProtoDataLength] nil return!!! CmdLen[%d]",
-			totalSize)
-		return nil
-	}
-	return msg.(*MessageBinary)
-}
 
 type MessageBinary struct {
 	msgbase.MessageBase
@@ -167,7 +124,7 @@ func (this *MessageBinary) WriteBinary() ([]byte, int) {
 		log.Error("[MessageBinary.WriteBinary] 错误的缓冲区大小，数据被篡改！ "+
 			"BufferLen[%d] CmdLen[%d]",
 			len(this.buffer), this.MessageBinaryHeadL1.CmdLen)
-		return make([]byte, 1), 0
+		return make([]byte, 0), 0
 	}
 	return this.buffer[:this.MessageBinaryHeadL1.CmdLen],
 		int(this.MessageBinaryHeadL1.CmdLen)
