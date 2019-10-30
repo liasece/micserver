@@ -11,7 +11,6 @@ const (
 
 type ROC struct {
 	objPool   util.MapPool
-	catch     Catch
 	onfRegObj func(IObj)
 }
 

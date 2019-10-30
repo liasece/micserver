@@ -211,3 +211,10 @@ func (l *Logger) deliverRecordToWriter(level int32, format string, args ...inter
 
 	l.logWriter.write(r)
 }
+
+func (l *Logger) GetLogger() *Logger {
+	if l == nil && l != default_logger {
+		return default_logger.GetLogger()
+	}
+	return l
+}

@@ -1843,16 +1843,16 @@ func ReadMsgSROCBindByBytes(indata []byte, obj *SROCBind) (int, *SROCBind) {
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	ObjIDHashs_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+	ObjIDs_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
 	offset += 4
-	if ObjIDHashs_slen != 0xffffffff {
-		if offset+(ObjIDHashs_slen*4) > data__len {
+	if ObjIDs_slen != 0xffffffff {
+		if offset+(ObjIDs_slen*0) > data__len {
 			return endpos, obj
 		}
-		obj.ObjIDHashs = make([]uint32, ObjIDHashs_slen)
-		for i4i := 0; ObjIDHashs_slen > i4i; i4i++ {
-			obj.ObjIDHashs[i4i] = uint32(binary.BigEndian.Uint32(data[offset : offset+4]))
-			offset += 4
+		obj.ObjIDs = make([]string, ObjIDs_slen)
+		for i4i := 0; ObjIDs_slen > i4i; i4i++ {
+			obj.ObjIDs[i4i] = string(readBinaryString(data[offset:]))
+			offset += 0
 		}
 	}
 	return endpos, obj
@@ -1872,16 +1872,16 @@ func WriteMsgSROCBindByObj(data []byte, obj *SROCBind) int {
 	offset += 1
 	writeBinaryString(data[offset:], obj.ObjType)
 	offset += 4 + len(obj.ObjType)
-	if obj.ObjIDHashs == nil {
+	if obj.ObjIDs == nil {
 		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ObjIDHashs)))
+		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ObjIDs)))
 	}
 	offset += 4
-	ObjIDHashs_slen := len(obj.ObjIDHashs)
-	for i4i := 0; ObjIDHashs_slen > i4i; i4i++ {
-		binary.BigEndian.PutUint32(data[offset:offset+4], obj.ObjIDHashs[i4i])
-		offset += 4
+	ObjIDs_slen := len(obj.ObjIDs)
+	for i4i := 0; ObjIDs_slen > i4i; i4i++ {
+		writeBinaryString(data[offset:offset+0], obj.ObjIDs[i4i])
+		offset += 0
 	}
 	return offset
 }
@@ -1889,5 +1889,12 @@ func GetSizeSROCBind(obj *SROCBind) int {
 	if obj == nil {
 		return 4
 	}
-	return 4 + 4 + len(obj.HostServerID) + 1 + 4 + len(obj.ObjType) + 4 + len(obj.ObjIDHashs)*4
+	sizerelystring4 := 0
+	i4i := 0
+	ObjIDs_slen := len(obj.ObjIDs)
+	for ObjIDs_slen > i4i {
+		sizerelystring4 += len(obj.ObjIDs[i4i]) + 4
+		i4i++
+	}
+	return 4 + 4 + len(obj.HostServerID) + 1 + 4 + len(obj.ObjType) + 4 + sizerelystring4
 }

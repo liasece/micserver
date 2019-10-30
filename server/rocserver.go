@@ -2,16 +2,13 @@ package server
 
 import (
 	"errors"
+	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/roc"
 	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/util"
 	"sync"
 	"time"
 )
-
-type catchServerInfo struct {
-	serverid string
-}
 
 type requestAgent struct {
 	fromServerID string
@@ -29,6 +26,7 @@ type responseAgent struct {
 }
 
 type ROCServer struct {
+	*log.Logger
 	server *Server
 
 	// 远程对象调用支持
@@ -42,14 +40,12 @@ type ROCServer struct {
 
 	seqMutex sync.Mutex
 	lastSeq  int64
-
-	catchType   sync.Map
-	catchObj    sync.Map
-	catchServer sync.Map
 }
 
 func (this *ROCServer) Init(server *Server) {
 	this.server = server
+	this.Logger = server.Logger.Clone()
+	this.Logger.SetTopic("ROCServer")
 
 	this.rocCatchChan = make(chan roc.IObj, 10000)
 	go this.rocObjNoticeProcess()
@@ -72,9 +68,9 @@ func (this *ROCServer) NewSeq() (res int64) {
 // 无返回值的RPC调用
 func (this *ROCServer) ROCCallNR(callpath string, callarg []byte) {
 	objType, objID := this.ROCManager.CallPathDecode(callpath)
-	serverid := this.catchGet(objType, util.GetStringHash(objID))
-	this.server.Info("ROCServer.ROCCallNR {%s:%s(%s:%s:%d):%v}",
-		serverid, callpath, objType, objID, util.GetStringHash(objID), callarg)
+	serverid := roc.GetCache().Get(objType, objID)
+	this.Info("ROCCallNR {%s:%s(%s:%s):%v}",
+		serverid, callpath, objType, objID, callarg)
 	// 构造消息
 	sendmsg := &servercomm.SROCRequest{
 		FromServerID: this.server.serverid,
@@ -106,8 +102,8 @@ func (this *ROCServer) AddBlockChan(seq int64) chan *responseAgent {
 func (this *ROCServer) ROCCallBlock(callpath string,
 	callarg []byte) ([]byte, error) {
 	objType, objID := this.ROCManager.CallPathDecode(callpath)
-	serverid := this.catchGet(objType, util.GetStringHash(objID))
-	this.server.Info("ROCServer.ROCCallBlock {%s:%s(%s:%s:%d):%v}",
+	serverid := roc.GetCache().Get(objType, objID)
+	this.Info("ROCCallBlock {%s:%s(%s:%s:%d):%v}",
 		serverid, callpath, objType, objID, util.GetStringHash(objID), callarg)
 	// 构造消息
 	sendmsg := &servercomm.SROCRequest{
@@ -166,12 +162,12 @@ func (this *ROCServer) rocRequestProcess() {
 			break
 		case agent := <-this.rocRequestChan:
 			// 处理ROC请求
-			this.server.Info("ROCServer.rocRequestProcess %+v", agent)
+			this.Info("rocRequestProcess %+v", agent)
 			res, err := this.ROCManager.Call(agent.callpath, agent.callarg)
 			if err != nil {
-				this.server.Error("ROCManager.Call err:%s", err.Error())
+				this.Error("ROCManager.Call err:%s", err.Error())
 			} else {
-				this.server.Info("ROC调用成功 res:%+v", res)
+				this.Info("ROC调用成功 res:%+v", res)
 			}
 			if agent.needReturn {
 				if agent.fromServerID == this.server.serverid {
@@ -208,7 +204,7 @@ func (this *ROCServer) rocResponseProcess() {
 			break
 		case agent := <-this.rocResponseChan:
 			// 处理ROC相应
-			this.server.Info("ROCServer.rocResponseProcess %+v", agent)
+			this.Info("rocResponseProcess %+v", agent)
 		case <-tm.C:
 			tm.Reset(time.Millisecond * 300)
 			break
@@ -219,7 +215,7 @@ func (this *ROCServer) rocResponseProcess() {
 // 当ROC对象发生注册行为时
 func (this *ROCServer) onRegROCObj(obj roc.IObj) {
 	// 保存本地映射缓存
-	this.catch(obj.GetObjType(), util.GetStringHash(obj.GetObjID()),
+	roc.GetCache().Set(obj.GetObjType(), obj.GetObjID(),
 		this.server.serverid)
 	this.rocCatchChan <- obj
 }
@@ -263,14 +259,13 @@ func (this *ROCServer) rocObjNoticeProcess() {
 				HostServerID: this.server.serverid,
 				IsDelete:     false,
 				ObjType:      tmpList[0].GetObjType(),
-				ObjIDHashs:   make([]uint32, tmpListI),
+				ObjIDs:       make([]string, tmpListI),
 			}
 			for i, obj := range tmpList {
 				if i >= tmpListI {
 					break
 				}
-				hash := util.GetStringHash(obj.GetObjID())
-				sendmsg.ObjIDHashs[i] = hash
+				sendmsg.ObjIDs[i] = obj.GetObjID()
 				tmpList[i] = nil
 			}
 			this.server.subnetManager.BroadcastCmd(sendmsg)
@@ -280,51 +275,8 @@ func (this *ROCServer) rocObjNoticeProcess() {
 }
 
 func (this *ROCServer) onMsgROCBind(msg *servercomm.SROCBind) {
-	this.catchSet(msg.ObjType, msg.ObjIDHashs, msg.HostServerID)
-}
-
-func (this *ROCServer) catchGetTypeMust(objType string) *sync.Map {
-	if vi, ok := this.catchType.Load(objType); !ok {
-		vi, _ := this.catchType.LoadOrStore(objType, &sync.Map{})
-		return vi.(*sync.Map)
-	} else {
-		return vi.(*sync.Map)
-	}
-}
-
-func (this *ROCServer) catchGetServerMust(serverid string) *catchServerInfo {
-	if vi, ok := this.catchServer.Load(serverid); !ok {
-		vi, _ := this.catchServer.LoadOrStore(serverid, &catchServerInfo{
-			serverid: serverid,
-		})
-		return vi.(*catchServerInfo)
-	} else {
-		return vi.(*catchServerInfo)
-	}
-}
-
-func (this *ROCServer) catch(objType string, objIDHash uint32, serverid string) {
-	m := this.catchGetTypeMust(objType)
-	server := this.catchGetServerMust(serverid)
-	m.Store(objIDHash, server)
-	this.server.Debug("ROCServer.catchSet [%s] [%d] [%s]",
-		objType, objIDHash, serverid)
-}
-
-func (this *ROCServer) catchSet(objType string, objIDHashs []uint32, serverid string) {
-	m := this.catchGetTypeMust(objType)
-	server := this.catchGetServerMust(serverid)
-	for _, v := range objIDHashs {
-		m.Store(v, server)
-	}
-	this.server.Debug("ROCServer.catchSet [%s] [%v] [%s]",
-		objType, objIDHashs, serverid)
-}
-
-func (this *ROCServer) catchGet(objType string, objIDHash uint32) string {
-	m := this.catchGetTypeMust(objType)
-	if vi, ok := m.Load(objIDHash); ok && vi != nil {
-		return (vi.(*catchServerInfo)).serverid
-	}
-	return ""
+	roc.GetCache().SetM(msg.ObjType, msg.ObjIDs, msg.HostServerID)
+	this.Debug("onMsgROCBind roc cache setm type[%s] "+
+		"ids%+v host[%s]",
+		msg.ObjType, msg.ObjIDs, msg.HostServerID)
 }

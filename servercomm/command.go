@@ -136,5 +136,5 @@ type SROCBind struct {
 	HostServerID string
 	IsDelete     bool
 	ObjType      string
-	ObjIDHashs   []uint32
+	ObjIDs       []string
 }

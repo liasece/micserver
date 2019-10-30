@@ -44,11 +44,11 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 		this.Logger = log.GetDefaultLogger().Clone()
 		this.Logger.SetLogName(this.moduleID)
 	}
-	this.Server.Init(this.moduleID)
+	this.Debug("[BaseModule.InitModule] module initting...")
 	this.Server.SetLogger(this.Logger)
+	this.Server.Init(this.moduleID)
 	this.Server.InitSubnet(this.Configer)
 
-	this.Debug("[BaseModule.InitModule] module initting...")
 	// gateway初始化
 	if gateaddr := this.Configer.GetModuleSetting("gatetcpaddr"); gateaddr != "" {
 		this.Server.InitGate(gateaddr)
