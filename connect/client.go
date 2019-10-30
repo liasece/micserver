@@ -44,35 +44,35 @@ const ClientConnRecvChanSize = 256
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
 const ClientConnRecvBufferSize = msg.MessageMaxSize * 2
 
-// 获取一个新的服务器连接
-// sctype: 连接的 客户端/服务器 类型
+// Initial a new client
 // netconn: 连接的net.Conn对象
-func NewClient(netconn net.Conn,
+func (this *Client) Init(netconn net.Conn,
 	onRecv func(*Client, *msg.MessageBinary),
-	onClose func(*Client)) *Client {
-	// 新建一个客户端连接
-	conn := new(Client)
-	conn.IConnection = NewTCP(netconn,
+	onClose func(*Client)) {
+	this.IConnection = NewTCP(netconn, this.Logger,
 		ClientConnSendChanSize, ClientConnSendBufferSize,
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
-	conn.CreateTime = int64(time.Now().Unix())
-	conn.readch = conn.IConnection.GetRecvMessageChannel()
-	conn.onRecv = onRecv
-	conn.onClose = onClose
-	go conn.recvMsgThread()
-	return conn
+	if this.Logger != nil {
+		this.Logger.SetTopic(fmt.Sprintf("Client.CID(%s).IP(%s)",
+			this.GetConnectID(), this.IConnection.RemoteAddr()))
+	}
+	this.CreateTime = int64(time.Now().Unix())
+	this.readch = this.IConnection.GetRecvMessageChannel()
+	this.onRecv = onRecv
+	this.onClose = onClose
+	go this.recvMsgThread()
 }
 
-func ClientDial(addr string,
+func (this *Client) Dial(addr string,
 	onRecv func(*Client, *msg.MessageBinary),
-	onClose func(*Client)) (*Client, error) {
+	onClose func(*Client)) error {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	client := NewClient(conn, onRecv, onClose)
-	client.StartReadData()
-	return client, err
+	this.Init(conn, onRecv, onClose)
+	this.StartReadData()
+	return nil
 }
 
 func (this *Client) StartReadData() {
@@ -201,6 +201,4 @@ func (this *Client) SendBytes(
 
 func (this *Client) SetLogger(logger *log.Logger) {
 	this.Logger = logger.Clone()
-	this.Logger.SetTopic(fmt.Sprintf("Client.CID(%s).IP(%s)",
-		this.GetConnectID(), this.IConnection.RemoteAddr()))
 }

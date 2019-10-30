@@ -18,6 +18,7 @@ type ClientManager struct {
 }
 
 func (this *ClientManager) Init(moduleID string) {
+	this.connPool.SetLogger(this.Logger)
 	this.connPool.Init(int32(util.GetStringHash(moduleID)))
 }
 

@@ -52,6 +52,7 @@ func (this *stringToClient) InitMapPool(gsum int) {
 }
 
 type ClientPool struct {
+	*log.Logger
 	allSockets stringToClient // 所有连接
 	linkSum    int32
 	groupID    uint16
@@ -62,10 +63,16 @@ func (this *ClientPool) Init(groupID int32) {
 	this.allSockets.InitMapPool(mClientPoolGroupSum)
 }
 
+func (this *ClientPool) SetLogger(l *log.Logger) {
+	this.Logger = l
+}
+
 func (this *ClientPool) NewClient(conn net.Conn,
 	onRecv func(*Client, *msg.MessageBinary),
 	onClose func(*Client)) (*Client, error) {
-	tcptask := NewClient(conn, onRecv, onClose)
+	tcptask := &Client{}
+	tcptask.SetLogger(this.Logger)
+	tcptask.Init(conn, onRecv, onClose)
 	err := this.AddAuto(tcptask)
 	if err != nil {
 		return nil, err

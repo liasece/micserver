@@ -53,23 +53,25 @@ type Server struct {
 	serverSCType TServerSCType
 }
 
-// 获取一个新的服务器连接
+// 初始化一个新的服务器连接
 // sctype: 连接的 客户端/服务器 类型
 // netconn: 连接的net.Conn对象
-func NewServer(sctype TServerSCType, netconn net.Conn,
+func (this *Server) Init(sctype TServerSCType, netconn net.Conn,
 	onRecv func(*Server, *msg.MessageBinary),
-	onClose func(*Server)) *Server {
-	conn := new(Server)
-	conn.Serverinfo = &servercomm.SServerInfo{}
-	conn.SetSC(sctype)
-	conn.ConnectPriority = rand.Int63()
-	conn.IConnection = NewTCP(netconn,
+	onClose func(*Server)) {
+	this.Serverinfo = &servercomm.SServerInfo{}
+	this.SetSC(sctype)
+	this.ConnectPriority = rand.Int63()
+	this.IConnection = NewTCP(netconn, this.Logger,
 		ServerSendChanSize, ServerSendBufferSize,
 		ServerRecvChanSize, ServerRecvBufferSize)
-	conn.IConnection.StartRecv()
-	go conn.recvMsgThread(conn.IConnection.GetRecvMessageChannel(),
+	this.IConnection.StartRecv()
+	go this.recvMsgThread(this.IConnection.GetRecvMessageChannel(),
 		onRecv, onClose)
-	return conn
+}
+
+func (this *Server) SetLogger(l *log.Logger) {
+	this.Logger = l
 }
 
 func (this *Server) recvMsgThread(c chan *msg.MessageBinary,

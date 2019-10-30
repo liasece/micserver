@@ -27,7 +27,9 @@ func (this *ServerPool) NewServer(sctype TServerSCType,
 	conn net.Conn, serverid string,
 	onRecv func(*Server, *msg.MessageBinary),
 	onClose func(*Server)) *Server {
-	tcptask := NewServer(sctype, conn, onRecv, onClose)
+	tcptask := &Server{}
+	tcptask.SetLogger(this.Logger)
+	tcptask.Init(sctype, conn, onRecv, onClose)
 	tcptask.Logger = this.Logger
 	if serverid == "" {
 		this.AddServerAuto(tcptask)
