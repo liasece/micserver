@@ -1,15 +1,17 @@
 package module
 
 import (
+	"time"
+
+	"github.com/liasece/micserver/base"
 	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/server"
 	"github.com/liasece/micserver/util"
-	"time"
 )
 
 type IModule interface {
-	GetModuleID() string
+	base.IModule
 	InitModule(conf.ModuleConfig)
 	BindSubnet(map[string]string)
 	AfterInitModule()

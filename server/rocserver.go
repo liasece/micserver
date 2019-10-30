@@ -2,12 +2,15 @@ package server
 
 import (
 	"errors"
+	"sync"
+	"time"
+
+	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/process"
 	"github.com/liasece/micserver/roc"
 	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/util"
-	"sync"
-	"time"
 )
 
 type requestAgent struct {
@@ -217,6 +220,9 @@ func (this *ROCServer) onRegROCObj(obj roc.IObj) {
 	// 保存本地映射缓存
 	roc.GetCache().Set(obj.GetObjType(), obj.GetObjID(),
 		this.server.serverid)
+	this.Debug("onRegROCObj roc cache set type[%s] "+
+		"id[%s] host[%s]",
+		obj.GetObjType(), obj.GetObjID(), this.server.serverid)
 	this.rocCatchChan <- obj
 }
 
@@ -268,7 +274,12 @@ func (this *ROCServer) rocObjNoticeProcess() {
 				sendmsg.ObjIDs[i] = obj.GetObjID()
 				tmpList[i] = nil
 			}
-			this.server.subnetManager.BroadcastCmd(sendmsg)
+			this.server.subnetManager.RangeServer(func(s *connect.Server) bool {
+				if !process.HasModule(s.Serverinfo.ServerID) {
+					s.SendCmd(sendmsg)
+				}
+				return true
+			})
 			tmpListI = 0
 		}
 	}

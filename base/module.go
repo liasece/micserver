@@ -1,5 +1,5 @@
 package base
 
 type IModule interface {
-	ILog
+	GetModuleID() string
 }

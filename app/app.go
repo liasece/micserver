@@ -1,13 +1,15 @@
 package app
 
 import (
-	"github.com/liasece/micserver/conf"
-	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/module"
-	"github.com/liasece/micserver/util"
 	"os"
 	"runtime/pprof"
 	"time"
+
+	"github.com/liasece/micserver/conf"
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/module"
+	"github.com/liasece/micserver/process"
+	"github.com/liasece/micserver/util"
 )
 
 /**
@@ -37,6 +39,7 @@ type App struct {
 }
 
 func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
+	process.AddApp(this)
 	this.Configer = configer
 	if this.Configer.AppConfig.HasSetting("logpath") {
 		this.Configer.AppConfig.AppSettings["logfilename"] = "app.log"
@@ -50,6 +53,7 @@ func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 	this.modules = modules
 	// create all module
 	for _, m := range this.modules {
+		process.AddModule(m)
 		this.Debug("[App.Init] init module: %s", m.GetModuleID())
 		m.InitModule(*this.Configer.AppConfig.GetModuleConfig(m.GetModuleID()))
 		m.AfterInitModule()
