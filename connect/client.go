@@ -53,8 +53,8 @@ func (this *Client) Init(netconn net.Conn,
 		ClientConnSendChanSize, ClientConnSendBufferSize,
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
 	if this.Logger != nil {
-		this.Logger.SetTopic(fmt.Sprintf("Client.CID(%s).IP(%s)",
-			this.GetConnectID(), this.IConnection.RemoteAddr()))
+		this.Logger.SetTopic(fmt.Sprintf("Client:%s(%s)",
+			this.IConnection.RemoteAddr(), this.GetConnectID()))
 	}
 	this.CreateTime = int64(time.Now().Unix())
 	this.readch = this.IConnection.GetRecvMessageChannel()

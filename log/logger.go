@@ -139,8 +139,8 @@ func (l *Logger) SetLogLayout(layout string) {
 }
 
 func (l *Logger) SetTopic(topic string) {
-	if l == nil && l != default_logger {
-		default_logger.SetTopic(topic)
+	if l == nil || l == default_logger {
+		// nil or default logger can't set topic
 		return
 	}
 	l.topic = topic
