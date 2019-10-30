@@ -7,35 +7,22 @@ import (
 )
 
 var (
-	_gModules     []base.IModule
-	_gModuleMutex sync.Mutex
+	_gModules sync.Map
 )
 
-func AddModule(app base.IModule) {
-	_gModuleMutex.Lock()
-	defer _gModuleMutex.Unlock()
-
-	if _gModules == nil {
-		_gModules = make([]base.IModule, 0)
-	}
-	_gModules = append(_gModules, app)
+func AddModule(module base.IModule) {
+	_gModules.Store(module.GetModuleID(), module)
 }
 
 func HasModule(moduleID string) bool {
-	_gModuleMutex.Lock()
-	defer _gModuleMutex.Unlock()
-
-	for _, v := range _gModules {
-		if v.GetModuleID() == moduleID {
-			return true
+	res := false
+	_gModules.Range(func(ki, vi interface{}) bool {
+		k := ki.(string)
+		if k == moduleID {
+			res = true
+			return false
 		}
-	}
-	return false
-}
-
-func GetModules() []base.IModule {
-	_gModuleMutex.Lock()
-	defer _gModuleMutex.Unlock()
-
-	return append(make([]base.IModule, 0), _gModules...)
+		return true
+	})
+	return res
 }
