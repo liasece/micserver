@@ -22,7 +22,7 @@ func startPprofThread(ip string, port uint32) {
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
-	time.Sleep(1 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 	log.Debug("[startPprofThread] pprof开始监听 IPPort[%s:%d]", ip, port)
 	pprofportstr := fmt.Sprintf("%s:%d", ip, port)
 	err := http.ListenAndServe(pprofportstr, nil)

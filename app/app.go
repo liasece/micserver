@@ -35,11 +35,12 @@ type App struct {
 	 * App 是否已停止，如果为 true ，App将会在下一个循环周期执行清理工作，
 	 * 退出阻塞循环。
 	 */
-	isStoped bool
+	isStoped chan struct{}
 }
 
 func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 	process.AddApp(this)
+	this.isStoped = make(chan struct{})
 	this.Configer = configer
 	if this.Configer.AppConfig.HasSetting("logpath") {
 		this.Configer.AppConfig.AppSettings["logfilename"] = "app.log"
@@ -109,9 +110,7 @@ func (this *App) RunAndBlock() {
 	go this.SignalListen()
 
 	// 保持程序运行
-	for !this.isStoped {
-		time.Sleep(1 * time.Second)
-	}
+	<-this.isStoped
 
 	for _, v := range this.modules {
 		v.KillModule()
@@ -125,13 +124,11 @@ func (this *App) RunAndBlock() {
 	}
 
 	// 当程序即将结束时
-	// server.OnFinal()
-	this.Debug("[App.Run] All server is over add save datas")
+	this.Debug("[App.RunAndBlock] All server is over add save datas")
 
-	this.Debug("[App.Run] ----- Main has stopped ----- ")
+	this.Debug("[App.RunAndBlock] ----- Main has stopped ----- ")
 	// 等日志打完
-	// time.Sleep(1 * time.Second)
-	this.Logger.CloseLogger()
+	time.Sleep(500 * time.Millisecond)
 }
 
 // 默认阻塞运行

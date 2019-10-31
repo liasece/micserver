@@ -84,7 +84,6 @@ func (this *BaseModule) KillModule() {
 
 	// 退出完成
 	this.hasStopped = true
-	this.Logger.CloseLogger()
 }
 
 func (this *BaseModule) IsStopped() bool {

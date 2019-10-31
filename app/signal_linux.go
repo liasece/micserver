@@ -25,7 +25,7 @@ func (this *App) SignalListen() {
 		case syscall.SIGTERM:
 		case syscall.SIGINT:
 			// kill -2 || Ctrl+c 触发的信号，中断信号，执行正常退出操作
-			this.isStoped = true
+			this.isStoped <- struct{}{}
 		case syscall.SIGQUIT:
 			// kill -9 || Ctrl+z 触发的信号，强制杀死进程
 			// 捕捉到就退不出了
