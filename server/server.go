@@ -186,7 +186,7 @@ func (this *Server) getServerMsgPack(msgstr msg.MsgStruct,
 	res := &servercomm.SForwardToServer{}
 	res.FromServerID = this.serverid
 	if tarconn != nil {
-		res.ToServerID = tarconn.Serverinfo.ServerID
+		res.ToServerID = tarconn.ServerInfo.ServerID
 	}
 	res.MsgID = msgstr.GetMsgId()
 	size := msgstr.GetSize()
@@ -201,7 +201,7 @@ func (this *Server) getFarwardFromGateMsgPack(msgid uint16, data []byte,
 	res := &servercomm.SForwardFromGate{}
 	res.FromServerID = this.serverid
 	if tarconn != nil {
-		res.ToServerID = tarconn.Serverinfo.ServerID
+		res.ToServerID = tarconn.ServerInfo.ServerID
 	}
 	if fromconn != nil {
 		res.Session = make(map[string]string)

@@ -35,13 +35,13 @@ type SubnetManager struct {
 	runningMsgChan   []chan *ConnectMsgQueueStruct
 	maxRunningMsgNum int32
 	// 我的服务器信息
-	myServerInfo *servercomm.SServerInfo
+	myServerInfo *servercomm.ServerInfo
 	// 子网系统钩子
 	subnetHook base.SubnetHook
 }
 
 func (this *SubnetManager) Init(moudleConf *conf.ModuleConfig) {
-	this.myServerInfo = &servercomm.SServerInfo{}
+	this.myServerInfo = &servercomm.ServerInfo{}
 	this.moudleConf = moudleConf
 	this.ServerPool.Logger = this.Logger
 	// 初始化连接
@@ -66,7 +66,7 @@ func (this *SubnetManager) HookSubnet(subnetHook base.SubnetHook) {
 func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uint64 {
 	latestVersion := uint64(0)
 	this.connInfos.RangeConnInfo(
-		func(value *servercomm.SServerInfo) bool {
+		func(value *servercomm.ServerInfo) bool {
 			if util.GetServerIDType(value.ServerID) == servertype &&
 				value.Version > latestVersion {
 				latestVersion = value.Version
@@ -80,13 +80,13 @@ func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uin
 func (this *SubnetManager) NotifyAllServerInfo(
 	tcptask *connect.Server) {
 	retmsg := &servercomm.SNotifyAllInfo{}
-	retmsg.Serverinfos = make([]*servercomm.SServerInfo, 0)
+	retmsg.ServerInfos = make([]*servercomm.ServerInfo, 0)
 	this.connInfos.RangeConnInfo(func(
-		value *servercomm.SServerInfo) bool {
-		retmsg.Serverinfos = append(retmsg.Serverinfos, value)
+		value *servercomm.ServerInfo) bool {
+		retmsg.ServerInfos = append(retmsg.ServerInfos, value)
 		return true
 	})
-	if len(retmsg.Serverinfos) > 0 {
+	if len(retmsg.ServerInfos) > 0 {
 		this.Debug("[NotifyAllServerInfo] 发送所有服务器列表信息 Msg[%s]",
 			retmsg.GetJson())
 		tcptask.SendCmd(retmsg)

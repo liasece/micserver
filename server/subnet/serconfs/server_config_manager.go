@@ -13,15 +13,15 @@ type ConnInfosManager struct {
 }
 
 func (this *ConnInfosManager) GetConnInfo(
-	serverid string) *servercomm.SServerInfo {
+	serverid string) *servercomm.ServerInfo {
 	if value, found := this.ConnInfos.Load(serverid); found {
-		return value.(*servercomm.SServerInfo)
+		return value.(*servercomm.ServerInfo)
 	}
-	return &servercomm.SServerInfo{}
+	return &servercomm.ServerInfo{}
 }
 
 func (this *ConnInfosManager) AddConnInfo(
-	newinfo *servercomm.SServerInfo) {
+	newinfo *servercomm.ServerInfo) {
 	if newinfo.ServerID == "" {
 		log.Error("[ConnInfosManager.AddConnInfo] "+
 			"尝试添加一个ID为空的服务器 拒绝 Info[%s]", newinfo.GetJson())
@@ -40,18 +40,18 @@ func (this *ConnInfosManager) RemoveConnInfo(serverid string) {
 }
 
 func (this *ConnInfosManager) RangeConnInfo(
-	callback func(*servercomm.SServerInfo) bool) {
+	callback func(*servercomm.ServerInfo) bool) {
 	this.ConnInfos.Range(func(tkey interface{},
 		tvalue interface{}) bool {
-		value := tvalue.(*servercomm.SServerInfo)
+		value := tvalue.(*servercomm.ServerInfo)
 		return callback(value)
 	})
 }
 
 func (this *ConnInfosManager) ExistConnInfo(
-	info *servercomm.SServerInfo) bool {
+	info *servercomm.ServerInfo) bool {
 	tconfig, finded := this.ConnInfos.Load(info.ServerID)
-	config := tconfig.(*servercomm.SServerInfo)
+	config := tconfig.(*servercomm.ServerInfo)
 	if !finded {
 		return false
 	}

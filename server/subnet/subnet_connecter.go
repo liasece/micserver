@@ -125,15 +125,15 @@ func (this *SubnetManager) onClientDisconnected(conn *connect.Server) {
 		conn.GetSCType() == connect.ServerSCTypeClient {
 		this.connectMutex.Lock()
 		defer this.connectMutex.Unlock()
-		if this.serverexitchan[fmt.Sprint(conn.Serverinfo.ServerID)] != nil {
-			this.serverexitchan[fmt.Sprint(conn.Serverinfo.ServerID)] <- true
+		if this.serverexitchan[fmt.Sprint(conn.ServerInfo.ServerID)] != nil {
+			this.serverexitchan[fmt.Sprint(conn.ServerInfo.ServerID)] <- true
 			this.Warn("[onClientDisconnected] "+
 				"服务服务器断开连接,准备重新连接 ServerID[%s]",
-				conn.Serverinfo.ServerID)
+				conn.ServerInfo.ServerID)
 		} else {
 			this.Debug("[onClientDisconnected] "+
 				"服务器重连管道已关闭,取消重连 ServerID[%s]",
-				fmt.Sprint(conn.Serverinfo.ServerID))
+				fmt.Sprint(conn.ServerInfo.ServerID))
 		}
 	}
 }

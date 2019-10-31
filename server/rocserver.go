@@ -275,7 +275,7 @@ func (this *ROCServer) rocObjNoticeProcess() {
 				tmpList[i] = nil
 			}
 			this.server.subnetManager.RangeServer(func(s *connect.Server) bool {
-				if !process.HasModule(s.Serverinfo.ServerID) {
+				if !process.HasModule(s.ServerInfo.ServerID) {
 					s.SendCmd(sendmsg)
 				}
 				return true

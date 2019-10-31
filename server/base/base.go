@@ -5,6 +5,6 @@ import (
 )
 
 type ServerHook interface {
-	OnForwardToServer(msg *servercomm.SForwardToServer)
-	OnForwardFromGate(msg *servercomm.SForwardFromGate)
+	OnServerMessage(msg *servercomm.ServerMessage)
+	OnClientMessage(msg *servercomm.ClientMessage)
 }

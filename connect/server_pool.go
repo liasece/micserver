@@ -54,7 +54,7 @@ func (this *ServerPool) BroadcastByType(servertype string,
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
-		if util.GetServerIDType(value.Serverinfo.ServerID) == servertype {
+		if util.GetServerIDType(value.ServerInfo.ServerID) == servertype {
 			value.SendCmd(v)
 		}
 		return true
@@ -77,7 +77,7 @@ func (this *ServerPool) GetMinServer(servertype string) *Server {
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
-		if util.GetServerIDType(value.Serverinfo.ServerID) == servertype {
+		if util.GetServerIDType(value.ServerInfo.ServerID) == servertype {
 			if jobnum >= value.GetJobNum() {
 				jobnum = value.GetJobNum()
 				res = value
@@ -94,9 +94,9 @@ func (this *ServerPool) GetLatestVersionByType(servertype string) uint64 {
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
-		if util.GetServerIDType(value.Serverinfo.ServerID) == servertype &&
-			value.Serverinfo.Version > latestVersion {
-			latestVersion = value.Serverinfo.Version
+		if util.GetServerIDType(value.ServerInfo.ServerID) == servertype &&
+			value.ServerInfo.Version > latestVersion {
+			latestVersion = value.ServerInfo.Version
 		}
 		return true
 	})
@@ -115,8 +115,8 @@ func (this *ServerPool) GetMinServerLatestVersion(
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
 		key := tkey.(uint64)
-		if util.GetServerIDType(value.Serverinfo.ServerID) == servertype &&
-			value.Serverinfo.Version == latestVersion {
+		if util.GetServerIDType(value.ServerInfo.ServerID) == servertype &&
+			value.ServerInfo.Version == latestVersion {
 			if jobnum >= value.GetJobNum() {
 				jobnum = value.GetJobNum()
 				serverid = key
@@ -141,7 +141,7 @@ func (this *ServerPool) GetRandomServer(
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
 		key := tkey.(string)
-		if util.GetServerIDType(value.Serverinfo.ServerID) == servertype {
+		if util.GetServerIDType(value.ServerInfo.ServerID) == servertype {
 			tasklist = append(tasklist, key)
 		}
 		return true
@@ -177,7 +177,7 @@ func (this *ServerPool) RemoveServer(tempid string) {
 		this.remove(tempid)
 		this.Debug("[ServerPool] 删除连接 TmpID[%s] 当前连接数量"+
 			" LinkSum[%d] ServerID[%s]",
-			tempid, this.ServerSum(), value.Serverinfo.ServerID)
+			tempid, this.ServerSum(), value.ServerInfo.ServerID)
 		return
 	}
 }
@@ -187,7 +187,7 @@ func (this *ServerPool) AddServer(connct *Server, tmpid string) {
 	this.add(tmpid, connct)
 	this.Debug("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
 		" LinkSum[%d] ServerID[%s]",
-		connct.Tempid, this.ServerSum(), connct.Serverinfo.ServerID)
+		connct.Tempid, this.ServerSum(), connct.ServerInfo.ServerID)
 }
 
 func (this *ServerPool) AddServerAuto(connct *Server) {
@@ -201,7 +201,7 @@ func (this *ServerPool) AddServerAuto(connct *Server) {
 	this.add(connct.Tempid, connct)
 	this.Debug("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
 		" LinkSum[%d] ServerID[%s]",
-		connct.Tempid, this.ServerSum(), connct.Serverinfo.ServerID)
+		connct.Tempid, this.ServerSum(), connct.ServerInfo.ServerID)
 }
 
 // 修改链接的 tempip

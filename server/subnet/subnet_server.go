@@ -39,7 +39,7 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 			return
 		}
 	}
-	serverInfo := &servercomm.SServerInfo{}
+	serverInfo := &servercomm.ServerInfo{}
 
 	// 来源服务器地址
 	remoteaddr := conn.RemoteAddr()
@@ -65,7 +65,7 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	// 来源服务器检查完毕
 	// 完善来源服务器在本服务器的信息
 	this.ChangeServerTempid(conn, fmt.Sprint(serverInfo.ServerID))
-	conn.Serverinfo = serverInfo
+	conn.ServerInfo = serverInfo
 	conn.SetVertify(true)
 	conn.SetTerminateTime(0) // 清除终止时间状态
 	this.Debug("[SubNetManager.OnServerLogin] "+
@@ -84,7 +84,7 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	this.NotifyAllServerInfo(conn)
 	// 把来源服务器信息广播给其它所有服务器
 	notifymsg := &servercomm.SStartMyNotifyCommand{}
-	notifymsg.Serverinfo = serverInfo
+	notifymsg.ServerInfo = serverInfo
 	this.BroadcastCmd(notifymsg)
 }
 

@@ -48,7 +48,7 @@ type Server struct {
 	// 建立连接优先级
 	ConnectPriority int64
 	// 该连接对方服务器信息
-	Serverinfo *servercomm.SServerInfo
+	ServerInfo *servercomm.ServerInfo
 	// 用于区分该连接是服务器 client task 连接
 	serverSCType TServerSCType
 }
@@ -59,7 +59,7 @@ type Server struct {
 func (this *Server) Init(sctype TServerSCType, netconn net.Conn,
 	onRecv func(*Server, *msg.MessageBinary),
 	onClose func(*Server)) {
-	this.Serverinfo = &servercomm.SServerInfo{}
+	this.ServerInfo = &servercomm.ServerInfo{}
 	this.SetSC(sctype)
 	this.ConnectPriority = rand.Int63()
 	this.IConnection = NewTCP(netconn, this.Logger,

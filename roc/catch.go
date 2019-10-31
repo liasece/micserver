@@ -17,15 +17,10 @@ type Cache struct {
 	catchType   sync.Map
 }
 
-var _gCache *Cache
-
-// single case
-func init() {
-	_gCache = &Cache{}
-}
+var _gCache Cache
 
 func GetCache() *Cache {
-	return _gCache
+	return &_gCache
 }
 
 func (this *Cache) catchGetTypeMust(objType string) *sync.Map {

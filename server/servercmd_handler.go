@@ -17,15 +17,29 @@ func (this *serverCmdHandler) HookServer(serverHook base.ServerHook) {
 	this.serverHook = serverHook
 }
 
-func (this *serverCmdHandler) onForwardToServer(smsg *servercomm.SForwardToServer) {
+func (this *serverCmdHandler) onForwardToServer(conn *connect.Server,
+	smsg *servercomm.SForwardToServer) {
 	if this.serverHook != nil {
-		this.serverHook.OnForwardToServer(smsg)
+		msg := &servercomm.ServerMessage{
+			FromServer: conn.ServerInfo,
+			MsgID:      smsg.MsgID,
+			Data:       smsg.Data,
+		}
+		this.serverHook.OnServerMessage(msg)
 	}
 }
 
-func (this *serverCmdHandler) onForwardFromGate(smsg *servercomm.SForwardFromGate) {
+func (this *serverCmdHandler) onForwardFromGate(conn *connect.Server,
+	smsg *servercomm.SForwardFromGate) {
 	if this.serverHook != nil {
-		this.serverHook.OnForwardFromGate(smsg)
+		msg := &servercomm.ClientMessage{
+			FromServer:   conn.ServerInfo,
+			ClientConnID: smsg.ClientConnID,
+			Session:      smsg.Session,
+			MsgID:        smsg.MsgID,
+			Data:         smsg.Data,
+		}
+		this.serverHook.OnClientMessage(msg)
 	}
 }
 
@@ -58,7 +72,7 @@ func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 		if this.serverHook != nil {
 			layerMsg := &servercomm.SForwardToServer{}
 			layerMsg.ReadBinary(msgbinary.ProtoData)
-			this.onForwardToServer(layerMsg)
+			this.onForwardToServer(conn, layerMsg)
 		}
 	case servercomm.SForwardFromGateID:
 		var layerMsg *servercomm.SForwardFromGate
@@ -72,7 +86,7 @@ func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 			layerMsg.ReadBinary(msgbinary.ProtoData)
 		}
 		// Gateway 转发过来的客户端消息
-		this.onForwardFromGate(layerMsg)
+		this.onForwardFromGate(conn, layerMsg)
 	case servercomm.SForwardToClientID:
 		// 其他服务器转发过来的，要发送到客户端的消息
 		layerMsg := &servercomm.SForwardToClient{}
