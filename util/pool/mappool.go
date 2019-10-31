@@ -1,7 +1,10 @@
-package util
+package pool
 
 import (
 	"sync"
+
+	"github.com/liasece/micserver/util/hash"
+	"github.com/liasece/micserver/util/strings"
 )
 
 type subPool struct {
@@ -39,8 +42,8 @@ func (this *MapPool) Init(groupSum int) {
 }
 
 func (this *MapPool) getGroupIndexFunc(k interface{}) int {
-	str := MustInterfaceToString(k)
-	hash := GetStringHash(str)
+	str := strings.MustInterfaceToString(k)
+	hash := hash.GetStringHash(str)
 	return int(hash) % this.groupSum
 }
 

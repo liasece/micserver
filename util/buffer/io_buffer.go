@@ -7,7 +7,7 @@
  *
  */
 
-package util
+package buffer
 
 import (
 	"errors"
