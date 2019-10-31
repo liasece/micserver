@@ -2,7 +2,7 @@
 package roc
 
 import (
-	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/pool"
 )
 
 const (
@@ -10,7 +10,7 @@ const (
 )
 
 type ROC struct {
-	objPool   util.MapPool
+	objPool   pool.MapPool
 	onfRegObj func(IObj)
 }
 

@@ -1,12 +1,13 @@
 package manager
 
 import (
+	"net"
+	"time"
+
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/server/gate/handle"
-	"github.com/liasece/micserver/util"
-	"net"
-	"time"
+	"github.com/liasece/micserver/util/hash"
 )
 
 // websocket连接管理器
@@ -19,7 +20,7 @@ type ClientManager struct {
 
 func (this *ClientManager) Init(moduleID string) {
 	this.connPool.SetLogger(this.Logger)
-	this.connPool.Init(int32(util.GetStringHash(moduleID)))
+	this.connPool.Init(int32(hash.GetStringHash(moduleID)))
 }
 
 func (this *ClientManager) addTCPClient(

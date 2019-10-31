@@ -3,17 +3,18 @@ package msg
 import (
 	"fmt"
 	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/buffer"
+	"github.com/liasece/micserver/util/sysutil"
 )
 
 type MessageBinaryReader struct {
 	inMsg  bool
 	HeadL1 MessageBinaryHeadL1
 
-	netbuffer *util.IOBuffer
+	netbuffer *buffer.IOBuffer
 }
 
-func NewMessageBinaryReader(netbuffer *util.IOBuffer) *MessageBinaryReader {
+func NewMessageBinaryReader(netbuffer *buffer.IOBuffer) *MessageBinaryReader {
 	return &MessageBinaryReader{
 		netbuffer: netbuffer,
 	}
@@ -23,7 +24,7 @@ func (this *MessageBinaryReader) RangeMsgBinary(
 	cb func(*MessageBinary)) (reerr error) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
 			log.Error("[MessageBinaryReader.RangeMsgBinary] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 			reerr = err

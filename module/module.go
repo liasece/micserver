@@ -8,6 +8,8 @@ import (
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/server"
 	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/monitor"
+	"github.com/liasece/micserver/util/timer"
 )
 
 type IModule interface {
@@ -23,7 +25,7 @@ type IModule interface {
 
 type BaseModule struct {
 	*log.Logger
-	util.TimerManager
+	timer.TimerManager
 	server.Server
 
 	moduleID string
@@ -32,7 +34,7 @@ type BaseModule struct {
 	hasKilledModule bool
 	hasStopped      bool
 	// 模块的负载
-	Load          util.Load
+	Load          monitor.Load
 	lastCheckLoad int64
 }
 

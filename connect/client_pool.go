@@ -3,7 +3,8 @@ package connect
 import (
 	"errors"
 	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/pool"
+	"github.com/liasece/micserver/util/uid"
 	"math/rand"
 	"net"
 	"time"
@@ -12,7 +13,7 @@ import (
 const mClientPoolGroupSum = 10
 
 type stringToClient struct {
-	util.MapPool
+	pool.MapPool
 }
 
 // 加载或存储
@@ -112,7 +113,7 @@ func (this *ClientPool) Remove(tempid string) {
 }
 
 func (this *ClientPool) AddAuto(connct *Client) error {
-	tmpid, err := util.NewUniqueID(this.groupID)
+	tmpid, err := uid.NewUniqueID(this.groupID)
 	if err != nil {
 		log.Error("[ClientPool.AddAuto] 生成ConnectID出错 Error[%s]",
 			err.Error())

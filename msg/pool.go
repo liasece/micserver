@@ -2,7 +2,7 @@ package msg
 
 import (
 	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/pool"
 )
 
 // 灵活对象池的对象大小分割。
@@ -14,11 +14,11 @@ var sizeControl []int = []int{32, 64, 128, 256, 512, 1024, 2 * 1024,
 	25 * 1024, 30 * 1024, 35 * 1024, 40 * 1024, 45 * 1024, 50 * 1024,
 	55 * 1024, 60 * 1024, 64 * 1024, 128 * 1024, 256 * 1024, 512 * 1024,
 	1024 * 1024, 2 * 1024 * 1024, 4 * 1024 * 1024, 8 * 1024 * 1024}
-var pools *util.FlexiblePool
+var pools *pool.FlexiblePool
 
 // 初始化灵活对象池
 func init() {
-	pools = util.NewFlexiblePool(sizeControl, newMsgBinaryBySize)
+	pools = pool.NewFlexiblePool(sizeControl, newMsgBinaryBySize)
 }
 
 // 根据 MessageBinary.buffer 的大小来创建一个对象池中的对象

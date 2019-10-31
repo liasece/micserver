@@ -2,7 +2,7 @@ package handle
 
 import (
 	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/monitor"
 	"net/http"
 )
 
@@ -11,7 +11,7 @@ type ClientHttpHandler struct {
 }
 
 func PingHandler(writer http.ResponseWriter, request *http.Request) {
-	functiontime := util.FunctionTime{}
+	functiontime := monitor.FunctionTime{}
 	functiontime.Start("IDIPHandler")
 	defer functiontime.Stop()
 

@@ -19,7 +19,8 @@ import (
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/network/baseio"
-	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/buffer"
+	"github.com/liasece/micserver/util/sysutil"
 )
 
 // 消息合批时，合并的最大消息数量
@@ -51,7 +52,7 @@ type TCPConn struct {
 	// 发送等待通道
 	sendmsgchan chan *msg.MessageBinary
 	// 发送缓冲区
-	sendBuffer *util.IOBuffer
+	sendBuffer *buffer.IOBuffer
 	// 当前等待发送出去的数据总大小
 	waitingSendBufferLength int64
 	// 等待发送数据的总大小
@@ -63,7 +64,7 @@ type TCPConn struct {
 	// 接收等待通道
 	recvmsgchan chan *msg.MessageBinary
 	// 接收缓冲区
-	recvBuffer *util.IOBuffer
+	recvBuffer *buffer.IOBuffer
 }
 
 // 初始化一个TCPConn对象
@@ -84,14 +85,14 @@ func (this *TCPConn) Init(conn net.Conn,
 	// 发送
 	this.sendmsgchan = make(chan *msg.MessageBinary, sendChanSize)
 	this.maxWaitingSendBufferLength = msg.MessageMaxSize * sendChanSize
-	this.sendBuffer = util.NewIOBuffer(nil, sendBufferSize)
+	this.sendBuffer = buffer.NewIOBuffer(nil, sendBufferSize)
 	this.sendJoinedMessageBinaryBuffer = make([]*msg.MessageBinary,
 		MaxMsgPackSum)
 	go this.sendThread()
 
 	// 接收
 	this.recvmsgchan = make(chan *msg.MessageBinary, recvChanSize)
-	this.recvBuffer = util.NewIOBuffer(this, recvBufferSize)
+	this.recvBuffer = buffer.NewIOBuffer(this, recvBufferSize)
 }
 
 func (this *TCPConn) SetLogger(l *log.Logger) {
@@ -125,7 +126,7 @@ func (this *TCPConn) HookProtocal(p baseio.Protocal) {
 func (this *TCPConn) Shutdown() error {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
 			this.Warn("[TCPConn.shutdownThread] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
@@ -166,7 +167,7 @@ func (this *TCPConn) SendMessageBinary(
 	msgbinary *msg.MessageBinary) error {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
 			this.Warn("[TCPConn.SendMessageBinary] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
@@ -238,7 +239,7 @@ func (this *TCPConn) closeSocket() error {
 func (this *TCPConn) asyncSendCmd() (normalreturn bool) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
 			this.Error("[TCPConn.asyncSendCmd] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 			normalreturn = false
@@ -395,7 +396,7 @@ func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) []*
 func (this *TCPConn) recvThread() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
 			this.Error("[TCPConn.recvThread] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}

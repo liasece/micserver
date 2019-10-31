@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/sysutil"
+	"github.com/liasece/micserver/util/uid"
 	"net"
 )
 
@@ -23,7 +24,7 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 			// 对方连接的优先级比较高，删除我方连接
 			myconn.IsNormalDisconnect = true
 			myconn.Terminate()
-			unuseid, _ := util.NewUniqueID(0xff)
+			unuseid, _ := uid.NewUniqueID(0xff)
 			this.ChangeServerTempid(
 				myconn, myconn.Tempid+"unuse"+fmt.Sprint(unuseid))
 		} else {
@@ -111,7 +112,7 @@ func (this *SubnetManager) BindTCPSubnet(settings map[string]string) error {
 func (this *SubnetManager) TCPServerListenerProcess(listener net.Listener) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
 			this.Error("[TCPServerListenerProcess] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
@@ -125,7 +126,7 @@ func (this *SubnetManager) TCPServerListenerProcess(listener net.Listener) {
 func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
 			this.Error("[mTCPServerListener] "+
 				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)

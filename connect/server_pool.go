@@ -2,13 +2,15 @@ package connect
 
 import (
 	"fmt"
-	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/msg"
-	"github.com/liasece/micserver/util"
 	"math/rand"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/uid"
 )
 
 type ServerPool struct {
@@ -191,7 +193,7 @@ func (this *ServerPool) AddServer(connct *Server, tmpid string) {
 }
 
 func (this *ServerPool) AddServerAuto(connct *Server) {
-	tmpid, err := util.NewUniqueID(this.groupID)
+	tmpid, err := uid.NewUniqueID(this.groupID)
 	if err != nil {
 		this.Error("[ServerPool.AddAuto] 生成UUID出错 Error[%s]",
 			err.Error())

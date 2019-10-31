@@ -9,7 +9,7 @@ import (
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/module"
 	"github.com/liasece/micserver/process"
-	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/sysutil"
 )
 
 /**
@@ -74,7 +74,7 @@ func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 func (this *App) startTestCpuProfile() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
 			this.Error("[startTestCpuProfile] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}

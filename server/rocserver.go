@@ -10,7 +10,7 @@ import (
 	"github.com/liasece/micserver/process"
 	"github.com/liasece/micserver/roc"
 	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/hash"
 )
 
 type requestAgent struct {
@@ -107,7 +107,7 @@ func (this *ROCServer) ROCCallBlock(callpath string,
 	objType, objID := this.ROCManager.CallPathDecode(callpath)
 	serverid := roc.GetCache().Get(objType, objID)
 	this.Info("ROCCallBlock {%s:%s(%s:%s:%d):%v}",
-		serverid, callpath, objType, objID, util.GetStringHash(objID), callarg)
+		serverid, callpath, objType, objID, hash.GetStringHash(objID), callarg)
 	// 构造消息
 	sendmsg := &servercomm.SROCRequest{
 		FromServerID: this.server.serverid,

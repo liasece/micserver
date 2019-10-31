@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/sysutil"
 	"net"
 	"time"
 )
@@ -22,7 +22,7 @@ import (
 func (this *SubnetManager) tryConnectServerThread(id string, addr string) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
 			this.Error("[tryConnectServerThread] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}

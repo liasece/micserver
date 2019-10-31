@@ -7,7 +7,9 @@ import (
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/hash"
+	"github.com/liasece/micserver/util/monitor"
+	"github.com/liasece/micserver/util/sysutil"
 )
 
 type ConnectMsgQueueStruct struct {
@@ -38,7 +40,7 @@ func (this *SubnetManager) OnGetRecvTCPMsgParseChan(conn *connect.Server,
 		layerMsg := &servercomm.SForwardFromGate{}
 		layerMsg.ReadBinary(msgbinary.ProtoData)
 		msgbinary.SetObj(layerMsg)
-		hash := int32(util.GetStringHash(layerMsg.ClientConnID)) % maxChan
+		hash := int32(hash.GetStringHash(layerMsg.ClientConnID)) % maxChan
 		if hash < 0 {
 			hash = -hash
 		}
@@ -184,7 +186,7 @@ func (this *SubnetManager) MultiRecvmsgQueue(
 	}
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := util.GetPanicInfo(recover()); err != nil {
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
 			this.Error("[SubnetManager.MultiRecvmsgQueue] "+
 				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
@@ -195,7 +197,7 @@ func (this *SubnetManager) MultiRecvmsgQueue(
 
 	msgchan := this.runningMsgChan[index]
 	for msgqueues := range msgchan {
-		functiontime := util.FunctionTime{}
+		functiontime := monitor.FunctionTime{}
 		functiontime.Start("MultiRecvmsgQueue")
 		this.OnRecvTCPMsg(msgqueues.conn, msgqueues.msg)
 		functiontime.Stop()
