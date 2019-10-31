@@ -77,7 +77,7 @@ func (this *BaseModule) SetModuleID(id string) {
 }
 
 func (this *BaseModule) KillModule() {
-	this.Debug("Killing module...")
+	this.Debug("[BaseModule] Killing module...")
 	this.Server.Stop()
 	this.hasKilledModule = true
 	this.KillRegister()
@@ -93,7 +93,7 @@ func (this *BaseModule) IsStopped() bool {
 
 func (this *BaseModule) TopRunner() {
 	this.RegTimer(time.Minute, 0, false, func(t time.Duration) bool {
-		this.Debug("Timer 1 Minute...")
+		this.Debug("[BaseModule] Timer 1 Minute...")
 		return true
 	})
 }
@@ -106,7 +106,7 @@ func (this *BaseModule) watchLoadToLog(dt time.Duration) bool {
 	load := this.Load.GetLoad()
 	incValue := load - this.lastCheckLoad
 	if incValue > 0 {
-		this.Info("[BaseModule]  Within %d sec load:[%d]",
+		this.Info("[BaseModule] Within %d sec load:[%d]",
 			int64(dt.Seconds()), incValue)
 	}
 	this.lastCheckLoad = load
