@@ -28,8 +28,7 @@ type Client struct {
 	// 接收消息通道
 	readch chan *msg.MessageBinary
 	// 回调
-	onRecv  func(*Client, *msg.MessageBinary)
-	onClose func(*Client)
+	connHook ConnectHook
 }
 
 // 客户端连接发送消息缓冲不宜过大， 10*64KiB*100000连接=64GiB
@@ -46,9 +45,7 @@ const ClientConnRecvBufferSize = msg.MessageMaxSize * 2
 
 // Initial a new client
 // netconn: 连接的net.Conn对象
-func (this *Client) Init(netconn net.Conn,
-	onRecv func(*Client, *msg.MessageBinary),
-	onClose func(*Client)) {
+func (this *Client) InitTCP(netconn net.Conn, connHook ConnectHook) {
 	this.IConnection = NewTCP(netconn, this.Logger,
 		ClientConnSendChanSize, ClientConnSendBufferSize,
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
@@ -58,19 +55,16 @@ func (this *Client) Init(netconn net.Conn,
 	}
 	this.CreateTime = int64(time.Now().Unix())
 	this.readch = this.IConnection.GetRecvMessageChannel()
-	this.onRecv = onRecv
-	this.onClose = onClose
+	this.connHook = connHook
 	go this.recvMsgThread()
 }
 
-func (this *Client) Dial(addr string,
-	onRecv func(*Client, *msg.MessageBinary),
-	onClose func(*Client)) error {
+func (this *Client) DialTCP(addr string, connHook ConnectHook) error {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return err
 	}
-	this.Init(conn, onRecv, onClose)
+	this.InitTCP(conn, connHook)
 	this.StartReadData()
 	return nil
 }
@@ -79,11 +73,21 @@ func (this *Client) StartReadData() {
 	this.IConnection.StartRecv()
 }
 
+func (this *Client) onRecvMessage(msg *msg.MessageBinary) {
+	if this.connHook != nil {
+		this.connHook.OnRecvMessage(this, msg)
+	}
+}
+
+func (this *Client) onClose() {
+	if this.connHook != nil {
+		this.connHook.OnClose(this)
+	}
+}
+
 func (this *Client) recvMsgThread() {
 	defer func() {
-		if this.onClose != nil {
-			this.onClose(this)
-		}
+		this.onClose()
 	}()
 
 	for {
@@ -92,9 +96,7 @@ func (this *Client) recvMsgThread() {
 			if !ok || m == nil {
 				return
 			}
-			if this.onRecv != nil {
-				this.onRecv(this, m)
-			}
+			this.onRecvMessage(m)
 		}
 	}
 }

@@ -17,3 +17,8 @@ type IConnection interface {
 	Write(data []byte) (int, error)
 	HookProtocal(p baseio.Protocal)
 }
+
+type ConnectHook interface {
+	OnRecvMessage(*Client, *msg.MessageBinary)
+	OnClose(*Client)
+}

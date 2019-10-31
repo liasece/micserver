@@ -24,8 +24,7 @@ func (this *ClientManager) Init(moduleID string) {
 
 func (this *ClientManager) addTCPClient(
 	netConn net.Conn) (*connect.Client, error) {
-	conn, err := this.connPool.NewClient(netConn, this.OnConnectRecv,
-		this.onConnectClose)
+	conn, err := this.connPool.NewTCPClient(netConn, this)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +42,7 @@ func (this *ClientManager) addTCPClient(
 	return conn, nil
 }
 
-func (this *ClientManager) onConnectClose(conn *connect.Client) {
+func (this *ClientManager) OnClose(conn *connect.Client) {
 	this.RemoveTaskByTmpID(conn.GetConnectID())
 }
 

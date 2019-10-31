@@ -23,7 +23,7 @@ func (this *ClientTcpHandler) HookGate(gateHook base.GateHook) {
 	this.gateHook = gateHook
 }
 
-func (this *ClientTcpHandler) OnConnectRecv(client *connect.Client,
+func (this *ClientTcpHandler) OnRecvMessage(client *connect.Client,
 	msgbin *msg.MessageBinary) {
 	cmdname := servercomm.MsgIdToString(msgbin.CmdID)
 	this.Analysiswsmsgcount++

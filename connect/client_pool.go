@@ -3,7 +3,6 @@ package connect
 import (
 	"errors"
 	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/util"
 	"math/rand"
 	"net"
@@ -67,12 +66,11 @@ func (this *ClientPool) SetLogger(l *log.Logger) {
 	this.Logger = l
 }
 
-func (this *ClientPool) NewClient(conn net.Conn,
-	onRecv func(*Client, *msg.MessageBinary),
-	onClose func(*Client)) (*Client, error) {
+func (this *ClientPool) NewTCPClient(conn net.Conn,
+	connHook ConnectHook) (*Client, error) {
 	tcptask := &Client{}
 	tcptask.SetLogger(this.Logger)
-	tcptask.Init(conn, onRecv, onClose)
+	tcptask.InitTCP(conn, connHook)
 	err := this.AddAuto(tcptask)
 	if err != nil {
 		return nil, err
