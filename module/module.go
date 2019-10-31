@@ -77,7 +77,7 @@ func (this *BaseModule) SetModuleID(id string) {
 }
 
 func (this *BaseModule) KillModule() {
-	this.Debug("KillModule...")
+	this.Debug("Killing module...")
 	this.Server.Stop()
 	this.hasKilledModule = true
 	this.KillRegister()
