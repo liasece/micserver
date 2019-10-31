@@ -18,6 +18,7 @@ import (
 
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/network/baseio"
 	"github.com/liasece/micserver/util"
 )
 
@@ -40,8 +41,8 @@ const (
 
 type TCPConn struct {
 	*log.Logger
-	net.Conn
-	handler
+	conn net.Conn
+	work baseio.Worker
 
 	// 尝试关闭一个连接
 	shutdownChan chan struct{}
@@ -63,10 +64,6 @@ type TCPConn struct {
 	recvmsgchan chan *msg.MessageBinary
 	// 接收缓冲区
 	recvBuffer *util.IOBuffer
-
-	// 外部协议提供的发送接收中间状态，在使用 TCP 之上的协议时，
-	// 可以通过该成员提供协议中间状态
-	protocolState interface{}
 }
 
 // 初始化一个TCPConn对象
@@ -80,7 +77,8 @@ func (this *TCPConn) Init(conn net.Conn,
 	sendChanSize int, sendBufferSize int,
 	recvChanSize int, recvBufferSize int) {
 	this.shutdownChan = make(chan struct{})
-	this.Conn = conn
+	this.conn = conn
+	this.work.Init(conn)
 	this.state = TCPCONNSTATE_LINKED
 
 	// 发送
@@ -116,7 +114,11 @@ func (this *TCPConn) IsAlive() bool {
 }
 
 func (this *TCPConn) RemoteAddr() string {
-	return this.Conn.RemoteAddr().String()
+	return this.conn.RemoteAddr().String()
+}
+
+func (this *TCPConn) HookProtocal(p baseio.Protocal) {
+	this.work.HookProtocal(p)
 }
 
 // 尝试关闭此连接
@@ -140,25 +142,11 @@ func (this *TCPConn) Shutdown() error {
 }
 
 func (this *TCPConn) Read(toData []byte) (int, error) {
-	if this.handler.fdoReadBytes != nil {
-		n, state, err := this.handler.fdoReadBytes(
-			this.Conn, this.protocolState, toData)
-		this.protocolState = state
-		return n, err
-	} else {
-		return this.Conn.Read(toData)
-	}
+	return this.work.Read(toData)
 }
 
-func (this *TCPConn) doSendTCPBytes(data []byte) (int, error) {
-	if this.handler.fdoSendBytes != nil {
-		n, state, err := this.handler.fdoSendBytes(this.Conn,
-			this.protocolState, data)
-		this.protocolState = state
-		return n, err
-	} else {
-		return this.Conn.Write(data)
-	}
+func (this *TCPConn) Write(data []byte) (int, error) {
+	return this.work.Write(data)
 }
 
 // 发送 Bytes
@@ -243,7 +231,7 @@ func (this *TCPConn) sendThread() {
 //关闭socket 应该在消息尝试发送完之后执行
 func (this *TCPConn) closeSocket() error {
 	this.state = TCPCONNSTATE_CLOSED
-	return this.Conn.Close()
+	return this.conn.Close()
 }
 
 // 异步方式发送消息 必须单线程执行
@@ -346,7 +334,7 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 			"this.sendBuffer.SeekAll() Err[%s]",
 			err.Error())
 	} else {
-		secn, err := this.doSendTCPBytes(bs)
+		secn, err := this.work.Write(bs)
 		if err != nil {
 			this.Warn("[TCPConn.sendMsgList] "+
 				"缓冲区发送消息异常 Err[%s]",
@@ -424,7 +412,7 @@ func (this *TCPConn) recvThread() {
 			return
 		}
 		// 设置阻塞过期时间
-		derr := this.SetReadDeadline(time.Now().
+		derr := this.conn.SetReadDeadline(time.Now().
 			Add(time.Duration(time.Millisecond * 250)))
 		if derr != nil {
 			// 设置阻塞过期时间失败
