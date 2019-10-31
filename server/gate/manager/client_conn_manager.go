@@ -120,7 +120,7 @@ func (this *ClientManager) StartAddClientTcpSocketHandle(addr string) {
 					err.Error())
 				continue
 			}
-			this.OnAcceptConnect(netConn)
+			this.OnAcceptClientConnect(netConn)
 			this.addTCPClient(netConn)
 		}
 	}()

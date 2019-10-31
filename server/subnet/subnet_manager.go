@@ -1,14 +1,16 @@
 package subnet
 
 import (
+	"strconv"
+	"sync"
+
 	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/server/subnet/base"
 	"github.com/liasece/micserver/server/subnet/serconfs"
 	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/util"
-	"strconv"
-	"sync"
 )
 
 func CheckServerType(servertype uint32) bool {
@@ -23,8 +25,6 @@ type SubnetManager struct {
 	*log.Logger
 	// 服务器连接池
 	connect.ServerPool
-	// 回调注册
-	SubnetCallback
 	// 配置信息
 	connInfos    serconfs.ConnInfosManager // 所有服务器信息
 	moudleConf   *conf.ModuleConfig
@@ -36,9 +36,11 @@ type SubnetManager struct {
 	maxRunningMsgNum int32
 	// 我的服务器信息
 	myServerInfo *servercomm.SServerInfo
+	// 子网系统钩子
+	subnetHook base.SubnetHook
 }
 
-func (this *SubnetManager) InitManager(moudleConf *conf.ModuleConfig) {
+func (this *SubnetManager) Init(moudleConf *conf.ModuleConfig) {
 	this.myServerInfo = &servercomm.SServerInfo{}
 	this.moudleConf = moudleConf
 	this.ServerPool.Logger = this.Logger
@@ -54,6 +56,10 @@ func (this *SubnetManager) InitManager(moudleConf *conf.ModuleConfig) {
 	// 我的服务器信息
 	this.myServerInfo.ServerID = this.moudleConf.ID
 	this.connInfos.Logger = this.Logger
+}
+
+func (this *SubnetManager) HookSubnet(subnetHook base.SubnetHook) {
+	this.subnetHook = subnetHook
 }
 
 // 指定类型的获取最新版本的服务器版本号

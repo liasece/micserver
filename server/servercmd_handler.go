@@ -3,36 +3,29 @@ package server
 import (
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/server/base"
 	"github.com/liasece/micserver/servercomm"
 )
 
 type serverCmdHandler struct {
 	server *Server
 
-	fonForwardToServer func(msg *servercomm.SForwardToServer)
-	fonForwardFromGate func(msg *servercomm.SForwardFromGate)
-	fonForwardToClient func(msg *servercomm.SForwardToClient)
+	serverHook base.ServerHook
 }
 
-func (this *serverCmdHandler) RegOnForwardToServer(
-	cb func(msg *servercomm.SForwardToServer)) {
-	this.fonForwardToServer = cb
+func (this *serverCmdHandler) HookServer(serverHook base.ServerHook) {
+	this.serverHook = serverHook
 }
 
 func (this *serverCmdHandler) onForwardToServer(smsg *servercomm.SForwardToServer) {
-	if this.fonForwardToServer != nil {
-		this.fonForwardToServer(smsg)
+	if this.serverHook != nil {
+		this.serverHook.OnForwardToServer(smsg)
 	}
 }
 
-func (this *serverCmdHandler) RegOnForwardFromGate(
-	cb func(msg *servercomm.SForwardFromGate)) {
-	this.fonForwardFromGate = cb
-}
-
 func (this *serverCmdHandler) onForwardFromGate(smsg *servercomm.SForwardFromGate) {
-	if this.fonForwardFromGate != nil {
-		this.fonForwardFromGate(smsg)
+	if this.serverHook != nil {
+		this.serverHook.OnForwardFromGate(smsg)
 	}
 }
 
@@ -57,15 +50,15 @@ func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 	}
 }
 
-func (this *serverCmdHandler) onRecvMsg(conn *connect.Server,
+func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 	msgbinary *msg.MessageBinary) {
 	switch msgbinary.CmdID {
 	case servercomm.SForwardToServerID:
 		// 服务器间用户空间消息转发
-		if this.fonForwardToServer != nil {
+		if this.serverHook != nil {
 			layerMsg := &servercomm.SForwardToServer{}
 			layerMsg.ReadBinary(msgbinary.ProtoData)
-			this.fonForwardToServer(layerMsg)
+			this.onForwardToServer(layerMsg)
 		}
 	case servercomm.SForwardFromGateID:
 		var layerMsg *servercomm.SForwardFromGate
@@ -79,9 +72,7 @@ func (this *serverCmdHandler) onRecvMsg(conn *connect.Server,
 			layerMsg.ReadBinary(msgbinary.ProtoData)
 		}
 		// Gateway 转发过来的客户端消息
-		if this.fonForwardFromGate != nil {
-			this.fonForwardFromGate(layerMsg)
-		}
+		this.onForwardFromGate(layerMsg)
 	case servercomm.SForwardToClientID:
 		// 其他服务器转发过来的，要发送到客户端的消息
 		layerMsg := &servercomm.SForwardToClient{}

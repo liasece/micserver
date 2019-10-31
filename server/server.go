@@ -42,8 +42,8 @@ func (this *Server) InitSubnet(conf *conf.ModuleConfig) {
 	}
 	this.serverCmdHandler.server = this
 	this.subnetManager.Logger = this.Logger.Clone()
-	this.subnetManager.InitManager(conf)
-	this.subnetManager.RegOnRecvMsg(this.serverCmdHandler.onRecvMsg)
+	this.subnetManager.Init(conf)
+	this.subnetManager.HookSubnet(&this.serverCmdHandler)
 }
 
 func (this *Server) BindSubnet(subnetAddrMap map[string]string) {
@@ -63,9 +63,7 @@ func (this *Server) InitGate(gateaddr string) {
 	this.gateBase.BindOuterTCP(gateaddr)
 
 	// 事件监听
-	this.gateBase.RegOnAcceptConnect(this.clientEventHandler.OnAcceptConnect)
-	this.gateBase.RegOnNewClient(this.clientEventHandler.OnNewClient)
-	this.gateBase.RegOnRecvClientMsg(this.clientEventHandler.OnRecvClientMsg)
+	this.gateBase.HookGate(&this.clientEventHandler)
 }
 
 func (this *Server) SetLogger(source *log.Logger) {

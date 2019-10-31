@@ -2,11 +2,12 @@ package subnet
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/util"
-	"time"
 )
 
 type ConnectMsgQueueStruct struct {
@@ -22,8 +23,8 @@ func (this *SubnetManager) onConnectClose(conn *connect.Server) {
 // 当收到TCP消息时调用
 func (this *SubnetManager) OnRecvTCPMsg(conn *connect.Server,
 	msgbinary *msg.MessageBinary) {
-	if this.SubnetCallback.fonRecvMsg != nil {
-		this.SubnetCallback.fonRecvMsg(conn, msgbinary)
+	if this.subnetHook != nil {
+		this.subnetHook.OnRecvSubnetMsg(conn, msgbinary)
 	} else {
 		this.Debug("this.SubnetCallback.fonRecvMsg == nil MsgID[%d]",
 			msgbinary.CmdID)

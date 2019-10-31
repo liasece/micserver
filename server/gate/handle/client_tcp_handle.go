@@ -1,26 +1,26 @@
 package handle
 
 import (
+	"net"
+	"time"
+
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/server/gate/base"
 	"github.com/liasece/micserver/servercomm"
-	"net"
-	"time"
 )
 
 type ClientTcpHandler struct {
 	*log.Logger
 
 	Analysiswsmsgcount uint32
-	fonRecvClientMsg   func(*connect.Client, *msg.MessageBinary)
-	fonNewClient       func(*connect.Client)
-	fonAcceptConnect   func(net.Conn)
+
+	gateHook base.GateHook
 }
 
-func (this *ClientTcpHandler) RegOnRecvClientMsg(
-	cb func(*connect.Client, *msg.MessageBinary)) {
-	this.fonRecvClientMsg = cb
+func (this *ClientTcpHandler) HookGate(gateHook base.GateHook) {
+	this.gateHook = gateHook
 }
 
 func (this *ClientTcpHandler) OnConnectRecv(client *connect.Client,
@@ -41,29 +41,19 @@ func (this *ClientTcpHandler) OnConnectRecv(client *connect.Client,
 	// 设置连接活动过期时间 5分钟
 	client.SetTerminateTime(now + 5*60)
 
-	if this.fonRecvClientMsg != nil {
-		this.fonRecvClientMsg(client, msgbin)
+	if this.gateHook != nil {
+		this.gateHook.OnRecvClientMsg(client, msgbin)
 	}
-}
-
-func (this *ClientTcpHandler) RegOnNewClient(
-	cb func(*connect.Client)) {
-	this.fonNewClient = cb
 }
 
 func (this *ClientTcpHandler) OnNewClient(client *connect.Client) {
-	if this.fonNewClient != nil {
-		this.fonNewClient(client)
+	if this.gateHook != nil {
+		this.gateHook.OnNewClient(client)
 	}
 }
 
-func (this *ClientTcpHandler) RegOnAcceptConnect(
-	cb func(net.Conn)) {
-	this.fonAcceptConnect = cb
-}
-
-func (this *ClientTcpHandler) OnAcceptConnect(conn net.Conn) {
-	if this.fonAcceptConnect != nil {
-		this.fonAcceptConnect(conn)
+func (this *ClientTcpHandler) OnAcceptClientConnect(conn net.Conn) {
+	if this.gateHook != nil {
+		this.gateHook.OnAcceptClientConnect(conn)
 	}
 }
