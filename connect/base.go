@@ -36,7 +36,7 @@ func (this *BaseConnect) Init() {
 }
 
 func (this *BaseConnect) SetLogger(l *log.Logger) {
-	this.Logger = l
+	this.Logger = l.Clone()
 }
 
 // 设置过期时间
@@ -121,6 +121,11 @@ func (this *BaseConnect) SendCmdWithCallback(v msg.MsgStruct,
 	}
 	msg.RegSendFinish(cb, cbarg)
 	return this.IConnection.SendMessageBinary(msg)
+}
+
+func (this *BaseConnect) SendBytes(
+	cmdid uint16, protodata []byte) error {
+	return this.IConnection.SendBytes(cmdid, protodata)
 }
 
 func (this *BaseConnect) Shutdown() {

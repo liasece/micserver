@@ -65,6 +65,7 @@ func (this *Server) InitChan(sctype TServerSCType,
 	sendChan chan *msg.MessageBinary, recvChan chan *msg.MessageBinary,
 	onRecv func(*Server, *msg.MessageBinary),
 	onClose func(*Server)) {
+	this.BaseConnect.Init()
 	this.ServerInfo = &servercomm.ServerInfo{}
 	this.SetSC(sctype)
 	this.ConnectPriority = rand.Int63()

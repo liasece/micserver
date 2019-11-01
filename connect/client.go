@@ -5,7 +5,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/session"
 )
@@ -56,12 +55,8 @@ func (this *Client) DialTCP(addr string, connHook ConnectHook) error {
 		return err
 	}
 	this.InitTCP(conn, connHook)
-	this.StartReadData()
-	return nil
-}
-
-func (this *Client) StartReadData() {
 	this.IConnection.StartRecv()
+	return nil
 }
 
 func (this *Client) onRecvMessage(msg *msg.MessageBinary) {
@@ -113,13 +108,4 @@ func (this *Client) Check() bool {
 		return false
 	}
 	return true
-}
-
-func (this *Client) SendBytes(
-	cmdid uint16, protodata []byte) error {
-	return this.IConnection.SendBytes(cmdid, protodata)
-}
-
-func (this *Client) SetLogger(logger *log.Logger) {
-	this.Logger = logger.Clone()
 }
