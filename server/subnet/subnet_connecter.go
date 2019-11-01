@@ -136,7 +136,7 @@ func (this *SubnetManager) onClientConnected(conn *connect.Server) {
 
 func (this *SubnetManager) onClientDisconnected(conn *connect.Server) {
 	this.onConnectClose(conn)
-	this.RemoveServer(conn.Tempid)
+	this.RemoveServer(conn.GetTempID())
 
 	if !conn.IsNormalDisconnect &&
 		conn.GetSCType() == connect.ServerSCTypeClient {

@@ -1,10 +1,8 @@
 package connect
 
 import (
-	"errors"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/util/pool"
-	"github.com/liasece/micserver/util/uid"
 	"math/rand"
 	"net"
 	"time"
@@ -55,11 +53,9 @@ type ClientPool struct {
 	*log.Logger
 	allSockets stringToClient // 所有连接
 	linkSum    int32
-	groupID    uint16
 }
 
-func (this *ClientPool) Init(groupID int32) {
-	this.groupID = uint16(groupID)
+func (this *ClientPool) Init() {
 	this.allSockets.InitMapPool(mClientPoolGroupSum)
 }
 
@@ -113,12 +109,7 @@ func (this *ClientPool) Remove(tempid string) {
 }
 
 func (this *ClientPool) AddAuto(connct *Client) error {
-	tmpid, err := uid.NewUniqueID(this.groupID)
-	if err != nil {
-		log.Error("[ClientPool.AddAuto] 生成ConnectID出错 Error[%s]",
-			err.Error())
-		return errors.New("unique id create error: " + err.Error())
-	}
+	tmpid := connct.GetTempID()
 	connct.SetConnectID(tmpid)
 	this.add(connct.GetConnectID(), connct)
 	return nil

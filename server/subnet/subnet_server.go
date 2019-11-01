@@ -29,7 +29,7 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 			myconn.Terminate()
 			unuseid, _ := uid.NewUniqueID(0xff)
 			this.ChangeServerTempid(
-				myconn, myconn.Tempid+"unuse"+fmt.Sprint(unuseid))
+				myconn, myconn.GetTempID()+"unuse"+fmt.Sprint(unuseid))
 		} else {
 			// 我方优先级比较高已经连接成功过了，非法连接
 			this.Debug("[SubNetManager.OnServerLogin] "+

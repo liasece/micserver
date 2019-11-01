@@ -42,9 +42,9 @@ func (this *Client) InitTCP(netconn net.Conn, connHook ConnectHook) {
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
 	if this.Logger != nil {
 		this.Logger.SetTopic(fmt.Sprintf("Client:%s(%s)",
-			this.IConnection.RemoteAddr(), this.GetConnectID()))
+			this.IConnection.RemoteAddr(), this.GetTempID()))
 	}
-	this.readch = this.IConnection.GetRecvMessageChannel()
+	this.readch = this.GetRecvMessageChannel()
 	this.connHook = connHook
 	go this.recvMsgThread()
 }
@@ -55,7 +55,7 @@ func (this *Client) DialTCP(addr string, connHook ConnectHook) error {
 		return err
 	}
 	this.InitTCP(conn, connHook)
-	this.IConnection.StartRecv()
+	this.StartRecv()
 	return nil
 }
 

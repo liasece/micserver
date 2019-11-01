@@ -123,7 +123,7 @@ func (this *Server) BroadcastServerCmd(msgstr msg.MsgStruct) {
 func (this *Server) GetBalanceServerID(servertype string) string {
 	server := this.subnetManager.GetRandomServer(servertype)
 	if server != nil {
-		return server.Tempid
+		return server.GetTempID()
 	}
 	return ""
 }

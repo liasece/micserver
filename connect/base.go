@@ -6,15 +6,17 @@ import (
 
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/network/baseio"
+	"github.com/liasece/micserver/util/uid"
 )
 
 type BaseConnect struct {
 	*log.Logger
 	// 连接实体
-	IConnection
+	IConnection IConnection
 
 	// 唯一编号
-	Tempid string
+	tempID string
 	// 结束时间 为0表示不结束
 	terminate_time int64
 	// 主动断开连接标记
@@ -26,17 +28,36 @@ type BaseConnect struct {
 	// 是否是正常的断开连接
 	IsNormalDisconnect bool
 	// 连接创建的时间
-	CreateTime int64
+	createTime int64
 	// 连接的延迟信息
 	ping Ping
 }
 
 func (this *BaseConnect) Init() {
-	this.CreateTime = int64(time.Now().Unix())
+	this.createTime = int64(time.Now().Unix())
+	tmpid, err := uid.NewUniqueID(0)
+	if err == nil {
+		this.SetTempID(tmpid)
+	} else {
+		this.Error("[BaseConnect.Init] 生成UUID出错 Error[%s]",
+			err.Error())
+	}
 }
 
 func (this *BaseConnect) SetLogger(l *log.Logger) {
 	this.Logger = l.Clone()
+}
+
+func (this *BaseConnect) GetCreateTime() int64 {
+	return this.createTime
+}
+
+func (this *BaseConnect) GetTempID() string {
+	return this.tempID
+}
+
+func (this *BaseConnect) SetTempID(id string) {
+	this.tempID = id
 }
 
 // 设置过期时间
@@ -65,9 +86,21 @@ func (this *BaseConnect) IsTerminate(curtime int64) bool {
 	return false
 }
 
+func (this *BaseConnect) StartRecv() {
+	this.IConnection.StartRecv()
+}
+
+func (this *BaseConnect) HookProtocal(p baseio.Protocal) {
+	this.IConnection.HookProtocal(p)
+}
+
+func (this *BaseConnect) GetRecvMessageChannel() chan *msg.MessageBinary {
+	return this.IConnection.GetRecvMessageChannel()
+}
+
 // 强制终止该连接
 func (this *BaseConnect) Terminate() {
-	this.Debug("[BaseConnect.Terminate] 连接停止 Tempid[%s]", this.Tempid)
+	this.Debug("[BaseConnect.Terminate] 连接停止 tempID[%s]", this.tempID)
 	this.terminate_force = true
 }
 

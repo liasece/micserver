@@ -10,7 +10,6 @@ import (
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/util"
-	"github.com/liasece/micserver/util/uid"
 )
 
 type ServerPool struct {
@@ -201,25 +200,18 @@ func (this *ServerPool) RemoveServer(tempid string) {
 }
 
 func (this *ServerPool) AddServer(connct *Server, tmpid string) {
-	connct.Tempid = tmpid
+	connct.SetTempID(tmpid)
 	this.add(tmpid, connct)
 	this.Debug("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
 		" LinkSum[%d] ServerID[%s]",
-		connct.Tempid, this.ServerSum(), connct.ServerInfo.ServerID)
+		connct.GetTempID(), this.ServerSum(), connct.ServerInfo.ServerID)
 }
 
 func (this *ServerPool) AddServerAuto(connct *Server) {
-	tmpid, err := uid.NewUniqueID(this.groupID)
-	if err != nil {
-		this.Error("[ServerPool.AddAuto] 生成UUID出错 Error[%s]",
-			err.Error())
-		return
-	}
-	connct.Tempid = tmpid
-	this.add(connct.Tempid, connct)
+	this.add(connct.GetTempID(), connct)
 	this.Debug("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
 		" LinkSum[%d] ServerID[%s]",
-		connct.Tempid, this.ServerSum(), connct.ServerInfo.ServerID)
+		connct.GetTempID(), this.ServerSum(), connct.ServerInfo.ServerID)
 }
 
 // 修改链接的 tempip
@@ -230,9 +222,9 @@ func (this *ServerPool) ChangeServerTempid(tcptask *Server,
 		return fmt.Errorf("目标连接已存在:%s", newTempID)
 	} else {
 		after := afterI.(*Server)
-		oldTmpID := after.Tempid
+		oldTmpID := after.GetTempID()
 		// 修改连接内的唯一ID标识
-		after.Tempid = newTempID
+		after.SetTempID(newTempID)
 		// 删除旧ID的索引，注意，如果你的ID生成规则不是唯一的，这里会有并发问题
 		this.remove(oldTmpID)
 		this.linkSum++

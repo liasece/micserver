@@ -19,7 +19,7 @@ type ConnectMsgQueueStruct struct {
 
 // 当TCP连接被移除时调用
 func (this *SubnetManager) onConnectClose(conn *connect.Server) {
-	this.RemoveServer(conn.Tempid)
+	this.RemoveServer(conn.GetTempID())
 }
 
 // 当收到TCP消息时调用
@@ -60,13 +60,13 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 			this.onClientDisconnected(conn)
 			this.Error("[SubnetManager.handleConnection] "+
 				"长时间未通过验证，断开连接 TmpID[%d]",
-				conn.Tempid)
+				conn.GetTempID())
 			return
 		}
 		if conn.IsTerminateForce() {
 			this.onClientDisconnected(conn)
 			this.Debug("[SubnetManager.handleConnection] "+
-				"服务器主动断开连接 TmpID[%s]", conn.Tempid)
+				"服务器主动断开连接 TmpID[%s]", conn.GetTempID())
 			return
 		}
 	}
