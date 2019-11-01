@@ -41,6 +41,22 @@ func (this *ServerPool) NewTCPServer(sctype TServerSCType,
 	return tcptask
 }
 
+func (this *ServerPool) NewChanServer(sctype TServerSCType,
+	sendChan chan *msg.MessageBinary, recvChan chan *msg.MessageBinary,
+	serverid string, onRecv func(*Server, *msg.MessageBinary),
+	onClose func(*Server)) *Server {
+	tcptask := &Server{}
+	tcptask.SetLogger(this.Logger)
+	tcptask.InitChan(sctype, sendChan, recvChan, onRecv, onClose)
+	tcptask.Logger = this.Logger
+	if serverid == "" {
+		this.AddServerAuto(tcptask)
+	} else {
+		this.AddServer(tcptask, serverid)
+	}
+	return tcptask
+}
+
 // 遍历连接池中的所有连接
 func (this *ServerPool) RangeServer(
 	callback func(*Server) bool) {

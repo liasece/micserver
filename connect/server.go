@@ -70,6 +70,23 @@ func (this *Server) InitTCP(sctype TServerSCType, netconn net.Conn,
 		onRecv, onClose)
 }
 
+// 初始化一个新的服务器连接
+// sctype: 连接的 客户端/服务器 类型
+// sendChan: 发送消息管道
+// recvChan: 接收消息管道
+func (this *Server) InitChan(sctype TServerSCType,
+	sendChan chan *msg.MessageBinary, recvChan chan *msg.MessageBinary,
+	onRecv func(*Server, *msg.MessageBinary),
+	onClose func(*Server)) {
+	this.ServerInfo = &servercomm.ServerInfo{}
+	this.SetSC(sctype)
+	this.ConnectPriority = rand.Int63()
+	this.IConnection = NewChan(sendChan, recvChan, this.Logger)
+	this.IConnection.StartRecv()
+	go this.recvMsgThread(this.IConnection.GetRecvMessageChannel(),
+		onRecv, onClose)
+}
+
 func (this *Server) SetLogger(l *log.Logger) {
 	this.Logger = l
 }

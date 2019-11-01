@@ -12,11 +12,14 @@ package subnet
 import (
 	"errors"
 	"fmt"
-	"github.com/liasece/micserver/connect"
-	"github.com/liasece/micserver/servercomm"
-	"github.com/liasece/micserver/util/sysutil"
 	"net"
 	"time"
+
+	"github.com/liasece/micserver/connect"
+	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/process"
+	"github.com/liasece/micserver/servercomm"
+	"github.com/liasece/micserver/util/sysutil"
 )
 
 func (this *SubnetManager) tryConnectServerThread(id string, addr string) {
@@ -37,7 +40,7 @@ func (this *SubnetManager) tryConnectServerThread(id string, addr string) {
 			this.Debug("[SubnetManager.tryConnectServerThread] "+
 				"正在连接 ServerID[%s] IPPort[%s]",
 				id, addr)
-			_, err := this.ConnectServer(id, addr)
+			err := this.ConnectServer(id, addr)
 			if err != nil && err.Error() != "重复连接" {
 				time.Sleep(2 * time.Second) // 2秒重连一次
 				c <- true
@@ -69,7 +72,7 @@ func (this *SubnetManager) TryConnectServer(id string, addr string) {
 
 // 连接服务器
 func (this *SubnetManager) ConnectServer(id string,
-	addr string) (*connect.Server, error) {
+	addr string) error {
 	this.connectMutex.Lock()
 	defer this.connectMutex.Unlock()
 	oldconn := this.GetServer(id)
@@ -77,44 +80,58 @@ func (this *SubnetManager) ConnectServer(id string,
 	if oldconn != nil {
 		this.Debug("[SubnetManager.ConnectServer] "+
 			"ServerID[%s] 重复的连接", id)
-		return nil, errors.New("重复连接")
+		return errors.New("重复连接")
 	}
 	this.Debug("[SubnetManager.ConnectServer] "+
 		"服务器连接创建地址开始 ServerID[%s] ServerIPPort[%s]",
 		id, addr)
-	tcpaddr, err := net.ResolveTCPAddr("tcp4", addr)
-	if err != nil {
-		this.Debug("[SubnetManager.ConnectServer] "+
-			"服务器连接创建地址失败 ServerIPPort[%s] Err[%s]",
-			addr, err.Error())
-		return nil, err
+	if chanServer := process.GetServerChan(id); chanServer != nil {
+		newMsgChan := make(chan *msg.MessageBinary, 1000)
+		chanServer <- &process.ChanServerHandshake{
+			ServerInfo:    this.myServerInfo,
+			ServerMsgChan: nil,
+			ClientMsgChan: newMsgChan,
+			Seq:           0,
+		}
+	} else {
+		tcpaddr, err := net.ResolveTCPAddr("tcp4", addr)
+		if err != nil {
+			this.Debug("[SubnetManager.ConnectServer] "+
+				"服务器连接创建地址失败 ServerIPPort[%s] Err[%s]",
+				addr, err.Error())
+			return err
+		}
+		Conn, err := net.DialTCP("tcp", nil, tcpaddr)
+		if err != nil {
+			this.Error("[SubnetManager.ConnectServer] "+
+				"服务器连接失败 ServerIPPort[%s] Err[%s]",
+				addr, err.Error())
+			return err
+		}
+		conn := this.NewTCPServer(connect.ServerSCTypeClient, Conn, id,
+			this.onConnectRecv, this.onConnectClose)
+		conn.Logger = this.Logger
+		this.OnCreateNewServer(conn)
+		// 发起登录
+		this.onClientConnected(conn)
 	}
-	Conn, err := net.DialTCP("tcp", nil, tcpaddr)
-	if err != nil {
-		this.Debug("[SubnetManager.ConnectServer] "+
-			"服务器连接失败 ServerIPPort[%s] Err[%s]",
-			addr, err.Error())
-		return nil, err
-	}
-	conn := this.NewTCPServer(connect.ServerSCTypeClient, Conn, id,
-		this.onConnectRecv, this.onConnectClose)
-	conn.Logger = this.Logger
-	// 发起登录
-
-	// 构造登陆消息
-	sendmsg := &servercomm.SLoginCommand{}
-	sendmsg.ServerID = this.moudleConf.ID
-	sendmsg.ServerAddr = this.moudleConf.GetModuleSetting("subnettcpaddr")
-	sendmsg.ConnectPriority = conn.ConnectPriority
-	// 发送登陆请求
-	conn.SendCmd(sendmsg)
 
 	this.Debug("[SubnetManager.ConnectServer] "+
 		"开始连接服务器 ServerID[%s] IPPort[%s]", id,
 		addr)
 
-	this.OnCreateNewServer(conn)
-	return conn, nil
+	return nil
+}
+
+func (this *SubnetManager) onClientConnected(conn *connect.Server) {
+	// 开始请求登陆
+	// 构造登陆消息
+	sendmsg := &servercomm.SLoginCommand{}
+	sendmsg.ServerID = this.myServerInfo.ServerID
+	sendmsg.ServerAddr = this.moudleConf.GetModuleSetting("subnettcpaddr")
+	sendmsg.ConnectPriority = conn.ConnectPriority
+	// 发送登陆请求
+	conn.SendCmd(sendmsg)
 }
 
 func (this *SubnetManager) onClientDisconnected(conn *connect.Server) {

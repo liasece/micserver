@@ -2,11 +2,14 @@ package subnet
 
 import (
 	"fmt"
+	"net"
+
 	"github.com/liasece/micserver/connect"
+	"github.com/liasece/micserver/msg"
+	"github.com/liasece/micserver/process"
 	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/util/sysutil"
 	"github.com/liasece/micserver/util/uid"
-	"net"
 )
 
 func (this *SubnetManager) OnServerLogin(conn *connect.Server,
@@ -97,12 +100,12 @@ func (this *SubnetManager) BindTCPSubnet(settings map[string]string) error {
 	// init tcp subnet port
 	netlisten, err := net.Listen("tcp", addr)
 	if err != nil {
-		this.Error("[SubNetManager.BindTCPServer] "+
+		this.Error("[SubNetManager.BindTCPSubnet] "+
 			"服务器绑定失败 IPPort[%s] Err[%s]",
 			addr, err.Error())
 		return err
 	}
-	this.Debug("[SubNetManager.BindTCPServer] "+
+	this.Debug("[SubNetManager.BindTCPSubnet] "+
 		"服务器绑定成功 IPPort[%s]", addr)
 	this.myServerInfo.ServerAddr = addr
 	go this.TCPServerListenerProcess(netlisten)
@@ -113,7 +116,7 @@ func (this *SubnetManager) TCPServerListenerProcess(listener net.Listener) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
-			this.Error("[TCPServerListenerProcess] "+
+			this.Error("[SubNetManager.TCPServerListenerProcess] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -128,7 +131,7 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
-			this.Error("[mTCPServerListener] "+
+			this.Error("[SubNetManager.mTCPServerListener] "+
 				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -136,12 +139,12 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 	for true {
 		newconn, err := listener.Accept()
 		if err != nil {
-			this.Error("[SubNetManager.TCPServerListenerProcess] "+
+			this.Error("[SubNetManager.mTCPServerListener] "+
 				"服务器端口监听异常 Err[%s]",
 				err.Error())
 			continue
 		}
-		this.Debug("[SubNetManager.BindTCPServer] "+
+		this.Debug("[SubNetManager.mTCPServerListener] "+
 			"收到新的TCP连接 Addr[%s]",
 			newconn.RemoteAddr().String())
 		conn := this.NewTCPServer(connect.ServerSCTypeTask, newconn, "",
@@ -149,6 +152,95 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 		if conn != nil {
 			conn.Logger = this.Logger
 			this.OnCreateNewServer(conn)
+		}
+	}
+}
+
+// Local chan server init
+
+func (this *SubnetManager) BindChanSubnet(settings map[string]string) error {
+	nochan, hasconf := settings["subnetnochan"]
+	if hasconf && nochan == "true" {
+		return nil
+	}
+	serverChan := make(chan *process.ChanServerHandshake, 1000)
+	process.AddServerChan(this.myServerInfo.ServerID, serverChan)
+	go this.ChanServerListenerProcess(serverChan)
+	this.Debug("BindChanSubnet ChanServer 注册成功")
+	return nil
+}
+
+func (this *SubnetManager) ChanServerListenerProcess(
+	serverChan chan *process.ChanServerHandshake) {
+	defer func() {
+		// 必须要先声明defer，否则不能捕获到panic异常
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
+			this.Error("[ChanServerListenerProcess] "+
+				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+		}
+	}()
+	defer func() {
+		process.DeleteServerChan(this.myServerInfo.ServerID)
+		close(serverChan)
+	}()
+	for true {
+		this.mChanServerListener(serverChan)
+	}
+}
+
+func (this *SubnetManager) mChanServerListener(
+	serverChan chan *process.ChanServerHandshake) {
+	defer func() {
+		// 必须要先声明defer，否则不能捕获到panic异常
+		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
+			// 这里的err其实就是panic传入的内容
+			this.Error("[SubNetManager.mChanServerListener] "+
+				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
+		}
+	}()
+
+	for true {
+		select {
+		case newinfo, ok := <-serverChan:
+			if !ok {
+				break
+			}
+			remoteChan := process.GetServerChan(newinfo.ServerInfo.ServerID)
+			if remoteChan != nil {
+				if newinfo.Seq == 0 {
+					// 请求开始
+					newMsgChan := make(chan *msg.MessageBinary, 1000)
+					remoteChan <- &process.ChanServerHandshake{
+						ServerInfo:    this.myServerInfo,
+						ServerMsgChan: newMsgChan,
+						ClientMsgChan: newinfo.ClientMsgChan,
+						Seq:           newinfo.Seq + 1,
+					}
+					// 建立本地通信Server对象
+					conn := this.NewChanServer(connect.ServerSCTypeTask,
+						newinfo.ClientMsgChan, newMsgChan, "",
+						this.onConnectRecv, this.onConnectClose)
+					conn.Logger = this.Logger
+					this.OnCreateNewServer(conn)
+					this.Debug("[SubNetManager.mChanServerListener] "+
+						"收到新的 ServerChan 连接 ServerID[%s]",
+						newinfo.ServerInfo.ServerID)
+				} else if newinfo.Seq == 1 {
+					// 请求回复
+					// 建立本地通信Server对象
+					conn := this.NewChanServer(connect.ServerSCTypeClient,
+						newinfo.ServerMsgChan, newinfo.ClientMsgChan,
+						newinfo.ServerInfo.ServerID,
+						this.onConnectRecv, this.onConnectClose)
+					conn.Logger = this.Logger
+					this.OnCreateNewServer(conn)
+					// 发起登录
+					this.onClientConnected(conn)
+					this.Debug("[SubNetManager.mChanServerListener] "+
+						"收到 ServerChan 连接请求回复 ServerID[%s]",
+						newinfo.ServerInfo.ServerID)
+				}
+			}
 		}
 	}
 }

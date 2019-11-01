@@ -39,6 +39,8 @@ func (this *AppConfig) GetModuleConfig(moduleid string) *ModuleConfig {
 	var res ModuleConfig
 	if v, ok := this.Modules[moduleid]; ok {
 		res = *v
+	} else {
+		res.ID = moduleid
 	}
 	if res.Settings == nil {
 		res.Settings = make(map[string]string)

@@ -56,6 +56,7 @@ func (this *SubnetManager) Init(moudleConf *conf.ModuleConfig) {
 	this.connInfos.Logger = this.Logger
 	// 初始化连接
 	this.BindTCPSubnet(this.moudleConf.Settings)
+	this.BindChanSubnet(this.moudleConf.Settings)
 }
 
 func (this *SubnetManager) HookSubnet(subnetHook base.SubnetHook) {
