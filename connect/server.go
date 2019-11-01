@@ -56,7 +56,7 @@ type Server struct {
 // 初始化一个新的服务器连接
 // sctype: 连接的 客户端/服务器 类型
 // netconn: 连接的net.Conn对象
-func (this *Server) Init(sctype TServerSCType, netconn net.Conn,
+func (this *Server) InitTCP(sctype TServerSCType, netconn net.Conn,
 	onRecv func(*Server, *msg.MessageBinary),
 	onClose func(*Server)) {
 	this.ServerInfo = &servercomm.ServerInfo{}

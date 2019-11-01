@@ -31,7 +31,7 @@ func (this *ServerPool) NewServer(sctype TServerSCType,
 	onClose func(*Server)) *Server {
 	tcptask := &Server{}
 	tcptask.SetLogger(this.Logger)
-	tcptask.Init(sctype, conn, onRecv, onClose)
+	tcptask.InitTCP(sctype, conn, onRecv, onClose)
 	tcptask.Logger = this.Logger
 	if serverid == "" {
 		this.AddServerAuto(tcptask)
