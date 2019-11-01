@@ -148,7 +148,7 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 			this.onConnectRecv, this.onConnectClose)
 		if conn != nil {
 			conn.Logger = this.Logger
-			this.OnCreateTCPConnect(conn)
+			this.OnCreateNewServer(conn)
 		}
 	}
 }

@@ -49,7 +49,7 @@ func (this *SubnetManager) OnGetRecvTCPMsgParseChan(conn *connect.Server,
 	return 0
 }
 
-func (this *SubnetManager) OnCreateTCPConnect(conn *connect.Server) {
+func (this *SubnetManager) OnCreateNewServer(conn *connect.Server) {
 }
 
 func (this *SubnetManager) onConnectRecv(conn *connect.Server,

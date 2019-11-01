@@ -113,7 +113,7 @@ func (this *SubnetManager) ConnectServer(id string,
 		"开始连接服务器 ServerID[%s] IPPort[%s]", id,
 		addr)
 
-	this.OnCreateTCPConnect(conn)
+	this.OnCreateNewServer(conn)
 	return conn, nil
 }
 
