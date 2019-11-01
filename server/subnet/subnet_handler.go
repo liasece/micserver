@@ -55,7 +55,7 @@ func (this *SubnetManager) OnCreateNewServer(conn *connect.Server) {
 func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 	msgbin *msg.MessageBinary) {
 	if conn.GetSCType() == connect.ServerSCTypeTask {
-		curtime := uint64(time.Now().Unix())
+		curtime := time.Now().Unix()
 		if conn.IsTerminateTimeout(curtime) {
 			this.onClientDisconnected(conn)
 			this.Error("[SubnetManager.handleConnection] "+
