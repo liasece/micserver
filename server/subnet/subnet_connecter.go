@@ -96,7 +96,7 @@ func (this *SubnetManager) ConnectServer(id string,
 			addr, err.Error())
 		return nil, err
 	}
-	conn := this.NewServer(connect.ServerSCTypeClient, Conn, id,
+	conn := this.NewTCPServer(connect.ServerSCTypeClient, Conn, id,
 		this.onConnectRecv, this.onConnectClose)
 	conn.Logger = this.Logger
 	// 发起登录

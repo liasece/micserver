@@ -25,7 +25,7 @@ func (this *ServerPool) Init(groupID uint16) {
 	this.groupID = groupID
 }
 
-func (this *ServerPool) NewServer(sctype TServerSCType,
+func (this *ServerPool) NewTCPServer(sctype TServerSCType,
 	conn net.Conn, serverid string,
 	onRecv func(*Server, *msg.MessageBinary),
 	onClose func(*Server)) *Server {
