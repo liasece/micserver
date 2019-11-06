@@ -33,9 +33,10 @@ type ROCServer struct {
 	server *Server
 
 	// 远程对象调用支持
-	ROCManager   roc.ROCManager
-	rocCatchChan chan roc.IObj
-	rocCatchList sync.Map
+	ROCManager      roc.ROCManager
+	rocAddCacheChan chan roc.IObj
+	rocDelCacheChan chan roc.IObj
+	rocCatchList    sync.Map
 
 	rocRequestChan  chan *requestAgent
 	rocResponseChan chan *responseAgent
@@ -50,7 +51,8 @@ func (this *ROCServer) Init(server *Server) {
 	this.Logger = server.Logger.Clone()
 	this.Logger.SetTopic("ROCServer")
 
-	this.rocCatchChan = make(chan roc.IObj, 10000)
+	this.rocAddCacheChan = make(chan roc.IObj, 10000)
+	this.rocDelCacheChan = make(chan roc.IObj, 10000)
 	go this.rocObjNoticeProcess()
 	this.ROCManager.RegOnRegObj(this.onRegROCObj)
 
@@ -223,20 +225,39 @@ func (this *ROCServer) onRegROCObj(obj roc.IObj) {
 	this.Debug("onRegROCObj roc cache set type[%s] "+
 		"id[%s] host[%s]",
 		obj.GetObjType(), obj.GetObjID(), this.server.serverid)
-	this.rocCatchChan <- obj
+	this.rocAddCacheChan <- obj
+}
+
+// 当ROC对象发生注册行为时
+func (this *ROCServer) onDelROCObj(obj roc.IObj) {
+	// 保存本地映射缓存
+	roc.GetCache().Del(obj.GetObjType(), obj.GetObjID(),
+		this.server.serverid)
+	this.Debug("onRegROCObj roc cache del type[%s] "+
+		"id[%s] host[%s]",
+		obj.GetObjType(), obj.GetObjID(), this.server.serverid)
+	this.rocDelCacheChan <- obj
 }
 
 func (this *ROCServer) rocObjNoticeProcess() {
 	tm := time.NewTimer(time.Millisecond * 300)
-	tmpList := make([]roc.IObj, 100)
-	lenTmpList := len(tmpList)
-	tmpListI := 0
-	var leftObj roc.IObj
+	tmpAddList := make([]roc.IObj, 100)
+	tmpDelList := make([]roc.IObj, 100)
+	lenTmpList := len(tmpAddList)
+	tmpAddListI := 0
+	tmpDelListI := 0
+	var leftAddObj roc.IObj
+	var leftDelObj roc.IObj
 	for !this.server.isStop {
-		if tmpListI == 0 && leftObj != nil {
-			tmpList[0] = leftObj
-			tmpListI++
-			leftObj = nil
+		if tmpAddListI == 0 && leftAddObj != nil {
+			tmpAddList[0] = leftAddObj
+			tmpAddListI++
+			leftAddObj = nil
+		}
+		if tmpDelListI == 0 && leftDelObj != nil {
+			tmpDelList[0] = leftDelObj
+			tmpDelListI++
+			leftDelObj = nil
 		}
 		wait := true
 		for wait {
@@ -244,15 +265,28 @@ func (this *ROCServer) rocObjNoticeProcess() {
 			select {
 			case <-this.server.stopChan:
 				break
-			case rocObj := <-this.rocCatchChan:
-				if tmpListI == 0 || rocObj.GetObjType() == tmpList[0].GetObjType() {
-					tmpList[tmpListI] = rocObj
-					tmpListI++
-					if tmpListI < lenTmpList {
+			case rocObj := <-this.rocAddCacheChan:
+				if tmpAddListI == 0 ||
+					rocObj.GetObjType() == tmpAddList[0].GetObjType() {
+					tmpAddList[tmpAddListI] = rocObj
+					tmpAddListI++
+					if tmpAddListI < lenTmpList {
 						wait = true
 					}
 				} else {
-					leftObj = rocObj
+					leftAddObj = rocObj
+					break
+				}
+			case rocObj := <-this.rocDelCacheChan:
+				if tmpDelListI == 0 ||
+					rocObj.GetObjType() == tmpDelList[0].GetObjType() {
+					tmpDelList[tmpAddListI] = rocObj
+					tmpDelListI++
+					if tmpDelListI < lenTmpList {
+						wait = true
+					}
+				} else {
+					leftDelObj = rocObj
 					break
 				}
 			case <-tm.C:
@@ -260,33 +294,65 @@ func (this *ROCServer) rocObjNoticeProcess() {
 				break
 			}
 		}
-		if !this.server.isStop && tmpListI > 0 {
-			sendmsg := &servercomm.SROCBind{
-				HostServerID: this.server.serverid,
-				IsDelete:     false,
-				ObjType:      tmpList[0].GetObjType(),
-				ObjIDs:       make([]string, tmpListI),
-			}
-			for i, obj := range tmpList {
-				if i >= tmpListI {
-					break
+
+		if !this.server.isStop {
+			if tmpAddListI > 0 {
+				sendmsg := &servercomm.SROCBind{
+					HostServerID: this.server.serverid,
+					IsDelete:     false,
+					ObjType:      tmpAddList[0].GetObjType(),
+					ObjIDs:       make([]string, tmpAddListI),
 				}
-				sendmsg.ObjIDs[i] = obj.GetObjID()
-				tmpList[i] = nil
-			}
-			this.server.subnetManager.RangeServer(func(s *connect.Server) bool {
-				if !process.HasModule(s.ServerInfo.ServerID) {
-					s.SendCmd(sendmsg)
+				for i, obj := range tmpAddList {
+					if i >= tmpAddListI {
+						break
+					}
+					sendmsg.ObjIDs[i] = obj.GetObjID()
+					tmpAddList[i] = nil
 				}
-				return true
-			})
-			tmpListI = 0
+				this.sendROCBindMsg(sendmsg)
+				tmpAddListI = 0
+			}
+			if tmpDelListI > 0 {
+				sendmsg := &servercomm.SROCBind{
+					HostServerID: this.server.serverid,
+					IsDelete:     true,
+					ObjType:      tmpDelList[0].GetObjType(),
+					ObjIDs:       make([]string, tmpDelListI),
+				}
+				for i, obj := range tmpDelList {
+					if i >= tmpDelListI {
+						break
+					}
+					sendmsg.ObjIDs[i] = obj.GetObjID()
+					tmpDelList[i] = nil
+				}
+				this.sendROCBindMsg(sendmsg)
+				tmpDelListI = 0
+			}
 		}
 	}
 }
 
+// 发送ROC对象绑定信息
+func (this *ROCServer) sendROCBindMsg(sendmsg *servercomm.SROCBind) {
+
+	this.server.subnetManager.RangeServer(
+		func(s *connect.Server) bool {
+			if !process.HasModule(s.ServerInfo.ServerID) {
+				s.SendCmd(sendmsg)
+			}
+			return true
+		})
+}
+
+// 当收到ROC绑定信息时
 func (this *ROCServer) onMsgROCBind(msg *servercomm.SROCBind) {
-	roc.GetCache().SetM(msg.ObjType, msg.ObjIDs, msg.HostServerID)
+	if !msg.IsDelete {
+		roc.GetCache().SetM(msg.ObjType, msg.ObjIDs, msg.HostServerID)
+	} else {
+		roc.GetCache().DelM(msg.ObjType, msg.ObjIDs, msg.HostServerID)
+	}
 	this.Debug("onMsgROCBind roc cache setm type[%s] "+
 		"ids%+v host[%s]",
 		msg.ObjType, msg.ObjIDs, msg.HostServerID)
