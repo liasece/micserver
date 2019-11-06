@@ -11,6 +11,8 @@ type GateHook interface {
 	OnAcceptClientConnect(conn net.Conn)
 	// 新的客户端连接对象
 	OnNewClient(client *connect.Client)
+	// 关闭客户端连接对象
+	OnCloseClient(client *connect.Client)
 	// 收到客户端消息
 	OnRecvClientMsg(client *connect.Client, msgbin *msg.MessageBinary)
 }

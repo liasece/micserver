@@ -53,6 +53,7 @@ func (this *GateBase) addTCPClient(
 
 func (this *GateBase) OnClose(conn *connect.Client) {
 	this.RemoveTaskByTmpID(conn.GetConnectID())
+	this.ClientTcpHandler.OnClose(conn)
 }
 
 func (this *GateBase) GetClient(

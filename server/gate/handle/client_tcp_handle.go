@@ -52,6 +52,12 @@ func (this *ClientTcpHandler) OnNewClient(client *connect.Client) {
 	}
 }
 
+func (this *ClientTcpHandler) OnClose(client *connect.Client) {
+	if this.gateHook != nil {
+		this.gateHook.OnCloseClient(client)
+	}
+}
+
 func (this *ClientTcpHandler) OnAcceptClientConnect(conn net.Conn) {
 	if this.gateHook != nil {
 		this.gateHook.OnAcceptClientConnect(conn)

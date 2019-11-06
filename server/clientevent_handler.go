@@ -34,6 +34,12 @@ func (this *clientEventHandler) OnNewClient(client *connect.Client) {
 	}
 }
 
+func (this *clientEventHandler) OnCloseClient(client *connect.Client) {
+	if this.gateHook != nil {
+		this.gateHook.OnCloseClient(client)
+	}
+}
+
 func (this *clientEventHandler) OnRecvClientMsg(
 	client *connect.Client, msgbin *msg.MessageBinary) {
 	if this.gateHook != nil {
