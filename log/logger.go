@@ -7,7 +7,7 @@ import (
 )
 
 type Logger struct {
-	logWriter   *logWriter
+	logWriter   *LogWriter
 	level       int32
 	logname     string
 	lastTime    int64
@@ -20,7 +20,7 @@ func NewLogger(settings map[string]string) *Logger {
 	l := new(Logger)
 	l.level = DEBUG
 	l.layout = "060102-15:04:05"
-	l.logWriter = &logWriter{}
+	l.logWriter = &LogWriter{}
 	l.logWriter.Init()
 
 	isDaemon := false
@@ -36,11 +36,11 @@ func NewLogger(settings map[string]string) *Logger {
 	if v, ok := settings["logpath"]; ok && len(logfilename) != 0 {
 		logfile := filepath.Join(v, logfilename)
 		if isDaemon {
-			l.AddLogFile(logfile, true)
-			l.RemoveConsoleLog()
+			l.logWriter.AddLogFile(logfile, true)
+			l.logWriter.RemoveConsoleLog()
 		} else {
 			// 默认走控制台
-			l.AddLogFile(logfile, false)
+			l.logWriter.AddLogFile(logfile, false)
 			w := NewConsoleWriter()
 			w.SetColor(true)
 			l.logWriter.registerLogWriter(w)
@@ -63,33 +63,6 @@ func (l *Logger) Clone() *Logger {
 	return &res
 }
 
-// 添加这个 Logger 及其同一父节点 Logger 的日志文件
-func (l *Logger) AddLogFile(filename string, redirecterr bool) {
-	if l == nil && l != default_logger {
-		default_logger.AddLogFile(filename, redirecterr)
-		return
-	}
-	l.logWriter.addLogFile(filename, redirecterr)
-}
-
-// 修改这个 Logger 及其同一父节点 Logger 的日志文件
-func (l *Logger) ChangeLogFile(filename string) {
-	if l == nil && l != default_logger {
-		default_logger.ChangeLogFile(filename)
-		return
-	}
-	l.logWriter.changeLogFile(filename)
-}
-
-// 移除这个 Logger 及其同一父节点 Logger 的控制台log
-func (l *Logger) RemoveConsoleLog() {
-	if l == nil && l != default_logger {
-		default_logger.RemoveConsoleLog()
-		return
-	}
-	l.logWriter.removeConsoleLog()
-}
-
 func (l *Logger) SetLogName(logname string) {
 	if l == nil && l != default_logger {
 		default_logger.SetLogName(logname)
@@ -98,21 +71,11 @@ func (l *Logger) SetLogName(logname string) {
 	l.logname = logname
 }
 
-func (l *Logger) SetLogLevelByStr(loglevel string) {
-	switch loglevel {
-	case "debug":
-		l.SetLogLevel(DEBUG)
-	case "info":
-		l.SetLogLevel(INFO)
-	case "warning":
-		l.SetLogLevel(WARNING)
-	case "error":
-		l.SetLogLevel(ERROR)
-	case "fatal":
-		l.SetLogLevel(FATAL)
-	default:
-		//errors.New("Invalid log level")
+func (l *Logger) GetLogWriter() *LogWriter {
+	if l == nil && l != default_logger {
+		return default_logger.GetLogWriter()
 	}
+	return l.logWriter
 }
 
 func (l *Logger) GetLogLevel() int32 {
@@ -130,13 +93,13 @@ func (l *Logger) SetLogLevel(lvl int32) {
 	l.level = lvl
 }
 
-func (l *Logger) SetLogLayout(layout string) {
-	if l == nil && l != default_logger {
-		default_logger.SetLogLayout(layout)
-		return
-	}
-	l.layout = layout
-}
+// func (l *Logger) SetLogLayout(layout string) {
+// 	if l == nil && l != default_logger {
+// 		default_logger.SetLogLayout(layout)
+// 		return
+// 	}
+// 	l.layout = layout
+// }
 
 func (l *Logger) SetTopic(topic string) {
 	if l == nil || l == default_logger {
@@ -164,14 +127,6 @@ func (l *Logger) Error(fmt string, args ...interface{}) {
 
 func (l *Logger) Fatal(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(FATAL, fmt, args...)
-}
-
-func (l *Logger) CloseLogger() {
-	if l == nil && l != default_logger {
-		default_logger.CloseLogger()
-		return
-	}
-	l.logWriter.close()
 }
 
 func (l *Logger) deliverRecordToWriter(level int32, format string, args ...interface{}) {

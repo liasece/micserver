@@ -6,14 +6,14 @@ import (
 	"time"
 )
 
-type logWriter struct {
+type LogWriter struct {
 	writers  []Writer
 	tunnel   chan *Record
 	c        chan bool
 	stopchan chan struct{}
 }
 
-func (this *logWriter) Init() {
+func (this *LogWriter) Init() {
 	this.writers = make([]Writer, 0, 2)
 	this.tunnel = make(chan *Record, tunnel_size_default)
 	this.stopchan = make(chan struct{})
@@ -22,7 +22,7 @@ func (this *logWriter) Init() {
 	go this.boostrapLogWriter()
 }
 
-func (this *logWriter) addLogFile(filename string, redirecterr bool) {
+func (this *LogWriter) AddLogFile(filename string, redirecterr bool) {
 	//	fmt.Printf("log filename,%s \n", filename)
 	filebasename := filename
 	filename += ".%Y%M%D-%H"
@@ -36,7 +36,7 @@ func (this *logWriter) addLogFile(filename string, redirecterr bool) {
 	this.registerLogWriter(w)
 }
 
-func (this *logWriter) changeLogFile(filename string) {
+func (this *LogWriter) ChangeLogFile(filename string) {
 	filebasename := filename
 	filename += ".%Y%M%D-%H"
 	for i := 0; i < len(this.writers); i++ {
@@ -54,7 +54,7 @@ func (this *logWriter) changeLogFile(filename string) {
 	}
 }
 
-func (this *logWriter) removeConsoleLog() {
+func (this *LogWriter) RemoveConsoleLog() {
 	newlist := make([]Writer, 0, 2)
 	for i := 0; i < len(this.writers); i++ {
 		w := this.writers[i]
@@ -66,14 +66,14 @@ func (this *logWriter) removeConsoleLog() {
 	this.writers = newlist
 }
 
-func (this *logWriter) registerLogWriter(w Writer) {
+func (this *LogWriter) registerLogWriter(w Writer) {
 	if err := w.Init(); err != nil {
 		panic(err)
 	}
 	this.writers = append(this.writers, w)
 }
 
-func (this *logWriter) close() {
+func (this *LogWriter) Close() {
 	select {
 	case <-this.stopchan:
 		return
@@ -96,7 +96,7 @@ func (this *logWriter) close() {
 	}
 }
 
-func (this *logWriter) write(r *Record) {
+func (this *LogWriter) write(r *Record) {
 	select {
 	case <-this.stopchan:
 		return
@@ -110,7 +110,7 @@ func (this *logWriter) write(r *Record) {
 	}
 }
 
-func (this *logWriter) boostrapLogWriter() {
+func (this *LogWriter) boostrapLogWriter() {
 	var (
 		r  *Record
 		ok bool

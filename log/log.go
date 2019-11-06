@@ -52,18 +52,6 @@ var (
 	takeup         = false
 )
 
-func SetLevel(lvl int32) {
-	default_logger.level = lvl
-}
-
-func GetLevel() int32 {
-	return default_logger.level
-}
-
-func SetLayout(layout string) {
-	default_logger.layout = layout
-}
-
 func Debug(fmt string, args ...interface{}) {
 	default_logger.deliverRecordToWriter(DEBUG, fmt, args...)
 }
@@ -84,13 +72,9 @@ func Fatal(fmt string, args ...interface{}) {
 	default_logger.deliverRecordToWriter(FATAL, fmt, args...)
 }
 
-func CloseLogger() {
-	default_logger.CloseLogger()
-}
-
 func SetDefaultLogger(l *Logger) {
 	if l != default_logger {
-		default_logger.CloseLogger()
+		default_logger.GetLogWriter().Close()
 		default_logger = l
 	}
 }
@@ -105,24 +89,4 @@ func init() {
 		return &Record{}
 	}}
 	default_logger.SetLogName("log")
-}
-
-func SetLogName(logname string) {
-	default_logger.logname = logname
-}
-
-func SetLogLevel(loglevel string) {
-	default_logger.SetLogLevelByStr(loglevel)
-}
-
-func AddLogFile(filename string, redirecterr bool) {
-	default_logger.AddLogFile(filename, redirecterr)
-}
-
-func ChangeLogFile(filename string) {
-	default_logger.ChangeLogFile(filename)
-}
-
-func RemoveConsoleLog() {
-	default_logger.RemoveConsoleLog()
 }
