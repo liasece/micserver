@@ -9,6 +9,7 @@ import (
 type ROCManager struct {
 	rocs      sync.Map
 	onfRegObj func(IObj)
+	onfDelObj func(IObj)
 }
 
 func (this *ROCManager) NewObjectType(objtype string) {
@@ -17,6 +18,7 @@ func (this *ROCManager) NewObjectType(objtype string) {
 	if !isLoad {
 		newroc.Init()
 		newroc.RegOnRegObj(this.onRegROCObj)
+		newroc.RegOnDelObj(this.onDelROCObj)
 	}
 }
 
@@ -27,6 +29,16 @@ func (this *ROCManager) RegOnRegObj(cb func(IObj)) {
 func (this *ROCManager) onRegROCObj(obj IObj) {
 	if this.onfRegObj != nil {
 		this.onfRegObj(obj)
+	}
+}
+
+func (this *ROCManager) RegOnDelObj(cb func(IObj)) {
+	this.onfDelObj = cb
+}
+
+func (this *ROCManager) onDelROCObj(obj IObj) {
+	if this.onfDelObj != nil {
+		this.onfDelObj(obj)
 	}
 }
 

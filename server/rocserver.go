@@ -55,6 +55,7 @@ func (this *ROCServer) Init(server *Server) {
 	this.rocDelCacheChan = make(chan roc.IObj, 10000)
 	go this.rocObjNoticeProcess()
 	this.ROCManager.RegOnRegObj(this.onRegROCObj)
+	this.ROCManager.RegOnDelObj(this.onDelROCObj)
 
 	this.rocRequestChan = make(chan *requestAgent, 10000)
 	go this.rocRequestProcess()
