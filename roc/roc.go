@@ -11,31 +11,26 @@ const (
 
 type ROC struct {
 	objPool   pool.MapPool
-	onfRegObj func(IObj)
-	onfDelObj func(IObj)
+	eventHook IROCObjEventHook
 }
 
 func (this *ROC) Init() {
 	this.objPool.Init(ROC_POOL_GROUP_SUM)
 }
 
-func (this *ROC) RegOnRegObj(cb func(IObj)) {
-	this.onfRegObj = cb
+func (this *ROC) HookObjEvent(hook IROCObjEventHook) {
+	this.eventHook = hook
 }
 
 func (this *ROC) onRegObj(obj IObj) {
-	if this.onfRegObj != nil {
-		this.onfRegObj(obj)
+	if this.eventHook != nil {
+		this.eventHook.OnROCObjAdd(obj)
 	}
 }
 
-func (this *ROC) RegOnDelObj(cb func(IObj)) {
-	this.onfDelObj = cb
-}
-
 func (this *ROC) onDelObj(obj IObj) {
-	if this.onfDelObj != nil {
-		this.onfDelObj(obj)
+	if this.eventHook != nil {
+		this.eventHook.OnROCObjDel(obj)
 	}
 }
 

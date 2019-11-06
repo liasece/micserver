@@ -54,8 +54,7 @@ func (this *ROCServer) Init(server *Server) {
 	this.rocAddCacheChan = make(chan roc.IObj, 10000)
 	this.rocDelCacheChan = make(chan roc.IObj, 10000)
 	go this.rocObjNoticeProcess()
-	this.ROCManager.RegOnRegObj(this.onRegROCObj)
-	this.ROCManager.RegOnDelObj(this.onDelROCObj)
+	this.ROCManager.HookObjEvent(this)
 
 	this.rocRequestChan = make(chan *requestAgent, 10000)
 	go this.rocRequestProcess()
@@ -219,22 +218,22 @@ func (this *ROCServer) rocResponseProcess() {
 }
 
 // 当ROC对象发生注册行为时
-func (this *ROCServer) onRegROCObj(obj roc.IObj) {
+func (this *ROCServer) OnROCObjAdd(obj roc.IObj) {
 	// 保存本地映射缓存
 	roc.GetCache().Set(obj.GetObjType(), obj.GetObjID(),
 		this.server.serverid)
-	this.Debug("onRegROCObj roc cache set type[%s] "+
+	this.Debug("OnROCObjAdd roc cache set type[%s] "+
 		"id[%s] host[%s]",
 		obj.GetObjType(), obj.GetObjID(), this.server.serverid)
 	this.rocAddCacheChan <- obj
 }
 
 // 当ROC对象发生注册行为时
-func (this *ROCServer) onDelROCObj(obj roc.IObj) {
+func (this *ROCServer) OnROCObjDel(obj roc.IObj) {
 	// 保存本地映射缓存
 	roc.GetCache().Del(obj.GetObjType(), obj.GetObjID(),
 		this.server.serverid)
-	this.Debug("onRegROCObj roc cache del type[%s] "+
+	this.Debug("OnROCObjDel roc cache del type[%s] "+
 		"id[%s] host[%s]",
 		obj.GetObjType(), obj.GetObjID(), this.server.serverid)
 	this.rocDelCacheChan <- obj

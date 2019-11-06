@@ -5,3 +5,8 @@ type IObj interface {
 	GetObjID() string
 	ROCCall(*ROCPath, []byte) ([]byte, error)
 }
+
+type IROCObjEventHook interface {
+	OnROCObjAdd(IObj)
+	OnROCObjDel(IObj)
+}
