@@ -84,7 +84,7 @@ func GetDefaultLogger() *Logger {
 }
 
 func init() {
-	default_logger = NewLogger(nil)
+	default_logger = NewLogger(false, "")
 	recordPool = &sync.Pool{New: func() interface{} {
 		return &Record{}
 	}}

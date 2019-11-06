@@ -2,7 +2,6 @@ package log
 
 import (
 	"fmt"
-	"path/filepath"
 	"time"
 )
 
@@ -16,31 +15,20 @@ type Logger struct {
 	topic       string
 }
 
-func NewLogger(settings map[string]string) *Logger {
+func NewLogger(isDaemon bool, logFilePath string) *Logger {
 	l := new(Logger)
 	l.level = DEBUG
 	l.layout = "060102-15:04:05"
 	l.logWriter = &LogWriter{}
 	l.logWriter.Init()
 
-	isDaemon := false
-	if v, ok := settings["isdaemon"]; ok {
-		if v == "true" {
-			isDaemon = true
-		}
-	}
-	logfilename := ""
-	if v, ok := settings["logfilename"]; ok {
-		logfilename = v
-	}
-	if v, ok := settings["logpath"]; ok && len(logfilename) != 0 {
-		logfile := filepath.Join(v, logfilename)
+	if len(logFilePath) != 0 {
 		if isDaemon {
-			l.logWriter.AddLogFile(logfile, true)
+			l.logWriter.AddLogFile(logFilePath, true)
 			l.logWriter.RemoveConsoleLog()
 		} else {
 			// 默认走控制台
-			l.logWriter.AddLogFile(logfile, false)
+			l.logWriter.AddLogFile(logFilePath, false)
 			w := NewConsoleWriter()
 			w.SetColor(true)
 			l.logWriter.registerLogWriter(w)

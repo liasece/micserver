@@ -43,8 +43,9 @@ func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 	this.isStoped = make(chan struct{})
 	this.Configer = configer
 	if this.Configer.AppConfig.HasSetting("logpath") {
-		this.Configer.AppConfig.AppSettings["logfilename"] = "app.log"
-		this.Logger = log.NewLogger(this.Configer.AppConfig.AppSettings)
+		setting := this.Configer.AppConfig.AppSettings
+		this.Logger = log.NewLogger(setting["isdaemon"] == "true",
+			setting["logpath"])
 		log.SetDefaultLogger(this.Logger)
 		this.Logger.SetLogName("app")
 	} else {

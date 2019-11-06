@@ -42,7 +42,9 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.Configer = &configer
 	// 初始化logger
 	if this.Configer.HasSetting("logpath") {
-		this.Logger = log.NewLogger(this.Configer.GetModuleSettingMap())
+		setting := this.Configer.GetModuleSettingMap()
+		this.Logger = log.NewLogger(setting["isdaemon"] == "true",
+			setting["logpath"])
 		this.SetLogName(this.moduleID)
 	} else {
 		this.Logger = log.GetDefaultLogger().Clone()
