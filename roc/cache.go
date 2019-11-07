@@ -17,7 +17,7 @@ type serverInfoMap map[string]*catchServerInfo
 type Cache struct {
 	catchServer serverInfoMap
 	catchType   map[string]serverInfoMap
-	mutex       sync.RWMutex
+	mutex       sync.Mutex
 }
 
 var _gCache Cache
@@ -97,8 +97,8 @@ func (this *Cache) DelM(objType string, objIDs []string, serverid string) {
 }
 
 func (this *Cache) Get(objType string, objID string) string {
-	this.mutex.RLock()
-	defer this.mutex.RUnlock()
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
 
 	m := this.catchGetTypeMust(objType)
 	if v, ok := m[objID]; ok && v != nil {

@@ -18,6 +18,8 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	this.connectMutex.Lock()
 	defer this.connectMutex.Unlock()
 
+	this.Debug("收到登陆请求 Server:%s", tarinfo.ServerID)
+
 	// 来源服务器请求登陆本服务器
 	myconn := this.GetServer(fmt.Sprint(tarinfo.ServerID))
 	if myconn != nil {
@@ -36,11 +38,6 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 			this.Debug("[SubNetManager.OnServerLogin] "+
 				"收到了重复的Server连接请求 Msg[%s]",
 				tarinfo.GetJson())
-			conn.IsNormalDisconnect = true
-			retmsg := &servercomm.SLoginRetCommand{}
-			retmsg.Loginfailed = servercomm.LOGINRETCODE_IDENTICAL
-			conn.SendCmd(retmsg)
-			conn.Terminate()
 			return
 		}
 	}
@@ -64,6 +61,10 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 		conn.Terminate()
 		return
 	}
+	this.Debug("[SubNetManager.OnServerLogin] "+
+		"客户端连接验证成功 "+
+		" SerID[%s] IP[%s]",
+		serverInfo.ServerID, serverInfo.ServerAddr)
 
 	serverInfo.Version = tarinfo.Version
 
@@ -73,10 +74,6 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	conn.ServerInfo = serverInfo
 	conn.SetVertify(true)
 	conn.SetTerminateTime(0) // 清除终止时间状态
-	this.Debug("[SubNetManager.OnServerLogin] "+
-		"客户端连接验证成功 "+
-		" SerID[%s] IP[%s]",
-		serverInfo.ServerID, serverInfo.ServerAddr)
 	// 向来源服务器回复登陆成功消息
 	retmsg := &servercomm.SLoginRetCommand{}
 	retmsg.Loginfailed = 0
@@ -209,37 +206,50 @@ func (this *SubnetManager) mChanServerListener(
 			remoteChan := process.GetServerChan(newinfo.ServerInfo.ServerID)
 			if remoteChan != nil {
 				if newinfo.Seq == 0 {
-					// 请求开始
-					newMsgChan := make(chan *msg.MessageBinary, 1000)
-					remoteChan <- &process.ChanServerHandshake{
-						ServerInfo:    this.myServerInfo,
-						ServerMsgChan: newMsgChan,
-						ClientMsgChan: newinfo.ClientMsgChan,
-						Seq:           newinfo.Seq + 1,
+					this.connectMutex.Lock()
+					oldconn := this.GetServer(newinfo.ServerInfo.ServerID)
+					// 重复连接
+					if oldconn != nil {
+						this.Debug("[SubnetManager.mChanServerListener] "+
+							"ServerID[%s] 重复的连接", newinfo.ServerInfo.ServerID)
+					} else {
+						// 请求开始
+						newMsgChan := make(chan *msg.MessageBinary, 1000)
+						remoteChan <- &process.ChanServerHandshake{
+							ServerInfo:    this.myServerInfo,
+							ServerMsgChan: newMsgChan,
+							ClientMsgChan: newinfo.ClientMsgChan,
+							Seq:           newinfo.Seq + 1,
+						}
+						this.Debug("[SubNetManager.mChanServerListener] "+
+							"收到新的 ServerChan 连接 ServerID[%s]",
+							newinfo.ServerInfo.ServerID)
+						// 建立本地通信Server对象
+						conn := this.NewChanServer(connect.ServerSCTypeTask,
+							newinfo.ClientMsgChan, newMsgChan, "",
+							this.onConnectRecv, this.onConnectClose)
+						conn.Logger = this.Logger
+						this.OnCreateNewServer(conn)
 					}
-					// 建立本地通信Server对象
-					conn := this.NewChanServer(connect.ServerSCTypeTask,
-						newinfo.ClientMsgChan, newMsgChan, "",
-						this.onConnectRecv, this.onConnectClose)
-					conn.Logger = this.Logger
-					this.OnCreateNewServer(conn)
-					this.Debug("[SubNetManager.mChanServerListener] "+
-						"收到新的 ServerChan 连接 ServerID[%s]",
-						newinfo.ServerInfo.ServerID)
+					this.connectMutex.Unlock()
 				} else if newinfo.Seq == 1 {
-					// 请求回复
-					// 建立本地通信Server对象
-					conn := this.NewChanServer(connect.ServerSCTypeClient,
-						newinfo.ServerMsgChan, newinfo.ClientMsgChan,
-						newinfo.ServerInfo.ServerID,
-						this.onConnectRecv, this.onConnectClose)
-					conn.Logger = this.Logger
-					this.OnCreateNewServer(conn)
-					// 发起登录
-					this.onClientConnected(conn)
-					this.Debug("[SubNetManager.mChanServerListener] "+
-						"收到 ServerChan 连接请求回复 ServerID[%s]",
-						newinfo.ServerInfo.ServerID)
+					this.connectMutex.Lock()
+					oldconn := this.GetServer(newinfo.ServerInfo.ServerID)
+					// 重复连接
+					if oldconn != nil {
+						this.Debug("[SubnetManager.mChanServerListener] "+
+							"ServerID[%s] 重复的连接", newinfo.ServerInfo.ServerID)
+					} else {
+						// 请求回复
+						this.Debug("[SubNetManager.mChanServerListener] "+
+							"收到 ServerChan 连接请求回复 ServerID[%s]",
+							newinfo.ServerInfo.ServerID)
+						// 建立本地通信Server对象
+						this.doConnectChanServer(
+							newinfo.ServerMsgChan, newinfo.ClientMsgChan,
+							newinfo.ServerInfo.ServerID)
+					}
+					this.connectMutex.Unlock()
 				}
 			}
 		}

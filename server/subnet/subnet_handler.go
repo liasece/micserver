@@ -94,11 +94,11 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 			conn.Terminate()
 			if recvmsg.Loginfailed == servercomm.LOGINRETCODE_IDENTICAL {
 				conn.IsNormalDisconnect = true
-				this.Debug("[SubnetManager.msgParseTCPConn] " +
-					"重复连接,不必连接")
+				this.Debug("[SubnetManager.msgParseTCPConn] "+
+					"重复连接,不必连接 TmpID[%s]", conn.GetTempID())
 			} else {
-				this.Error("[SubnetManager.msgParseTCPConn] " +
-					"连接验证失败,断开连接")
+				this.Error("[SubnetManager.msgParseTCPConn] "+
+					"连接验证失败,断开连接 TmpID[%s]", conn.GetTempID())
 			}
 			return
 		}

@@ -83,9 +83,9 @@ func (this *SubnetManager) ConnectServer(id string,
 			"ServerID[%s] 重复的连接", id)
 		return errors.New("重复连接")
 	}
-	this.Debug("[SubnetManager.ConnectServer] "+
-		"服务器连接创建地址开始 ServerID[%s] ServerIPPort[%s]",
-		id, addr)
+	// this.Debug("[SubnetManager.ConnectServer] "+
+	// 	"服务器连接创建地址开始 ServerID[%s] ServerIPPort[%s]",
+	// 	id, addr)
 	if chanServer := process.GetServerChan(id); chanServer != nil {
 		newMsgChan := make(chan *msg.MessageBinary, 1000)
 		chanServer <- &process.ChanServerHandshake{
@@ -102,26 +102,44 @@ func (this *SubnetManager) ConnectServer(id string,
 				addr, err.Error())
 			return err
 		}
-		Conn, err := net.DialTCP("tcp", nil, tcpaddr)
+		netconn, err := net.DialTCP("tcp", nil, tcpaddr)
 		if err != nil {
 			this.Error("[SubnetManager.ConnectServer] "+
 				"服务器连接失败 ServerIPPort[%s] Err[%s]",
 				addr, err.Error())
 			return err
 		}
-		conn := this.NewTCPServer(connect.ServerSCTypeClient, Conn, id,
-			this.onConnectRecv, this.onConnectClose)
-		conn.Logger = this.Logger
-		this.OnCreateNewServer(conn)
-		// 发起登录
-		this.onClientConnected(conn)
+		this.doConnectTCPServer(netconn, id)
 	}
 
-	this.Debug("[SubnetManager.ConnectServer] "+
-		"开始连接服务器 ServerID[%s] IPPort[%s]", id,
-		addr)
+	// this.Debug("[SubnetManager.ConnectServer] "+
+	// 	"开始连接服务器 ServerID[%s] IPPort[%s]", id,
+	// 	addr)
 
 	return nil
+}
+
+// 使用一个TCP连接实际连接一个服务器
+func (this *SubnetManager) doConnectTCPServer(netconn net.Conn, id string) {
+	this.Debug("开始登陆TCP服务器 Server:%s", id)
+	conn := this.NewTCPServer(connect.ServerSCTypeClient, netconn, id,
+		this.onConnectRecv, this.onConnectClose)
+	conn.Logger = this.Logger
+	this.OnCreateNewServer(conn)
+	// 发起登录
+	this.onClientConnected(conn)
+}
+
+// 使用一个本地连接实际连接一个服务器
+func (this *SubnetManager) doConnectChanServer(
+	sendchan, recvchan chan *msg.MessageBinary, id string) {
+	this.Debug("开始登陆Chan服务器 Server:%s", id)
+	conn := this.NewChanServer(connect.ServerSCTypeClient, sendchan, recvchan, id,
+		this.onConnectRecv, this.onConnectClose)
+	conn.Logger = this.Logger
+	this.OnCreateNewServer(conn)
+	// 发起登录
+	this.onClientConnected(conn)
 }
 
 func (this *SubnetManager) onClientConnected(conn *connect.Server) {
@@ -133,6 +151,7 @@ func (this *SubnetManager) onClientConnected(conn *connect.Server) {
 	sendmsg.ConnectPriority = conn.ConnectPriority
 	// 发送登陆请求
 	conn.SendCmd(sendmsg)
+	this.Debug("请求登陆 Server:%s", conn.GetTempID())
 }
 
 func (this *SubnetManager) onClientDisconnected(conn *connect.Server) {
