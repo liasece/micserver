@@ -42,10 +42,10 @@ func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 	process.AddApp(this)
 	this.isStoped = make(chan struct{})
 	this.Configer = configer
-	if this.Configer.AppConfig.HasSetting("logpath") {
-		setting := this.Configer.AppConfig.AppSettings
-		this.Logger = log.NewLogger(setting["isdaemon"] == "true",
-			setting["logpath"])
+	if this.Configer.AppConfig.Exist(conf.LogWholePath) {
+		setting := this.Configer.AppConfig
+		this.Logger = log.NewLogger(setting.GetBool(conf.IsDaemon),
+			setting.GetString(conf.LogWholePath))
 		log.SetDefaultLogger(this.Logger)
 		this.Logger.SetLogName("app")
 	} else {

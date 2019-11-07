@@ -15,6 +15,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/process"
@@ -128,7 +129,7 @@ func (this *SubnetManager) onClientConnected(conn *connect.Server) {
 	// 构造登陆消息
 	sendmsg := &servercomm.SLoginCommand{}
 	sendmsg.ServerID = this.myServerInfo.ServerID
-	sendmsg.ServerAddr = this.moudleConf.GetModuleSetting("subnettcpaddr")
+	sendmsg.ServerAddr = this.moudleConf.GetString(conf.SubnetTCPAddr)
 	sendmsg.ConnectPriority = conn.ConnectPriority
 	// 发送登陆请求
 	conn.SendCmd(sendmsg)

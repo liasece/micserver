@@ -139,19 +139,13 @@ func (this *TopConfig) InitParse() {
 	}
 	if cmdLineArgv != nil {
 		if v, ok := cmdLineArgv["isdaemon"]; ok {
-			if this.AppConfig.AppSettings != nil {
-				this.AppConfig.AppSettings["isdaemon"] = v
-			}
+			this.AppConfig.Set(IsDaemon, v)
 		}
 		if v, ok := cmdLineArgv["logpath"]; ok {
-			if this.AppConfig.AppSettings != nil {
-				this.AppConfig.AppSettings["logpath"] = v
-			}
+			this.AppConfig.Set(LogWholePath, v)
 		}
 		if v, ok := cmdLineArgv["processid"]; ok {
-			if this.AppConfig.AppSettings != nil {
-				this.AppConfig.AppSettings["processid"] = v
-			}
+			this.AppConfig.Set(ProcessID, v)
 			if v != "development" {
 				this.argvModuleList = strings.Split(v, ",")
 			}
@@ -162,9 +156,7 @@ func (this *TopConfig) InitParse() {
 			if err == nil {
 				this.Version = tint
 			}
-			if this.AppConfig.AppSettings != nil {
-				this.AppConfig.AppSettings["version"] = v
-			}
+			this.AppConfig.Set(Version, v)
 		}
 	}
 }

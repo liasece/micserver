@@ -41,10 +41,9 @@ type BaseModule struct {
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.Configer = &configer
 	// 初始化logger
-	if this.Configer.HasSetting("logpath") {
-		setting := this.Configer.GetModuleSettingMap()
-		this.Logger = log.NewLogger(setting["isdaemon"] == "true",
-			setting["logpath"])
+	if this.Configer.Exist(conf.LogWholePath) {
+		this.Logger = log.NewLogger(this.Configer.GetBool(conf.IsDaemon),
+			this.Configer.GetString(conf.LogWholePath))
 		this.SetLogName(this.moduleID)
 	} else {
 		this.Logger = log.GetDefaultLogger().Clone()
@@ -56,7 +55,7 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.Server.InitSubnet(this.Configer)
 
 	// gateway初始化
-	if gateaddr := this.Configer.GetModuleSetting("gatetcpaddr"); gateaddr != "" {
+	if gateaddr := this.Configer.GetString(conf.GateTCPAddr); gateaddr != "" {
 		this.Server.InitGate(gateaddr)
 	}
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/process"
@@ -92,11 +93,11 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	this.BroadcastCmd(notifymsg)
 }
 
-func (this *SubnetManager) BindTCPSubnet(settings map[string]string) error {
-	addr, hasconf := settings["subnettcpaddr"]
-	if !hasconf {
+func (this *SubnetManager) BindTCPSubnet(settings *conf.ModuleConfig) error {
+	if !settings.Exist(conf.SubnetTCPAddr) {
 		return fmt.Errorf("subnettcpaddr hasn't set.")
 	}
+	addr := settings.GetString(conf.SubnetTCPAddr)
 	// init tcp subnet port
 	netlisten, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -158,9 +159,9 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 
 // Local chan server init
 
-func (this *SubnetManager) BindChanSubnet(settings map[string]string) error {
-	nochan, hasconf := settings["subnetnochan"]
-	if hasconf && nochan == "true" {
+func (this *SubnetManager) BindChanSubnet(settings *conf.ModuleConfig) error {
+	nochan := settings.GetBool(conf.SubnetNoChan)
+	if nochan {
 		return nil
 	}
 	serverChan := make(chan *process.ChanServerHandshake, 1000)

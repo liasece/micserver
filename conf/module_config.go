@@ -1,66 +1,82 @@
 package conf
 
+import (
+	"github.com/liasece/micserver/util/conv"
+)
+
 type ModuleConfig struct {
-	ID          string            `json:"id"`
-	Settings    map[string]string `json:"settings"`
-	AppSettings map[string]string `json:"-"`
+	ID          string      `json:"id"`
+	Settings    *BaseConfig `json:"settings"`
+	AppSettings *BaseConfig `json:"-"`
 }
 
-func (this *ModuleConfig) HasModuleSetting(key string) bool {
-	if this.Settings == nil {
-		return false
+func (this *ModuleConfig) HasModuleSetting(key ConfigKey) bool {
+	return this.Settings.Exist(key)
+}
+
+func (this *ModuleConfig) get(key ConfigKey) interface{} {
+	if this.Settings.Exist(key) {
+		return this.Settings.Get(key)
 	}
-	if _, ok := this.Settings[key]; ok {
+	if this.AppSettings.Exist(key) {
+		return this.AppSettings.Get(key)
+	}
+	return nil
+}
+
+func (this *ModuleConfig) exist(key ConfigKey) bool {
+	if this.Settings.Exist(key) {
+		return true
+	}
+	if this.AppSettings.Exist(key) {
 		return true
 	}
 	return false
 }
 
-func (this *ModuleConfig) GetModuleSetting(key string) string {
-	if this.Settings == nil {
+func (this *ModuleConfig) Exist(key ConfigKey) bool {
+	if this == nil {
+		return false
+	}
+	return this.exist(key)
+}
+
+func (this *ModuleConfig) Get(key ConfigKey) interface{} {
+	if this == nil {
+		return nil
+	}
+	return this.get(key)
+}
+
+func (this *ModuleConfig) GetBool(key ConfigKey) bool {
+	if this == nil {
+		return false
+	}
+	v := this.get(key)
+	if v == nil {
+		return false
+	}
+	return conv.MustInterfaceToBool(v)
+}
+
+func (this *ModuleConfig) GetString(key ConfigKey) string {
+	if this == nil {
 		return ""
 	}
-	if v, ok := this.Settings[key]; ok {
-		return v
+	v := this.get(key)
+	if v == nil {
+		return ""
 	}
-	return ""
+	return conv.MustInterfaceToString(v)
 }
 
-func (this *ModuleConfig) GetModuleSettingMap() map[string]string {
-	res := make(map[string]string)
-	for k, v := range this.AppSettings {
-		res[k] = v
+func (this *ModuleConfig) GetInt64(key ConfigKey) int64 {
+	if this == nil {
+		return 0
 	}
-	for k, v := range this.Settings {
-		res[k] = v
+	v := this.get(key)
+	if v == nil {
+		return 0
 	}
-	return res
-}
-
-func (this *ModuleConfig) HasSetting(key string) bool {
-	if this.Settings != nil {
-		if _, ok := this.Settings[key]; ok {
-			return true
-		}
-	}
-	if this.AppSettings != nil {
-		if _, ok := this.AppSettings[key]; ok {
-			return true
-		}
-	}
-	return false
-}
-
-func (this *ModuleConfig) GetSetting(key string) string {
-	if this.Settings != nil {
-		if v, ok := this.Settings[key]; ok {
-			return v
-		}
-	}
-	if this.AppSettings != nil {
-		if v, ok := this.AppSettings[key]; ok {
-			return v
-		}
-	}
-	return ""
+	return conv.MustInterfaceToInt64(v)
 }

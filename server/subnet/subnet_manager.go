@@ -45,7 +45,7 @@ func (this *SubnetManager) Init(moudleConf *conf.ModuleConfig) {
 	this.moudleConf = moudleConf
 	this.ServerPool.Logger = this.Logger
 	// 初始化消息处理队列
-	if msgthreadnumstr := moudleConf.GetSetting("msgthreadnum"); msgthreadnumstr != "" {
+	if msgthreadnumstr := moudleConf.GetString(conf.MsgThreadNum); msgthreadnumstr != "" {
 		msgthreadnum, err := strconv.Atoi(msgthreadnumstr)
 		if err == nil {
 			this.InitMsgQueue(int32(msgthreadnum))
@@ -55,8 +55,8 @@ func (this *SubnetManager) Init(moudleConf *conf.ModuleConfig) {
 	this.myServerInfo.ServerID = this.moudleConf.ID
 	this.connInfos.Logger = this.Logger
 	// 初始化连接
-	this.BindTCPSubnet(this.moudleConf.Settings)
-	this.BindChanSubnet(this.moudleConf.Settings)
+	this.BindTCPSubnet(this.moudleConf)
+	this.BindChanSubnet(this.moudleConf)
 }
 
 func (this *SubnetManager) HookSubnet(subnetHook base.SubnetHook) {
