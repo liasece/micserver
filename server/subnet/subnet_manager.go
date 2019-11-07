@@ -1,7 +1,6 @@
 package subnet
 
 import (
-	"strconv"
 	"sync"
 
 	"github.com/liasece/micserver/conf"
@@ -45,12 +44,7 @@ func (this *SubnetManager) Init(moudleConf *conf.ModuleConfig) {
 	this.moudleConf = moudleConf
 	this.ServerPool.Logger = this.Logger
 	// 初始化消息处理队列
-	if msgthreadnumstr := moudleConf.GetString(conf.MsgThreadNum); msgthreadnumstr != "" {
-		msgthreadnum, err := strconv.Atoi(msgthreadnumstr)
-		if err == nil {
-			this.InitMsgQueue(int32(msgthreadnum))
-		}
-	}
+	this.InitMsgQueue(int32(moudleConf.GetInt64(conf.MsgThreadNum)))
 	// 我的服务器信息
 	this.myServerInfo.ServerID = this.moudleConf.ID
 	this.connInfos.Logger = this.Logger
