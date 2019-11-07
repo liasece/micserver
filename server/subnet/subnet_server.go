@@ -203,55 +203,60 @@ func (this *SubnetManager) mChanServerListener(
 			if !ok {
 				break
 			}
-			remoteChan := process.GetServerChan(newinfo.ServerInfo.ServerID)
-			if remoteChan != nil {
-				if newinfo.Seq == 0 {
-					this.connectMutex.Lock()
-					oldconn := this.GetServer(newinfo.ServerInfo.ServerID)
-					// 重复连接
-					if oldconn != nil {
-						this.Debug("[SubnetManager.mChanServerListener] "+
-							"ServerID[%s] 重复的连接", newinfo.ServerInfo.ServerID)
-					} else {
-						// 请求开始
-						newMsgChan := make(chan *msg.MessageBinary, 1000)
-						remoteChan <- &process.ChanServerHandshake{
-							ServerInfo:    this.myServerInfo,
-							ServerMsgChan: newMsgChan,
-							ClientMsgChan: newinfo.ClientMsgChan,
-							Seq:           newinfo.Seq + 1,
-						}
-						this.Debug("[SubNetManager.mChanServerListener] "+
-							"收到新的 ServerChan 连接 ServerID[%s]",
-							newinfo.ServerInfo.ServerID)
-						// 建立本地通信Server对象
-						conn := this.NewChanServer(connect.ServerSCTypeTask,
-							newinfo.ClientMsgChan, newMsgChan, "",
-							this.onConnectRecv, this.onConnectClose)
-						conn.Logger = this.Logger
-						this.OnCreateNewServer(conn)
-					}
-					this.connectMutex.Unlock()
-				} else if newinfo.Seq == 1 {
-					this.connectMutex.Lock()
-					oldconn := this.GetServer(newinfo.ServerInfo.ServerID)
-					// 重复连接
-					if oldconn != nil {
-						this.Debug("[SubnetManager.mChanServerListener] "+
-							"ServerID[%s] 重复的连接", newinfo.ServerInfo.ServerID)
-					} else {
-						// 请求回复
-						this.Debug("[SubNetManager.mChanServerListener] "+
-							"收到 ServerChan 连接请求回复 ServerID[%s]",
-							newinfo.ServerInfo.ServerID)
-						// 建立本地通信Server对象
-						this.doConnectChanServer(
-							newinfo.ServerMsgChan, newinfo.ClientMsgChan,
-							newinfo.ServerInfo.ServerID)
-					}
-					this.connectMutex.Unlock()
+			this.processChanServerRequest(newinfo)
+		}
+	}
+}
+
+func (this *SubnetManager) processChanServerRequest(
+	newinfo *process.ChanServerHandshake) {
+	remoteChan := process.GetServerChan(newinfo.ServerInfo.ServerID)
+	if remoteChan != nil {
+		if newinfo.Seq == 0 {
+			this.connectMutex.Lock()
+			oldconn := this.GetServer(newinfo.ServerInfo.ServerID)
+			// 重复连接
+			if oldconn != nil {
+				this.Debug("[SubnetManager.mChanServerListener] "+
+					"ServerID[%s] 重复的连接", newinfo.ServerInfo.ServerID)
+			} else {
+				// 请求开始
+				newMsgChan := make(chan *msg.MessageBinary, 1000)
+				remoteChan <- &process.ChanServerHandshake{
+					ServerInfo:    this.myServerInfo,
+					ServerMsgChan: newMsgChan,
+					ClientMsgChan: newinfo.ClientMsgChan,
+					Seq:           newinfo.Seq + 1,
 				}
+				this.Debug("[SubNetManager.mChanServerListener] "+
+					"收到新的 ServerChan 连接 ServerID[%s]",
+					newinfo.ServerInfo.ServerID)
+				// 建立本地通信Server对象
+				conn := this.NewChanServer(connect.ServerSCTypeTask,
+					newinfo.ClientMsgChan, newMsgChan, "",
+					this.onConnectRecv, this.onConnectClose)
+				conn.Logger = this.Logger
+				this.OnCreateNewServer(conn)
 			}
+			this.connectMutex.Unlock()
+		} else if newinfo.Seq == 1 {
+			this.connectMutex.Lock()
+			oldconn := this.GetServer(newinfo.ServerInfo.ServerID)
+			// 重复连接
+			if oldconn != nil {
+				this.Debug("[SubnetManager.mChanServerListener] "+
+					"ServerID[%s] 重复的连接", newinfo.ServerInfo.ServerID)
+			} else {
+				// 请求回复
+				this.Debug("[SubNetManager.mChanServerListener] "+
+					"收到 ServerChan 连接请求回复 ServerID[%s]",
+					newinfo.ServerInfo.ServerID)
+				// 建立本地通信Server对象
+				this.doConnectChanServer(
+					newinfo.ServerMsgChan, newinfo.ClientMsgChan,
+					newinfo.ServerInfo.ServerID)
+			}
+			this.connectMutex.Unlock()
 		}
 	}
 }
