@@ -20,9 +20,9 @@ type MessageBinaryHeadL1 struct {
 }
 
 func (this *MessageBinaryHeadL1) WriteBinary(data []byte) (size int) {
-	binary.BigEndian.PutUint32(data[size:], this.CmdLen) // 4
+	binary.LittleEndian.PutUint32(data[size:], this.CmdLen) // 4
 	size += 4
-	binary.BigEndian.PutUint16(data[size:], this.CmdID) // 2
+	binary.LittleEndian.PutUint16(data[size:], this.CmdID) // 2
 	size += 2
 
 	return
@@ -33,10 +33,10 @@ func (this *MessageBinaryHeadL1) ReadBinary(data []byte) (int, error) {
 		return 0, fmt.Errorf("data not enough")
 	}
 	size := 0
-	this.CmdLen = binary.BigEndian.Uint32(data[size:])
+	this.CmdLen = binary.LittleEndian.Uint32(data[size:])
 	this.DataLen = this.CmdLen - MSG_HEADSIZE
 	size += 4
-	this.CmdID = binary.BigEndian.Uint16(data[size:])
+	this.CmdID = binary.LittleEndian.Uint16(data[size:])
 	size += 2
 	// cmdlen must  include head layer 1 size
 	if int(this.CmdLen) < MSG_HEADSIZE_L1 {
