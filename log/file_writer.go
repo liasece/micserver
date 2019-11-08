@@ -133,7 +133,7 @@ func (w *FileWriter) Rotate() error {
 	}
 	os.Remove(w.filebasename)
 	// Create a symlink
-	err := os.Symlink(filePath, w.filebasename)
+	err := os.Symlink(path.Base(filePath), w.filebasename)
 	if err != nil {
 		// return err
 	}
