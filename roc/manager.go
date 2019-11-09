@@ -2,7 +2,6 @@ package roc
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 )
 
@@ -74,15 +73,11 @@ func (this *ROCManager) GetObj(objType ROCObjType, objID string) (IObj, bool) {
 }
 
 func (this *ROCManager) Call(callstr string, arg []byte) ([]byte, error) {
-	strs := strings.Split(callstr, ".")
-	if len(strs) < 1 {
-		return nil, fmt.Errorf("callstr split on . is length == 0")
-	}
-	path := NewROCPath(strs)
+	path := NewROCPath(callstr)
 	obj, ok := this.getObj(path.GetObjType(), path.GetObjID())
 	if !ok || obj == nil {
 		path.Reset()
-		return nil, fmt.Errorf("has't this object:%+v,%+v", path, path.Move())
+		return nil, fmt.Errorf("has't this object:%s", path, path.String())
 	}
 	path.Reset()
 	return obj.ROCCall(path, arg)

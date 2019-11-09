@@ -170,12 +170,12 @@ func (this *ROCServer) rocRequestProcess() {
 			break
 		case agent := <-this.rocRequestChan:
 			// 处理ROC请求
-			this.Info("rocRequestProcess %+v", agent)
+			this.Info("ROC Request[%s]", agent.callpath)
 			res, err := this.ROCManager.Call(agent.callpath, agent.callarg)
 			if err != nil {
 				this.Error("ROCManager.Call err:%s", err.Error())
 			} else {
-				this.Info("ROC调用成功 res:%+v", res)
+				// this.Debug("ROC调用成功 res:%+v", res)
 			}
 			if agent.needReturn {
 				if agent.fromServerID == this.server.serverid {

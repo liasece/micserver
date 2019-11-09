@@ -2,6 +2,7 @@ package roc
 
 import (
 	"fmt"
+	"strings"
 )
 
 type ROCPath struct {
@@ -44,15 +45,16 @@ func kstrDecode(kstr string) (ROCObjType, string) {
 	return ROCObjType(t), key
 }
 
-func NewROCPath(strs []string) *ROCPath {
-	res := &ROCPath{
-		strs: strs,
+func NewROCPath(pathstr string) *ROCPath {
+	res := &ROCPath{}
+	strs := strings.Split(pathstr, ".")
+	if len(strs) < 1 {
+		return res
 	}
-	if len(strs) > 0 {
-		t, id := kstrDecode(strs[0])
-		res.objType = ROCObjType(t)
-		res.objID = id
-	}
+	t, id := kstrDecode(strs[0])
+	res.objType = ROCObjType(t)
+	res.objID = id
+	res.strs = strs[1:]
 	return res
 }
 
@@ -79,8 +81,9 @@ func (this *ROCPath) Move() string {
 	if this.pos >= len(this.strs) {
 		return ""
 	}
+	res := this.strs[this.pos]
 	this.pos++
-	return this.strs[this.pos]
+	return res
 }
 
 func (this *ROCPath) F(funcName string) *ROCPath {
