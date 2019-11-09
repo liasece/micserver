@@ -33,6 +33,7 @@ type IOBuffer struct {
 	end           int
 	maxLength     int
 	defaultLength int
+	banAutoResize bool
 }
 
 func NewIOBuffer(reader io.Reader, length int) *IOBuffer {
@@ -45,6 +46,10 @@ func NewIOBuffer(reader io.Reader, length int) *IOBuffer {
 		maxLength:     length,
 		defaultLength: length,
 	}
+}
+
+func (b *IOBuffer) SetBanAutoResize(value bool) {
+	b.banAutoResize = value
 }
 
 func (b *IOBuffer) Len() int {
@@ -109,7 +114,7 @@ func (b *IOBuffer) ReadFromReader() (int, error) {
 		return n, err
 	}
 	b.end += n
-	if n == leftSize {
+	if n == leftSize && !b.banAutoResize {
 		// 缓冲区满，扩容一次，最大容忍超过默认值的16倍
 		targetLength := b.maxLength * 2
 		if targetLength <= b.defaultLength*16 {
@@ -176,7 +181,7 @@ func (b *IOBuffer) Write(src []byte) error {
 	}
 
 	size := len(src)
-	if size > b.RemainSize() {
+	if size > b.RemainSize() && !b.banAutoResize {
 		// 缓冲区满，扩容一次，最大容忍超过默认值的16倍
 		targetLength := b.start + size
 		if targetLength <= b.defaultLength*16 {

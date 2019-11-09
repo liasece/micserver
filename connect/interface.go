@@ -16,6 +16,7 @@ type IConnection interface {
 	SendBytes(cmdid uint16, protodata []byte) error
 	Write(data []byte) (int, error)
 	HookProtocal(p baseio.Protocal)
+	SetBanAutoResize(value bool)
 }
 
 type ConnectHook interface {

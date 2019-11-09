@@ -97,6 +97,11 @@ func (this *TCPConn) Init(conn net.Conn,
 	this.recvBuffer.Logger = this.Logger
 }
 
+func (this *TCPConn) SetBanAutoResize(value bool) {
+	this.sendBuffer.SetBanAutoResize(value)
+	this.recvBuffer.SetBanAutoResize(value)
+}
+
 func (this *TCPConn) SetLogger(l *log.Logger) {
 	this.Logger = l
 }

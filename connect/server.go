@@ -52,6 +52,8 @@ func (this *Server) InitTCP(sctype TServerSCType, netconn net.Conn,
 	this.IConnection = NewTCP(netconn, this.Logger,
 		ServerSendChanSize, ServerSendBufferSize,
 		ServerRecvChanSize, ServerRecvBufferSize)
+	// 禁止连接自动扩容缓冲区
+	this.IConnection.SetBanAutoResize(true)
 	this.IConnection.StartRecv()
 	go this.recvMsgThread(this.IConnection.GetRecvMessageChannel(),
 		onRecv, onClose)

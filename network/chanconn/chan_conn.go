@@ -80,6 +80,10 @@ func (this *ChanConn) Init(sendChan chan *msg.MessageBinary,
 	this.recvmsgchan = make(chan *msg.MessageBinary, len(recvChan))
 }
 
+func (this *ChanConn) SetBanAutoResize(value bool) {
+	this.Error("ChanConn can't SetBanAutoResize")
+}
+
 func (this *ChanConn) SetLogger(l *log.Logger) {
 	this.Logger = l
 }
