@@ -115,6 +115,9 @@ func (b *IOBuffer) ReadFromReader() (int, error) {
 		if targetLength <= b.defaultLength*16 {
 			b.Syslog("缓冲区满，扩容 %d->%d", b.maxLength, targetLength)
 			b.resize(targetLength)
+		} else {
+			b.Error("缓冲区满，扩容失败！ now[%d] default[%d]",
+				b.maxLength, b.defaultLength)
 		}
 	}
 	return n, nil
@@ -179,6 +182,9 @@ func (b *IOBuffer) Write(src []byte) error {
 		if targetLength <= b.defaultLength*16 {
 			b.Syslog("缓冲区满，扩容 %d->%d", b.maxLength, targetLength)
 			b.resize(targetLength)
+		} else {
+			b.Error("缓冲区满，扩容失败！ now[%d] default[%d]",
+				b.maxLength, b.defaultLength)
 		}
 		// return ErrOverSize
 	}
