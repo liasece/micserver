@@ -10,7 +10,7 @@ type ROCManager struct {
 	eventHook IROCObjEventHook
 }
 
-func (this *ROCManager) NewObjectType(objtype ROCObjType) {
+func (this *ROCManager) NewROC(objtype ROCObjType) {
 	newroc := &ROC{}
 	_, isLoad := this.rocs.LoadOrStore(objtype, newroc)
 	if !isLoad {

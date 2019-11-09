@@ -220,7 +220,7 @@ func (this *TCPConn) sendThread() {
 		}
 	}
 	// 用于通知发送线程，发送channel已关闭
-	this.Debug("[TCPConn.sendThread] 发送线程已关闭")
+	this.Debug("[TCPConn.sendThread] 断开连接")
 	// close(this.stopChan)
 	err := this.closeSocket()
 	if err != nil {

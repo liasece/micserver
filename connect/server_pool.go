@@ -192,7 +192,7 @@ func (this *ServerPool) RemoveServer(tempid string) {
 		value.Shutdown()
 		// 删除连接
 		this.remove(tempid)
-		this.Debug("[ServerPool] 删除连接 TmpID[%s] 当前连接数量"+
+		this.Debug("[ServerPool] 断开连接 TmpID[%s] 当前连接数量"+
 			" LinkSum[%d] ServerID[%s]",
 			tempid, this.ServerSum(), value.ServerInfo.ServerID)
 		return

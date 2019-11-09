@@ -6,7 +6,9 @@ import (
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
+	serverbase "github.com/liasece/micserver/server/base"
 	"github.com/liasece/micserver/server/gate"
+	gatebase "github.com/liasece/micserver/server/gate/base"
 	"github.com/liasece/micserver/server/subnet"
 	"github.com/liasece/micserver/servercomm"
 	"github.com/liasece/micserver/util"
@@ -15,18 +17,17 @@ import (
 type Server struct {
 	*log.Logger
 	// event libs
-	serverCmdHandler
-	clientEventHandler
 	ROCServer
 
-	isStop   bool
-	stopChan chan bool
-
-	subnetManager *subnet.SubnetManager
-	gateBase      *gate.GateBase
+	serverCmdHandler   serverCmdHandler
+	clientEventHandler clientEventHandler
+	subnetManager      *subnet.SubnetManager
+	gateBase           *gate.GateBase
 
 	// server info
 	serverid string
+	isStop   bool
+	stopChan chan bool
 }
 
 func (this *Server) Init(serverid string) {
@@ -44,6 +45,14 @@ func (this *Server) InitSubnet(conf *conf.ModuleConfig) {
 	this.subnetManager.Logger = this.Logger.Clone()
 	this.subnetManager.Init(conf)
 	this.subnetManager.HookSubnet(&this.serverCmdHandler)
+}
+
+func (this *Server) HookServer(serverHook serverbase.ServerHook) {
+	this.serverCmdHandler.HookServer(serverHook)
+}
+
+func (this *Server) HookGate(gateHook gatebase.GateHook) {
+	this.clientEventHandler.HookGate(gateHook)
 }
 
 func (this *Server) BindSubnet(subnetAddrMap map[string]string) {

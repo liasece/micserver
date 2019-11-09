@@ -28,22 +28,23 @@ type BaseModule struct {
 	timer.TimerManager
 	server.Server
 
-	moduleID string
-	Configer *conf.ModuleConfig
+	// 模块配置
+	configer *conf.ModuleConfig
+	// 模块的负载
+	load monitor.Load
 
+	moduleID        string
 	hasKilledModule bool
 	hasStopped      bool
-	// 模块的负载
-	Load          monitor.Load
-	lastCheckLoad int64
+	lastCheckLoad   int64
 }
 
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
-	this.Configer = &configer
+	this.configer = &configer
 	// 初始化logger
-	if this.Configer.Exist(conf.LogWholePath) {
-		this.Logger = log.NewLogger(this.Configer.GetBool(conf.IsDaemon),
-			this.Configer.GetString(conf.LogWholePath))
+	if this.configer.Exist(conf.LogWholePath) {
+		this.Logger = log.NewLogger(this.configer.GetBool(conf.IsDaemon),
+			this.configer.GetString(conf.LogWholePath))
 		this.SetLogName(this.moduleID)
 	} else {
 		this.Logger = log.GetDefaultLogger().Clone()
@@ -52,10 +53,10 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.Debug("[BaseModule.InitModule] module initting...")
 	this.Server.SetLogger(this.Logger)
 	this.Server.Init(this.moduleID)
-	this.Server.InitSubnet(this.Configer)
+	this.Server.InitSubnet(this.configer)
 
 	// gateway初始化
-	if gateaddr := this.Configer.GetString(conf.GateTCPAddr); gateaddr != "" {
+	if gateaddr := this.configer.GetString(conf.GateTCPAddr); gateaddr != "" {
 		this.Server.InitGate(gateaddr)
 	}
 
@@ -68,7 +69,7 @@ func (this *BaseModule) AfterInitModule() {
 }
 
 func (this *BaseModule) GetConfiger() *conf.ModuleConfig {
-	return this.Configer
+	return this.configer
 }
 
 func (this *BaseModule) GetModuleID() string {
@@ -105,7 +106,7 @@ func (this *BaseModule) GetServerType() string {
 }
 
 func (this *BaseModule) watchLoadToLog(dt time.Duration) bool {
-	load := this.Load.GetLoad()
+	load := this.load.GetLoad()
 	incValue := load - this.lastCheckLoad
 	if incValue > 0 {
 		this.Info("[BaseModule] Within %d sec load:[%d]",

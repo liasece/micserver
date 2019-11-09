@@ -33,7 +33,7 @@ type ROCServer struct {
 	server *Server
 
 	// 远程对象调用支持
-	ROCManager      roc.ROCManager
+	_ROCManager     roc.ROCManager
 	rocAddCacheChan chan roc.IObj
 	rocDelCacheChan chan roc.IObj
 	rocCatchList    sync.Map
@@ -54,7 +54,7 @@ func (this *ROCServer) Init(server *Server) {
 	this.rocAddCacheChan = make(chan roc.IObj, 10000)
 	this.rocDelCacheChan = make(chan roc.IObj, 10000)
 	go this.rocObjNoticeProcess()
-	this.ROCManager.HookObjEvent(this)
+	this._ROCManager.HookObjEvent(this)
 
 	this.rocRequestChan = make(chan *requestAgent, 10000)
 	go this.rocRequestProcess()
@@ -62,12 +62,20 @@ func (this *ROCServer) Init(server *Server) {
 	go this.rocResponseProcess()
 }
 
-func (this *ROCServer) NewSeq() (res int64) {
+func (this *ROCServer) newSeq() (res int64) {
 	this.seqMutex.Lock()
 	this.lastSeq++
 	res = this.lastSeq
 	this.seqMutex.Unlock()
 	return
+}
+
+func (this *ROCServer) GetROC(objtype roc.ROCObjType) *roc.ROC {
+	return this._ROCManager.GetROC(objtype)
+}
+
+func (this *ROCServer) NewROC(objtype roc.ROCObjType) {
+	this._ROCManager.NewROC(objtype)
 }
 
 // 无返回值的RPC调用
@@ -80,7 +88,7 @@ func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) {
 	// 构造消息
 	sendmsg := &servercomm.SROCRequest{
 		FromServerID: this.server.serverid,
-		Seq:          this.NewSeq(),
+		Seq:          this.newSeq(),
 		CallStr:      callpath.String(),
 		CallArg:      callarg,
 	}
@@ -98,7 +106,7 @@ func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) {
 	}
 }
 
-func (this *ROCServer) AddBlockChan(seq int64) chan *responseAgent {
+func (this *ROCServer) addBlockChan(seq int64) chan *responseAgent {
 	ch := make(chan *responseAgent, 1)
 	this.rocBlockChanMap.Store(seq, ch)
 	return ch
@@ -116,13 +124,13 @@ func (this *ROCServer) ROCCallBlock(callpath *roc.ROCPath,
 	// 构造消息
 	sendmsg := &servercomm.SROCRequest{
 		FromServerID: this.server.serverid,
-		Seq:          this.NewSeq(),
+		Seq:          this.newSeq(),
 		CallStr:      callpath.String(),
 		CallArg:      callarg,
 		NeedReturn:   true,
 	}
 
-	ch := this.AddBlockChan(sendmsg.Seq)
+	ch := this.addBlockChan(sendmsg.Seq)
 
 	if serverid == this.server.serverid {
 		sendmsg.ToServerID = serverid
@@ -171,7 +179,7 @@ func (this *ROCServer) rocRequestProcess() {
 		case agent := <-this.rocRequestChan:
 			// 处理ROC请求
 			this.Info("ROC Request[%s]", agent.callpath)
-			res, err := this.ROCManager.Call(agent.callpath, agent.callarg)
+			res, err := this._ROCManager.Call(agent.callpath, agent.callarg)
 			if err != nil {
 				this.Error("ROCManager.Call err:%s", err.Error())
 			} else {

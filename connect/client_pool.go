@@ -101,9 +101,9 @@ func (this *ClientPool) Remove(tempid string) {
 		value.Shutdown()
 		// 删除连接
 		this.remove(tempid)
-		value.Debug("[ClientPool.Remove] 删除连接 当前连接数量"+
+		value.Debug("[ClientPool.Remove] 断开连接 TmpID[%s] 当前连接数量"+
 			" Len[%d]",
-			this.Len())
+			tempid, this.Len())
 		return
 	}
 }
