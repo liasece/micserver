@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func GetServerIDType(id string) string {
+func GetModuleIDType(id string) string {
 	res := ""
 	for _, k := range id {
 		if k >= '0' && k <= '9' {

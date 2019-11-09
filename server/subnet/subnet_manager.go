@@ -62,7 +62,7 @@ func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uin
 	latestVersion := uint64(0)
 	this.connInfos.RangeConnInfo(
 		func(value *servercomm.ServerInfo) bool {
-			if util.GetServerIDType(value.ServerID) == servertype &&
+			if util.GetModuleIDType(value.ServerID) == servertype &&
 				value.Version > latestVersion {
 				latestVersion = value.Version
 			}

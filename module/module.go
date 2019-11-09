@@ -101,8 +101,8 @@ func (this *BaseModule) TopRunner() {
 	})
 }
 
-func (this *BaseModule) GetServerType() string {
-	return util.GetServerIDType(this.moduleID)
+func (this *BaseModule) GetModuleType() string {
+	return util.GetModuleIDType(this.moduleID)
 }
 
 func (this *BaseModule) watchLoadToLog(dt time.Duration) bool {

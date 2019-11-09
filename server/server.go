@@ -176,7 +176,7 @@ func (this *Server) DoSendBytesToClient(fromserver string, gateid string,
 		conn := this.gateBase.GetClient(to)
 		if conn != nil {
 			if fromserver != gateid {
-				conn.Session.SetBindServer(util.GetServerIDType(fromserver),
+				conn.Session.SetBind(util.GetModuleIDType(fromserver),
 					fromserver)
 			}
 			conn.SendBytes(msgid, data)

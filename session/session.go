@@ -8,7 +8,7 @@ import (
 
 type ISInner_SendServerMsg interface {
 	SInner_SendServerMsg(gate string, msg msg.MsgStruct)
-	GetServerType() string
+	GetModuleType() string
 }
 
 type Session struct {
@@ -45,12 +45,12 @@ func (this *Session) SetConnectID(value string) {
 	this.set("ConnectID", value)
 }
 
-func (this *Session) GetBindServer(servertype string) string {
-	return this.get("bindserver_" + servertype)
+func (this *Session) GetBind(moduleType string) string {
+	return this.get("bind_" + moduleType)
 }
 
-func (this *Session) SetBindServer(servertype string, value string) {
-	this.set("bindserver_"+servertype, value)
+func (this *Session) SetBind(moduleType string, value string) {
+	this.set("bind_"+moduleType, value)
 }
 
 func (this *Session) HasKey(key string) bool {

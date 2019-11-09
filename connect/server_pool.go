@@ -71,7 +71,7 @@ func (this *ServerPool) BroadcastByType(servertype string,
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
-		if util.GetServerIDType(value.ServerInfo.ServerID) == servertype {
+		if util.GetModuleIDType(value.ServerInfo.ServerID) == servertype {
 			value.SendCmd(v)
 		}
 		return true
@@ -94,7 +94,7 @@ func (this *ServerPool) GetMinServer(servertype string) *Server {
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
-		if util.GetServerIDType(value.ServerInfo.ServerID) == servertype {
+		if util.GetModuleIDType(value.ServerInfo.ServerID) == servertype {
 			if jobnum >= value.GetJobNum() {
 				jobnum = value.GetJobNum()
 				res = value
@@ -111,7 +111,7 @@ func (this *ServerPool) GetLatestVersionByType(servertype string) uint64 {
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
-		if util.GetServerIDType(value.ServerInfo.ServerID) == servertype &&
+		if util.GetModuleIDType(value.ServerInfo.ServerID) == servertype &&
 			value.ServerInfo.Version > latestVersion {
 			latestVersion = value.ServerInfo.Version
 		}
@@ -132,7 +132,7 @@ func (this *ServerPool) GetMinServerLatestVersion(
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
 		key := tkey.(uint64)
-		if util.GetServerIDType(value.ServerInfo.ServerID) == servertype &&
+		if util.GetModuleIDType(value.ServerInfo.ServerID) == servertype &&
 			value.ServerInfo.Version == latestVersion {
 			if jobnum >= value.GetJobNum() {
 				jobnum = value.GetJobNum()
@@ -158,7 +158,7 @@ func (this *ServerPool) GetRandomServer(
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
 		key := tkey.(string)
-		if util.GetServerIDType(value.ServerInfo.ServerID) == servertype {
+		if util.GetModuleIDType(value.ServerInfo.ServerID) == servertype {
 			tasklist = append(tasklist, key)
 		}
 		return true
