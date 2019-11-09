@@ -50,7 +50,7 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 		this.Logger = log.GetDefaultLogger().Clone()
 		this.Logger.SetLogName(this.moduleID)
 	}
-	this.Debug("[BaseModule.InitModule] module initting...")
+	this.Syslog("[BaseModule.InitModule] module initting...")
 	this.Server.SetLogger(this.Logger)
 	this.Server.Init(this.moduleID)
 	this.Server.InitSubnet(this.configer)
@@ -64,7 +64,7 @@ func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 }
 
 func (this *BaseModule) AfterInitModule() {
-	this.Debug("[BaseModule.AfterInitModule] 模块 [%s] 初始化完成",
+	this.Syslog("[BaseModule.AfterInitModule] 模块 [%s] 初始化完成",
 		this.GetModuleID())
 }
 
@@ -81,7 +81,7 @@ func (this *BaseModule) SetModuleID(id string) {
 }
 
 func (this *BaseModule) KillModule() {
-	this.Debug("[BaseModule] Killing module...")
+	this.Syslog("[BaseModule] Killing module...")
 	this.Server.Stop()
 	this.hasKilledModule = true
 	this.KillRegister()
@@ -96,7 +96,7 @@ func (this *BaseModule) IsStopped() bool {
 
 func (this *BaseModule) TopRunner() {
 	this.RegTimer(time.Minute, 0, false, func(t time.Duration) bool {
-		this.Debug("[BaseModule] Timer 1 Minute...")
+		this.Syslog("[BaseModule] Timer 1 Minute...")
 		return true
 	})
 }

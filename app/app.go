@@ -56,7 +56,7 @@ func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 	// create all module
 	for _, m := range this.modules {
 		process.AddModule(m)
-		this.Debug("[App.Init] init module: %s", m.GetModuleID())
+		this.Syslog("[App.Init] init module: %s", m.GetModuleID())
 		m.InitModule(*this.Configer.AppConfig.GetModuleConfig(m.GetModuleID()))
 		m.AfterInitModule()
 		go m.TopRunner()
@@ -67,8 +67,8 @@ func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 		m.BindSubnet(subnetTCPAddrMap)
 	}
 
-	this.Debug("[App.Init] App 初始化成功！")
-	this.Debug("[App.Init] App 初始化 Module 数量：%d", len(this.modules))
+	this.Syslog("[App.Init] App 初始化成功！")
+	this.Syslog("[App.Init] App 初始化 Module 数量：%d", len(this.modules))
 }
 
 // cpu性能测试
@@ -105,7 +105,7 @@ func (this *App) startTestCpuProfile() {
 
 // 阻塞运行
 func (this *App) RunAndBlock() {
-	this.Debug("[App.Run] ----- Main has started ----- ")
+	this.Syslog("[App.Run] ----- Main has started ----- ")
 
 	// 监听系统Signal
 	go this.SignalListen()
@@ -125,9 +125,9 @@ func (this *App) RunAndBlock() {
 	}
 
 	// 当程序即将结束时
-	this.Debug("[App.RunAndBlock] All server is over add save datas")
+	this.Syslog("[App.RunAndBlock] All server is over add save datas")
 
-	this.Debug("[App.RunAndBlock] ----- Main has stopped ----- ")
+	this.Syslog("[App.RunAndBlock] ----- Main has stopped ----- ")
 	// 等日志打完
 	time.Sleep(500 * time.Millisecond)
 }

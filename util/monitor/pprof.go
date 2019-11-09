@@ -11,7 +11,7 @@ import (
 )
 
 func BindPprof(ip string, port uint32) error {
-	log.Debug("[startPprofThread] pprof正在启动 IPPort[%s:%d]", ip, port)
+	log.Syslog("[startPprofThread] pprof正在启动 IPPort[%s:%d]", ip, port)
 	go startPprofThread(ip, port)
 	return nil
 }
@@ -25,11 +25,11 @@ func startPprofThread(ip string, port uint32) {
 		}
 	}()
 	time.Sleep(500 * time.Millisecond)
-	log.Debug("[startPprofThread] pprof开始监听 IPPort[%s:%d]", ip, port)
+	log.Syslog("[startPprofThread] pprof开始监听 IPPort[%s:%d]", ip, port)
 	pprofportstr := fmt.Sprintf("%s:%d", ip, port)
 	err := http.ListenAndServe(pprofportstr, nil)
 	if err == nil {
-		log.Debug("[startPprofThread] pprof启动成功 Addr[%s]",
+		log.Syslog("[startPprofThread] pprof启动成功 Addr[%s]",
 			pprofportstr)
 	} else {
 		log.Error("[startPprofThread] pprof启动失败 Addr[%s] Err[%s]",

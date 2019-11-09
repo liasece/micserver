@@ -17,7 +17,7 @@ type Logger struct {
 
 func NewLogger(isDaemon bool, logFilePath string) *Logger {
 	l := new(Logger)
-	l.level = DEBUG
+	l.level = SYS
 	l.layout = "060102-15:04:05"
 	l.logWriter = &LogWriter{}
 	l.logWriter.Init()
@@ -95,6 +95,10 @@ func (l *Logger) SetTopic(topic string) {
 		return
 	}
 	l.topic = topic
+}
+
+func (l *Logger) Syslog(fmt string, args ...interface{}) {
+	l.deliverRecordToWriter(SYS, fmt, args...)
 }
 
 func (l *Logger) Debug(fmt string, args ...interface{}) {

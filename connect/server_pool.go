@@ -192,7 +192,7 @@ func (this *ServerPool) RemoveServer(tempid string) {
 		value.Shutdown()
 		// 删除连接
 		this.remove(tempid)
-		this.Debug("[ServerPool] 断开连接 TmpID[%s] 当前连接数量"+
+		this.Syslog("[ServerPool] 断开连接 TmpID[%s] 当前连接数量"+
 			" LinkSum[%d] ServerID[%s]",
 			tempid, this.ServerSum(), value.ServerInfo.ServerID)
 		return
@@ -202,14 +202,14 @@ func (this *ServerPool) RemoveServer(tempid string) {
 func (this *ServerPool) AddServer(connct *Server, tmpid string) {
 	connct.SetTempID(tmpid)
 	this.add(tmpid, connct)
-	this.Debug("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
+	this.Syslog("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
 		" LinkSum[%d] ServerID[%s]",
 		connct.GetTempID(), this.ServerSum(), connct.ServerInfo.ServerID)
 }
 
 func (this *ServerPool) AddServerAuto(connct *Server) {
 	this.add(connct.GetTempID(), connct)
-	this.Debug("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
+	this.Syslog("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
 		" LinkSum[%d] ServerID[%s]",
 		connct.GetTempID(), this.ServerSum(), connct.ServerInfo.ServerID)
 }
@@ -228,7 +228,7 @@ func (this *ServerPool) ChangeServerTempid(tcptask *Server,
 		// 删除旧ID的索引，注意，如果你的ID生成规则不是唯一的，这里会有并发问题
 		this.remove(oldTmpID)
 		this.linkSum++
-		this.Debug("[ServerPool]修改连接tempid Old[%s] -->> New[%s]",
+		this.Syslog("[ServerPool]修改连接tempid Old[%s] -->> New[%s]",
 			oldTmpID, newTempID)
 	}
 	return nil

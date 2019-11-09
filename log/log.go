@@ -6,12 +6,13 @@ import (
 )
 
 var (
-	LEVEL_FLAGS = [...]string{"[D]", "[I]", "[WARNING]", "[ERROR]", "[FATALERROR]"}
+	LEVEL_FLAGS = [...]string{"[S]", "[D]", "[I]", "[WARNING]", "[ERROR]", "[FATALERROR]"}
 	recordPool  *sync.Pool
 )
 
 const (
-	DEBUG = iota
+	SYS = iota
+	DEBUG
 	INFO
 	WARNING
 	ERROR
@@ -51,6 +52,10 @@ var (
 	default_logger *Logger
 	takeup         = false
 )
+
+func Syslog(fmt string, args ...interface{}) {
+	default_logger.deliverRecordToWriter(SYS, fmt, args...)
+}
 
 func Debug(fmt string, args ...interface{}) {
 	default_logger.deliverRecordToWriter(DEBUG, fmt, args...)

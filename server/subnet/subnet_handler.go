@@ -28,7 +28,7 @@ func (this *SubnetManager) OnRecvTCPMsg(conn *connect.Server,
 	if this.subnetHook != nil {
 		this.subnetHook.OnRecvSubnetMsg(conn, msgbinary)
 	} else {
-		this.Debug("this.SubnetCallback.fonRecvMsg == nil MsgID[%d]",
+		this.Syslog("this.SubnetCallback.fonRecvMsg == nil MsgID[%d]",
 			msgbinary.CmdID)
 	}
 }
@@ -65,18 +65,18 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 		}
 		if conn.IsTerminateForce() {
 			this.onClientDisconnected(conn)
-			this.Debug("[SubnetManager.handleConnection] "+
+			this.Syslog("[SubnetManager.handleConnection] "+
 				"服务器主动断开连接 TmpID[%s]", conn.GetTempID())
 			return
 		}
 	}
-	// this.Debug("[SubnetManager.msgParseTCPConn] 收到消息 %s",
+	// this.Syslog("[SubnetManager.msgParseTCPConn] 收到消息 %s",
 	// 	servercomm.MsgIdToString(msgbin.CmdID))
 	switch msgbin.CmdID {
 	case servercomm.STestCommandID:
 		recvmsg := &servercomm.STestCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
-		this.Debug("[SubnetManager.msgParseTCPConn] "+
+		this.Syslog("[SubnetManager.msgParseTCPConn] "+
 			"Server 收到测试消息 CmdLen[%d] No.[%d]",
 			msgbin.CmdLen, recvmsg.Testno)
 		return
@@ -94,7 +94,7 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 			conn.Terminate()
 			if recvmsg.Loginfailed == servercomm.LOGINRETCODE_IDENTICAL {
 				conn.IsNormalDisconnect = true
-				this.Debug("[SubnetManager.msgParseTCPConn] "+
+				this.Syslog("[SubnetManager.msgParseTCPConn] "+
 					"重复连接,不必连接 TmpID[%s]", conn.GetTempID())
 			} else {
 				this.Error("[SubnetManager.msgParseTCPConn] "+
@@ -103,7 +103,7 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 			return
 		}
 		conn.ServerInfo = recvmsg.Destination
-		this.Debug("[SubnetManager.msgParseTCPConn] "+
+		this.Syslog("[SubnetManager.msgParseTCPConn] "+
 			"连接服务器验证成功,id:%s,ipport:%s",
 			conn.ServerInfo.ServerID, conn.ServerInfo.ServerAddr)
 		return
@@ -118,7 +118,7 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 		this.connectMutex.Lock()
 		defer this.connectMutex.Unlock()
 		this.connInfos.RemoveConnInfo(conn.ServerInfo.ServerID)
-		this.Debug("[msgParseTCPConn] 服务器已主动关闭，不再尝试连接它了 "+
+		this.Syslog("[msgParseTCPConn] 服务器已主动关闭，不再尝试连接它了 "+
 			"ServerInfo[%s]", conn.ServerInfo.GetJson())
 		return
 	case servercomm.SNotifyAllInfoID:
@@ -127,7 +127,7 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		this.connectMutex.Lock()
 		defer this.connectMutex.Unlock()
-		this.Debug("[SubnetManager.msgParseTCPConn] " +
+		this.Syslog("[SubnetManager.msgParseTCPConn] " +
 			"收到所有服务器列表信息")
 		// 所有服务器信息列表
 		for i := 0; i < len(recvmsg.ServerInfos); i++ {
@@ -168,7 +168,7 @@ func (this *SubnetManager) InitMsgQueue(sum int32) {
 	}
 	this.runningMsgChan = make([]chan *ConnectMsgQueueStruct,
 		this.maxRunningMsgNum)
-	this.Debug("[SubnetManager.InitMsgQueue] "+
+	this.Syslog("[SubnetManager.InitMsgQueue] "+
 		"Task 消息处理线程数量 ThreadNum[%d]", this.maxRunningMsgNum)
 	for i := int32(0); i < this.maxRunningMsgNum; i++ {
 		this.runningMsgChan[i] = make(chan *ConnectMsgQueueStruct,

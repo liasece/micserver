@@ -18,12 +18,12 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	this.connectMutex.Lock()
 	defer this.connectMutex.Unlock()
 
-	this.Debug("收到登陆请求 Server:%s", tarinfo.ServerID)
+	this.Syslog("收到登陆请求 Server:%s", tarinfo.ServerID)
 
 	// 来源服务器请求登陆本服务器
 	myconn := this.GetServer(fmt.Sprint(tarinfo.ServerID))
 	if myconn != nil {
-		this.Debug("[SubnetManager.OnServerLogin] 重复连接 %s 优先级：%d:%d",
+		this.Syslog("[SubnetManager.OnServerLogin] 重复连接 %s 优先级：%d:%d",
 			tarinfo.ServerID,
 			myconn.ConnectPriority, tarinfo.ConnectPriority)
 		if myconn.ConnectPriority < tarinfo.ConnectPriority {
@@ -35,7 +35,7 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 				myconn, myconn.GetTempID()+"unuse"+fmt.Sprint(unuseid))
 		} else {
 			// 我方优先级比较高已经连接成功过了，非法连接
-			this.Debug("[SubNetManager.OnServerLogin] "+
+			this.Syslog("[SubNetManager.OnServerLogin] "+
 				"收到了重复的Server连接请求 Msg[%s]",
 				tarinfo.GetJson())
 			return
@@ -61,7 +61,7 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 		conn.Terminate()
 		return
 	}
-	this.Debug("[SubNetManager.OnServerLogin] "+
+	this.Syslog("[SubNetManager.OnServerLogin] "+
 		"客户端连接验证成功 "+
 		" SerID[%s] IP[%s]",
 		serverInfo.ServerID, serverInfo.ServerAddr)
@@ -103,7 +103,7 @@ func (this *SubnetManager) BindTCPSubnet(settings *conf.ModuleConfig) error {
 			addr, err.Error())
 		return err
 	}
-	this.Debug("[SubNetManager.BindTCPSubnet] "+
+	this.Syslog("[SubNetManager.BindTCPSubnet] "+
 		"服务器绑定成功 IPPort[%s]", addr)
 	this.myServerInfo.ServerAddr = addr
 	go this.TCPServerListenerProcess(netlisten)
@@ -142,7 +142,7 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 				err.Error())
 			continue
 		}
-		this.Debug("[SubNetManager.mTCPServerListener] "+
+		this.Syslog("[SubNetManager.mTCPServerListener] "+
 			"收到新的TCP连接 Addr[%s]",
 			newconn.RemoteAddr().String())
 		conn := this.NewTCPServer(connect.ServerSCTypeTask, newconn, "",
@@ -164,7 +164,7 @@ func (this *SubnetManager) BindChanSubnet(settings *conf.ModuleConfig) error {
 	serverChan := make(chan *process.ChanServerHandshake, 1000)
 	process.AddServerChan(this.myServerInfo.ServerID, serverChan)
 	go this.ChanServerListenerProcess(serverChan)
-	this.Debug("BindChanSubnet ChanServer 注册成功")
+	this.Syslog("BindChanSubnet ChanServer 注册成功")
 	return nil
 }
 
@@ -217,7 +217,7 @@ func (this *SubnetManager) processChanServerRequest(
 			oldconn := this.GetServer(newinfo.ServerInfo.ServerID)
 			// 重复连接
 			if oldconn != nil {
-				this.Debug("[SubnetManager.mChanServerListener] "+
+				this.Syslog("[SubnetManager.mChanServerListener] "+
 					"ServerID[%s] 重复的连接", newinfo.ServerInfo.ServerID)
 			} else {
 				// 请求开始
@@ -228,7 +228,7 @@ func (this *SubnetManager) processChanServerRequest(
 					ClientMsgChan: newinfo.ClientMsgChan,
 					Seq:           newinfo.Seq + 1,
 				}
-				this.Debug("[SubNetManager.mChanServerListener] "+
+				this.Syslog("[SubNetManager.mChanServerListener] "+
 					"收到新的 ServerChan 连接 ServerID[%s]",
 					newinfo.ServerInfo.ServerID)
 				// 建立本地通信Server对象
@@ -244,11 +244,11 @@ func (this *SubnetManager) processChanServerRequest(
 			oldconn := this.GetServer(newinfo.ServerInfo.ServerID)
 			// 重复连接
 			if oldconn != nil {
-				this.Debug("[SubnetManager.mChanServerListener] "+
+				this.Syslog("[SubnetManager.mChanServerListener] "+
 					"ServerID[%s] 重复的连接", newinfo.ServerInfo.ServerID)
 			} else {
 				// 请求回复
-				this.Debug("[SubNetManager.mChanServerListener] "+
+				this.Syslog("[SubNetManager.mChanServerListener] "+
 					"收到 ServerChan 连接请求回复 ServerID[%s]",
 					newinfo.ServerInfo.ServerID)
 				// 建立本地通信Server对象

@@ -38,7 +38,7 @@ func (this *SubnetManager) tryConnectServerThread(id string, addr string) {
 		this.connectMutex.Unlock()
 		select {
 		case <-c:
-			this.Debug("[SubnetManager.tryConnectServerThread] "+
+			this.Syslog("[SubnetManager.tryConnectServerThread] "+
 				"正在连接 ServerID[%s] IPPort[%s]",
 				id, addr)
 			err := this.ConnectServer(id, addr)
@@ -62,7 +62,7 @@ func (this *SubnetManager) TryConnectServer(id string, addr string) {
 	if _, finded := this.serverexitchan[id]; !finded {
 		this.serverexitchan[id] = make(chan bool, 100)
 	} else {
-		this.Debug("[SubnetManager.TryConnectServer] "+
+		this.Syslog("[SubnetManager.TryConnectServer] "+
 			"ServerID[%s] 守护线程已启动，不再重复启动",
 			id)
 		return
@@ -79,11 +79,11 @@ func (this *SubnetManager) ConnectServer(id string,
 	oldconn := this.GetServer(id)
 	// 重复连接
 	if oldconn != nil {
-		this.Debug("[SubnetManager.ConnectServer] "+
+		this.Syslog("[SubnetManager.ConnectServer] "+
 			"ServerID[%s] 重复的连接", id)
 		return errors.New("重复连接")
 	}
-	// this.Debug("[SubnetManager.ConnectServer] "+
+	// this.Syslog("[SubnetManager.ConnectServer] "+
 	// 	"服务器连接创建地址开始 ServerID[%s] ServerIPPort[%s]",
 	// 	id, addr)
 	if chanServer := process.GetServerChan(id); chanServer != nil {
@@ -97,7 +97,7 @@ func (this *SubnetManager) ConnectServer(id string,
 	} else {
 		tcpaddr, err := net.ResolveTCPAddr("tcp4", addr)
 		if err != nil {
-			this.Debug("[SubnetManager.ConnectServer] "+
+			this.Syslog("[SubnetManager.ConnectServer] "+
 				"服务器连接创建地址失败 ServerIPPort[%s] Err[%s]",
 				addr, err.Error())
 			return err
@@ -112,7 +112,7 @@ func (this *SubnetManager) ConnectServer(id string,
 		this.doConnectTCPServer(netconn, id)
 	}
 
-	// this.Debug("[SubnetManager.ConnectServer] "+
+	// this.Syslog("[SubnetManager.ConnectServer] "+
 	// 	"开始连接服务器 ServerID[%s] IPPort[%s]", id,
 	// 	addr)
 
@@ -121,7 +121,7 @@ func (this *SubnetManager) ConnectServer(id string,
 
 // 使用一个TCP连接实际连接一个服务器
 func (this *SubnetManager) doConnectTCPServer(netconn net.Conn, id string) {
-	this.Debug("开始登陆TCP服务器 Server:%s", id)
+	this.Syslog("开始登陆TCP服务器 Server:%s", id)
 	conn := this.NewTCPServer(connect.ServerSCTypeClient, netconn, id,
 		this.onConnectRecv, this.onConnectClose)
 	conn.Logger = this.Logger
@@ -133,7 +133,7 @@ func (this *SubnetManager) doConnectTCPServer(netconn net.Conn, id string) {
 // 使用一个本地连接实际连接一个服务器
 func (this *SubnetManager) doConnectChanServer(
 	sendchan, recvchan chan *msg.MessageBinary, id string) {
-	this.Debug("开始登陆Chan服务器 Server:%s", id)
+	this.Syslog("开始登陆Chan服务器 Server:%s", id)
 	conn := this.NewChanServer(connect.ServerSCTypeClient, sendchan, recvchan, id,
 		this.onConnectRecv, this.onConnectClose)
 	conn.Logger = this.Logger
@@ -151,7 +151,7 @@ func (this *SubnetManager) onClientConnected(conn *connect.Server) {
 	sendmsg.ConnectPriority = conn.ConnectPriority
 	// 发送登陆请求
 	conn.SendCmd(sendmsg)
-	this.Debug("请求登陆 Server:%s", conn.GetTempID())
+	this.Syslog("请求登陆 Server:%s", conn.GetTempID())
 }
 
 func (this *SubnetManager) onClientDisconnected(conn *connect.Server) {
@@ -168,7 +168,7 @@ func (this *SubnetManager) onClientDisconnected(conn *connect.Server) {
 				"服务服务器断开连接,准备重新连接 ServerID[%s]",
 				conn.ServerInfo.ServerID)
 		} else {
-			this.Debug("[onClientDisconnected] "+
+			this.Syslog("[onClientDisconnected] "+
 				"服务器重连管道已关闭,取消重连 ServerID[%s]",
 				fmt.Sprint(conn.ServerInfo.ServerID))
 		}

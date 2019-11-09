@@ -44,8 +44,8 @@ func (this *GateBase) addTCPClient(
 	conn.SetTerminateTime(curtime + 20) // 20秒以后还没有验证通过就断开连接
 
 	conn.Debug("[GateBase.addTCPClient] "+
-		"新增连接数 当前连接数量 NowSum[%d]",
-		this.GetClientTcpSocketCount())
+		"新增客户端连接 TmpID[%s] 当前连接数量 NowSum[%d]",
+		conn.GetTempID(), this.GetClientTcpSocketCount())
 	// 开始接收数据
 	conn.StartRecv()
 	return conn, nil
@@ -103,8 +103,8 @@ func (this *GateBase) RangeRemove(
 		this.remove(v)
 	}
 
-	this.Debug("[GateBase.ExecRemove] "+
-		"条件删除连接数 RemoveSum[%d] 当前连接数量 LinkSum[%d]",
+	this.Syslog("[GateBase.RangeRemove] "+
+		"遍历删除连接数 RemoveSum[%d] 当前连接数量 LinkSum[%d]",
 		len(removelist), this.GetClientTcpSocketCount())
 }
 
@@ -116,7 +116,7 @@ func (this *GateBase) StartAddClientTcpSocketHandle(addr string) {
 			err.Error())
 		return
 	}
-	this.Debug("[GateBase.StartAddClientTcpSocketHandle] "+
+	this.Syslog("[GateBase.StartAddClientTcpSocketHandle] "+
 		"Gateway Client TCP服务启动成功 IPPort[%s]", addr)
 	go func() {
 		for {
