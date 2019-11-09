@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	LEVEL_FLAGS = [...]string{"DEBUG", " INFO", " WARN", "ERROR", "FATALERROR"}
+	LEVEL_FLAGS = [...]string{"[D]", "[I]", "[WARNING]", "[ERROR]", "[FATALERROR]"}
 	recordPool  *sync.Pool
 )
 

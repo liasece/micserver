@@ -129,7 +129,7 @@ func (l *Logger) deliverRecordToWriter(level int32, format string, args ...inter
 	}
 
 	if l.topic != "" {
-		inf += "[" + l.topic + "] "
+		inf += l.topic + " "
 	}
 
 	if format != "" {
