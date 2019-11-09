@@ -1,7 +1,6 @@
 package roc
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -77,7 +76,7 @@ func (this *ROCManager) Call(callstr string, arg []byte) ([]byte, error) {
 	obj, ok := this.getObj(path.GetObjType(), path.GetObjID())
 	if !ok || obj == nil {
 		path.Reset()
-		return nil, fmt.Errorf("has't this object:%s", path, path.String())
+		return nil, ErrUnknowObj
 	}
 	path.Reset()
 	return obj.ROCCall(path, arg)

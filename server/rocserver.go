@@ -181,7 +181,9 @@ func (this *ROCServer) rocRequestProcess() {
 			this.Info("ROC Request[%s]", agent.callpath)
 			res, err := this._ROCManager.Call(agent.callpath, agent.callarg)
 			if err != nil {
-				this.Error("ROCManager.Call err:%s", err.Error())
+				if err != roc.ErrUnknowObj {
+					this.Error("ROCManager.Call err:%s", err.Error())
+				}
 			} else {
 				// this.Debug("ROC调用成功 res:%+v", res)
 			}
