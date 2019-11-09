@@ -5,6 +5,8 @@ import (
 	"github.com/liasece/micserver/util/pool"
 )
 
+type ROCObjType string
+
 const (
 	ROC_POOL_GROUP_SUM = 8
 )
@@ -36,7 +38,7 @@ func (this *ROC) onDelObj(obj IObj) {
 
 // 在使用远程对象调用前，需要先注册
 func (this *ROC) RegObj(obj IObj) error {
-	id := obj.GetObjID()
+	id := obj.GetROCObjID()
 	this.objPool.Store(id, obj)
 	this.onRegObj(obj)
 	return nil
@@ -44,7 +46,7 @@ func (this *ROC) RegObj(obj IObj) error {
 
 // 删除远程调用对象
 func (this *ROC) DelObj(obj IObj) error {
-	id := obj.GetObjID()
+	id := obj.GetROCObjID()
 	this.objPool.Delete(id)
 	this.onDelObj(obj)
 	return nil

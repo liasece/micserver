@@ -1,8 +1,8 @@
 package roc
 
 type IObj interface {
-	GetObjType() string
-	GetObjID() string
+	GetROCObjType() ROCObjType
+	GetROCObjID() string
 	ROCCall(*ROCPath, []byte) ([]byte, error)
 }
 

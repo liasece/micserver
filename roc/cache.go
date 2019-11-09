@@ -13,10 +13,11 @@ type catchServerInfo struct {
 }
 
 type serverInfoMap map[string]*catchServerInfo
+type objIDToServerMap map[string]*catchServerInfo
 
 type Cache struct {
 	catchServer serverInfoMap
-	catchType   map[string]serverInfoMap
+	catchType   map[ROCObjType]objIDToServerMap
 	mutex       sync.Mutex
 }
 
@@ -26,12 +27,12 @@ func GetCache() *Cache {
 	return &_gCache
 }
 
-func (this *Cache) catchGetTypeMust(objType string) serverInfoMap {
+func (this *Cache) catchGetTypeMust(objType ROCObjType) objIDToServerMap {
 	if this.catchType == nil {
-		this.catchType = make(map[string]serverInfoMap)
+		this.catchType = make(map[ROCObjType]objIDToServerMap)
 	}
 	if v, ok := this.catchType[objType]; !ok {
-		v = make(serverInfoMap)
+		v = make(objIDToServerMap)
 		this.catchType[objType] = v
 		return v
 	} else {
@@ -54,7 +55,7 @@ func (this *Cache) catchGetServerMust(serverid string) *catchServerInfo {
 	}
 }
 
-func (this *Cache) Set(objType string, objID string, serverid string) {
+func (this *Cache) Set(objType ROCObjType, objID string, serverid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
@@ -63,7 +64,7 @@ func (this *Cache) Set(objType string, objID string, serverid string) {
 	m[objID] = server
 }
 
-func (this *Cache) SetM(objType string, objIDs []string, serverid string) {
+func (this *Cache) SetM(objType ROCObjType, objIDs []string, serverid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
@@ -74,7 +75,7 @@ func (this *Cache) SetM(objType string, objIDs []string, serverid string) {
 	}
 }
 
-func (this *Cache) Del(objType string, objID string, serverid string) {
+func (this *Cache) Del(objType ROCObjType, objID string, serverid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
@@ -84,7 +85,7 @@ func (this *Cache) Del(objType string, objID string, serverid string) {
 	}
 }
 
-func (this *Cache) DelM(objType string, objIDs []string, serverid string) {
+func (this *Cache) DelM(objType ROCObjType, objIDs []string, serverid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
@@ -96,7 +97,7 @@ func (this *Cache) DelM(objType string, objIDs []string, serverid string) {
 	}
 }
 
-func (this *Cache) Get(objType string, objID string) string {
+func (this *Cache) Get(objType ROCObjType, objID string) string {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 

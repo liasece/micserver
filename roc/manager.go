@@ -11,7 +11,7 @@ type ROCManager struct {
 	eventHook IROCObjEventHook
 }
 
-func (this *ROCManager) NewObjectType(objtype string) {
+func (this *ROCManager) NewObjectType(objtype ROCObjType) {
 	newroc := &ROC{}
 	_, isLoad := this.rocs.LoadOrStore(objtype, newroc)
 	if !isLoad {
@@ -37,7 +37,7 @@ func (this *ROCManager) OnROCObjDel(obj IObj) {
 }
 
 func (this *ROCManager) RegObj(obj IObj) error {
-	objtype := obj.GetObjType()
+	objtype := obj.GetROCObjType()
 	roc := this.GetROC(objtype)
 	if roc == nil {
 		return ErrUnregisterRoc
@@ -45,7 +45,7 @@ func (this *ROCManager) RegObj(obj IObj) error {
 	return roc.RegObj(obj)
 }
 
-func (this *ROCManager) GetROC(objtype string) *ROC {
+func (this *ROCManager) GetROC(objtype ROCObjType) *ROC {
 	vi, ok := this.rocs.Load(objtype)
 	if !ok {
 		return nil
@@ -53,13 +53,13 @@ func (this *ROCManager) GetROC(objtype string) *ROC {
 	return vi.(*ROC)
 }
 
-func (this *ROCManager) CallPathDecode(kstr string) (string, string) {
+func (this *ROCManager) CallPathDecode(kstr string) (ROCObjType, string) {
 	return kstrDecode(kstr)
 }
 
 // kstr的格式必须为 ROC 远程对象调用那样定义的格式
 // (对象类型)([对象的键])
-func (this *ROCManager) getObj(objType string, objID string) (IObj, bool) {
+func (this *ROCManager) getObj(objType ROCObjType, objID string) (IObj, bool) {
 	roc := this.GetROC(objType)
 	if roc == nil {
 		return nil, false
@@ -69,7 +69,7 @@ func (this *ROCManager) getObj(objType string, objID string) (IObj, bool) {
 
 // kstr的格式必须为 ROC 远程对象调用那样定义的格式
 // (对象类型)([对象的键])
-func (this *ROCManager) GetObj(objType string, objID string) (IObj, bool) {
+func (this *ROCManager) GetObj(objType ROCObjType, objID string) (IObj, bool) {
 	return this.getObj(objType, objID)
 }
 
