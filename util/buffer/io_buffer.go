@@ -11,6 +11,7 @@ package buffer
 
 import (
 	"errors"
+	"github.com/liasece/micserver/log"
 	"io"
 )
 
@@ -24,16 +25,26 @@ var (
 
 // 不是线程安全的
 type IOBuffer struct {
-	reader    io.Reader
-	buf       []byte
-	start     int
-	end       int
-	maxLength int
+	*log.Logger
+
+	reader        io.Reader
+	buf           []byte
+	start         int
+	end           int
+	maxLength     int
+	defaultLength int
 }
 
 func NewIOBuffer(reader io.Reader, length int) *IOBuffer {
 	buf := make([]byte, length)
-	return &IOBuffer{reader, buf, 0, 0, length}
+	return &IOBuffer{
+		reader:        reader,
+		buf:           buf,
+		start:         0,
+		end:           0,
+		maxLength:     length,
+		defaultLength: length,
+	}
 }
 
 func (b *IOBuffer) Len() int {
@@ -51,6 +62,19 @@ func (b *IOBuffer) grow() error {
 	copy(b.buf, b.buf[b.start:b.end])
 	b.end -= b.start
 	b.start = 0
+	return nil
+}
+
+func (b *IOBuffer) resize(length int) error {
+	newbuf := make([]byte, length)
+	if b.end != 0 || b.start != 0 {
+		// 向新缓冲区中 grow
+		copy(newbuf, b.buf[b.start:b.end])
+		b.end -= b.start
+		b.start = 0
+	}
+	b.buf = newbuf
+	b.maxLength = length
 	return nil
 }
 
@@ -73,11 +97,26 @@ func (b *IOBuffer) ReadFromReader() (int, error) {
 	if gerr != nil {
 		return 0, gerr
 	}
+	// 如果缓冲区空了，需要将扩容的内存还回去
+	if b.end == 0 && b.maxLength >= b.defaultLength*2+1 {
+		b.Syslog("缓冲区扩容恢复 %d->%d", b.maxLength, b.defaultLength)
+		b.resize(b.defaultLength)
+	}
+
+	leftSize := b.maxLength - b.end
 	n, err := b.reader.Read(b.buf[b.end:])
 	if err != nil {
 		return n, err
 	}
 	b.end += n
+	if n == leftSize {
+		// 缓冲区满，扩容一次，最大容忍超过默认值的16倍
+		targetLength := b.maxLength * 2
+		if targetLength <= b.defaultLength*16 {
+			b.Syslog("缓冲区满，扩容 %d->%d", b.maxLength, targetLength)
+			b.resize(targetLength)
+		}
+	}
 	return n, nil
 }
 
@@ -127,10 +166,28 @@ func (b *IOBuffer) Write(src []byte) error {
 	if gerr != nil {
 		return gerr
 	}
+	// 如果缓冲区空了，需要将扩容的内存还回去
+	if b.end == 0 && b.maxLength >= b.defaultLength*2 {
+		b.Syslog("缓冲区扩容恢复 %d->%d", b.maxLength, b.defaultLength)
+		b.resize(b.defaultLength)
+	}
+
 	size := len(src)
+	if size > b.RemainSize() {
+		// 缓冲区满，扩容一次，最大容忍超过默认值的16倍
+		targetLength := b.start + size
+		if targetLength <= b.defaultLength*16 {
+			b.Syslog("缓冲区满，扩容 %d->%d", b.maxLength, targetLength)
+			b.resize(targetLength)
+		}
+		// return ErrOverSize
+	}
+
+	size = len(src)
 	if size > b.RemainSize() {
 		return ErrOverSize
 	}
+
 	b.end += copy(b.buf[b.end:], src)
 	return nil
 }

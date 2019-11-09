@@ -86,6 +86,7 @@ func (this *TCPConn) Init(conn net.Conn,
 	this.sendmsgchan = make(chan *msg.MessageBinary, sendChanSize)
 	this.maxWaitingSendBufferLength = msg.MessageMaxSize * sendChanSize
 	this.sendBuffer = buffer.NewIOBuffer(nil, sendBufferSize)
+	this.sendBuffer.Logger = this.Logger
 	this.sendJoinedMessageBinaryBuffer = make([]*msg.MessageBinary,
 		MaxMsgPackSum)
 	go this.sendThread()
@@ -93,6 +94,7 @@ func (this *TCPConn) Init(conn net.Conn,
 	// 接收
 	this.recvmsgchan = make(chan *msg.MessageBinary, recvChanSize)
 	this.recvBuffer = buffer.NewIOBuffer(this, recvBufferSize)
+	this.recvBuffer.Logger = this.Logger
 }
 
 func (this *TCPConn) SetLogger(l *log.Logger) {

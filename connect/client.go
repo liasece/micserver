@@ -25,13 +25,13 @@ type Client struct {
 const ClientConnSendChanSize = 256
 
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
-const ClientConnSendBufferSize = msg.MessageMaxSize * 2
+const ClientConnSendBufferSize = 16 * 1024
 
 // 客户端连接发送消息缓冲不宜过大， 10*64KiB*100000连接=64GiB
 const ClientConnRecvChanSize = 256
 
 // 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
-const ClientConnRecvBufferSize = msg.MessageMaxSize * 2
+const ClientConnRecvBufferSize = 256 * 1024
 
 // Initial a new client
 // netconn: 连接的net.Conn对象
