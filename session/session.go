@@ -8,7 +8,11 @@ import (
 
 type ISInner_SendModuleMsg interface {
 	SInner_SendModuleMsg(gate string, msg msg.MsgStruct)
-	GetModuleType() string
+}
+
+type ISInner_SendClientMsg interface {
+	SInner_SendClientMsg(gateid string, connectid string, msgid uint16,
+		data []byte)
 }
 
 type Session struct {
@@ -75,6 +79,12 @@ func (this *Session) SyncToModule(mod ISInner_SendModuleMsg,
 		ClientConnID: this.GetConnectID(),
 	}
 	mod.SInner_SendModuleMsg(targetServer, smsg)
+}
+
+func (this *Session) SendMsg(mod ISInner_SendClientMsg,
+	msgid uint16, data []byte) {
+	mod.SInner_SendClientMsg(this.GetBind("gate"),
+		this.GetConnectID(), msgid, data)
 }
 
 func (this *Session) ToMap() map[string]string {

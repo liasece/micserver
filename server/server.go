@@ -111,6 +111,12 @@ func (this *Server) SInner_SendModuleMsg(
 	}
 }
 
+// 发送一个服务器消息到另一个服务器,仅框架内使用
+func (this *Server) SInner_SendClientMsg(
+	gateid string, connectid string, msgid uint16, data []byte) {
+	this.SendBytesToClient(gateid, connectid, msgid, data)
+}
+
 // 转发一个客户端消息到另一个服务器
 func (this *Server) ForwardClientMsgToModule(fromconn *connect.Client,
 	to string, msgid uint16, data []byte) {
