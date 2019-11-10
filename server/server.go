@@ -92,16 +92,16 @@ func (this *Server) GetClient(tmpid string) *connect.Client {
 }
 
 // 发送一个服务器消息到另一个服务器
-func (this *Server) SendServerMsg(
+func (this *Server) SendModuleMsg(
 	to string, msgstr msg.MsgStruct) {
 	conn := this.subnetManager.GetServer(to)
 	if conn != nil {
-		conn.SendCmd(this.getServerMsgPack(msgstr, conn))
+		conn.SendCmd(this.getModuleMsgPack(msgstr, conn))
 	}
 }
 
 // 发送一个服务器消息到另一个服务器,仅框架内使用
-func (this *Server) SInner_SendServerMsg(
+func (this *Server) SInner_SendModuleMsg(
 	to string, msgstr msg.MsgStruct) {
 	conn := this.subnetManager.GetServer(to)
 	if conn != nil {
@@ -112,7 +112,7 @@ func (this *Server) SInner_SendServerMsg(
 }
 
 // 转发一个客户端消息到另一个服务器
-func (this *Server) ForwardClientMsgToServer(fromconn *connect.Client,
+func (this *Server) ForwardClientMsgToModule(fromconn *connect.Client,
 	to string, msgid uint16, data []byte) {
 	conn := this.subnetManager.GetServer(to)
 	if conn != nil {
@@ -124,13 +124,13 @@ func (this *Server) ForwardClientMsgToServer(fromconn *connect.Client,
 }
 
 // 广播一个消息到连接到本服务器的所有服务器
-func (this *Server) BroadcastServerCmd(msgstr msg.MsgStruct) {
-	this.subnetManager.BroadcastCmd(this.getServerMsgPack(msgstr, nil))
+func (this *Server) BroadcastModuleCmd(msgstr msg.MsgStruct) {
+	this.subnetManager.BroadcastCmd(this.getModuleMsgPack(msgstr, nil))
 }
 
 // 获取一个均衡的负载服务器
-func (this *Server) GetBalanceModuleID(servertype string) string {
-	server := this.subnetManager.GetRandomServer(servertype)
+func (this *Server) GetBalanceModuleID(moduletype string) string {
+	server := this.subnetManager.GetRandomServer(moduletype)
 	if server != nil {
 		return server.GetTempID()
 	}
@@ -190,9 +190,9 @@ func (this *Server) DoSendBytesToClient(fromserver string, gateid string,
 }
 
 // 获取一个服务器消息的服务器间转发协议
-func (this *Server) getServerMsgPack(msgstr msg.MsgStruct,
+func (this *Server) getModuleMsgPack(msgstr msg.MsgStruct,
 	tarconn *connect.Server) msg.MsgStruct {
-	res := &servercomm.SForwardToServer{}
+	res := &servercomm.SForwardToModule{}
 	res.FromModuleID = this.moduleid
 	if tarconn != nil {
 		res.ToModuleID = tarconn.ModuleInfo.ModuleID

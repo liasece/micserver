@@ -5,6 +5,6 @@ import (
 )
 
 type ServerHook interface {
-	OnServerMessage(msg *servercomm.ServerMessage)
+	OnModuleMessage(msg *servercomm.ModuleMessage)
 	OnClientMessage(msg *servercomm.ClientMessage)
 }

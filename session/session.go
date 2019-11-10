@@ -6,8 +6,8 @@ import (
 	"sync"
 )
 
-type ISInner_SendServerMsg interface {
-	SInner_SendServerMsg(gate string, msg msg.MsgStruct)
+type ISInner_SendModuleMsg interface {
+	SInner_SendModuleMsg(gate string, msg msg.MsgStruct)
 	GetModuleType() string
 }
 
@@ -68,13 +68,13 @@ func (this *Session) IsVertify() bool {
 	return true
 }
 
-func (this *Session) SyncToServer(mod ISInner_SendServerMsg,
+func (this *Session) SyncToModule(mod ISInner_SendModuleMsg,
 	targetServer string) {
 	smsg := &servercomm.SUpdateSession{
 		Session:      this.ToMap(),
 		ClientConnID: this.GetConnectID(),
 	}
-	mod.SInner_SendServerMsg(targetServer, smsg)
+	mod.SInner_SendModuleMsg(targetServer, smsg)
 }
 
 func (this *Session) ToMap() map[string]string {

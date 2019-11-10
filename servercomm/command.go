@@ -84,14 +84,14 @@ type SUpdateSession struct {
 	Session      map[string]string
 }
 
-type SForwardToServer struct {
+type SForwardToModule struct {
 	FromModuleID string
 	ToModuleID   string
 	MsgID        uint16
 	Data         []byte
 }
 
-type ServerMessage struct {
+type ModuleMessage struct {
 	FromModule *ModuleInfo
 	MsgID      uint16
 	Data       []byte

@@ -19,8 +19,8 @@ const (
 	SNotifyAllInfoID          = 45
 	SNotifySafelyQuitID       = 46
 	SUpdateSessionID          = 47
-	SForwardToServerID        = 48
-	ServerMessageID           = 49
+	SForwardToModuleID        = 48
+	ModuleMessageID           = 49
 	SForwardToClientID        = 50
 	SForwardFromGateID        = 51
 	ClientMessageID           = 52
@@ -41,8 +41,8 @@ const (
 	SNotifyAllInfoName          = "servercomm.SNotifyAllInfo"
 	SNotifySafelyQuitName       = "servercomm.SNotifySafelyQuit"
 	SUpdateSessionName          = "servercomm.SUpdateSession"
-	SForwardToServerName        = "servercomm.SForwardToServer"
-	ServerMessageName           = "servercomm.ServerMessage"
+	SForwardToModuleName        = "servercomm.SForwardToModule"
+	ModuleMessageName           = "servercomm.ModuleMessage"
 	SForwardToClientName        = "servercomm.SForwardToClient"
 	SForwardFromGateName        = "servercomm.SForwardFromGate"
 	ClientMessageName           = "servercomm.ClientMessage"
@@ -87,11 +87,11 @@ func (this *SNotifySafelyQuit) WriteBinary(data []byte) int {
 func (this *SUpdateSession) WriteBinary(data []byte) int {
 	return WriteMsgSUpdateSessionByObj(data, this)
 }
-func (this *SForwardToServer) WriteBinary(data []byte) int {
-	return WriteMsgSForwardToServerByObj(data, this)
+func (this *SForwardToModule) WriteBinary(data []byte) int {
+	return WriteMsgSForwardToModuleByObj(data, this)
 }
-func (this *ServerMessage) WriteBinary(data []byte) int {
-	return WriteMsgServerMessageByObj(data, this)
+func (this *ModuleMessage) WriteBinary(data []byte) int {
+	return WriteMsgModuleMessageByObj(data, this)
 }
 func (this *SForwardToClient) WriteBinary(data []byte) int {
 	return WriteMsgSForwardToClientByObj(data, this)
@@ -159,12 +159,12 @@ func (this *SUpdateSession) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSUpdateSessionByBytes(data, this)
 	return size
 }
-func (this *SForwardToServer) ReadBinary(data []byte) int {
-	size, _ := ReadMsgSForwardToServerByBytes(data, this)
+func (this *SForwardToModule) ReadBinary(data []byte) int {
+	size, _ := ReadMsgSForwardToModuleByBytes(data, this)
 	return size
 }
-func (this *ServerMessage) ReadBinary(data []byte) int {
-	size, _ := ReadMsgServerMessageByBytes(data, this)
+func (this *ModuleMessage) ReadBinary(data []byte) int {
+	size, _ := ReadMsgModuleMessageByBytes(data, this)
 	return size
 }
 func (this *SForwardToClient) ReadBinary(data []byte) int {
@@ -217,10 +217,10 @@ func MsgIdToString(id uint16) string {
 		return SNotifySafelyQuitName
 	case SUpdateSessionID:
 		return SUpdateSessionName
-	case SForwardToServerID:
-		return SForwardToServerName
-	case ServerMessageID:
-		return ServerMessageName
+	case SForwardToModuleID:
+		return SForwardToModuleName
+	case ModuleMessageID:
+		return ModuleMessageName
 	case SForwardToClientID:
 		return SForwardToClientName
 	case SForwardFromGateID:
@@ -263,10 +263,10 @@ func StringToMsgId(msgname string) uint16 {
 		return SNotifySafelyQuitID
 	case SUpdateSessionName:
 		return SUpdateSessionID
-	case SForwardToServerName:
-		return SForwardToServerID
-	case ServerMessageName:
-		return ServerMessageID
+	case SForwardToModuleName:
+		return SForwardToModuleID
+	case ModuleMessageName:
+		return ModuleMessageID
 	case SForwardToClientName:
 		return SForwardToClientID
 	case SForwardFromGateName:
@@ -319,11 +319,11 @@ func (this *SNotifySafelyQuit) GetMsgId() uint16 {
 func (this *SUpdateSession) GetMsgId() uint16 {
 	return SUpdateSessionID
 }
-func (this *SForwardToServer) GetMsgId() uint16 {
-	return SForwardToServerID
+func (this *SForwardToModule) GetMsgId() uint16 {
+	return SForwardToModuleID
 }
-func (this *ServerMessage) GetMsgId() uint16 {
-	return ServerMessageID
+func (this *ModuleMessage) GetMsgId() uint16 {
+	return ModuleMessageID
 }
 func (this *SForwardToClient) GetMsgId() uint16 {
 	return SForwardToClientID
@@ -379,11 +379,11 @@ func (this *SNotifySafelyQuit) GetMsgName() string {
 func (this *SUpdateSession) GetMsgName() string {
 	return SUpdateSessionName
 }
-func (this *SForwardToServer) GetMsgName() string {
-	return SForwardToServerName
+func (this *SForwardToModule) GetMsgName() string {
+	return SForwardToModuleName
 }
-func (this *ServerMessage) GetMsgName() string {
-	return ServerMessageName
+func (this *ModuleMessage) GetMsgName() string {
+	return ModuleMessageName
 }
 func (this *SForwardToClient) GetMsgName() string {
 	return SForwardToClientName
@@ -439,11 +439,11 @@ func (this *SNotifySafelyQuit) GetSize() int {
 func (this *SUpdateSession) GetSize() int {
 	return GetSizeSUpdateSession(this)
 }
-func (this *SForwardToServer) GetSize() int {
-	return GetSizeSForwardToServer(this)
+func (this *SForwardToModule) GetSize() int {
+	return GetSizeSForwardToModule(this)
 }
-func (this *ServerMessage) GetSize() int {
-	return GetSizeServerMessage(this)
+func (this *ModuleMessage) GetSize() int {
+	return GetSizeModuleMessage(this)
 }
 func (this *SForwardToClient) GetSize() int {
 	return GetSizeSForwardToClient(this)
@@ -511,11 +511,11 @@ func (this *SUpdateSession) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
-func (this *SForwardToServer) GetJson() string {
+func (this *SForwardToModule) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
-func (this *ServerMessage) GetJson() string {
+func (this *ModuleMessage) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
@@ -1368,7 +1368,7 @@ func GetSizeSUpdateSession(obj *SUpdateSession) int {
 	}
 	return 4 + 4 + len(obj.ClientConnID) + 4 + sizerelystring2
 }
-func ReadMsgSForwardToServerByBytes(indata []byte, obj *SForwardToServer) (int, *SForwardToServer) {
+func ReadMsgSForwardToModuleByBytes(indata []byte, obj *SForwardToModule) (int, *SForwardToModule) {
 	offset := 0
 	if len(indata) < 4 {
 		return 0, nil
@@ -1379,7 +1379,7 @@ func ReadMsgSForwardToServerByBytes(indata []byte, obj *SForwardToServer) (int, 
 		return 4, nil
 	}
 	if obj == nil {
-		obj = &SForwardToServer{}
+		obj = &SForwardToModule{}
 	}
 	if offset+objsize > len(indata) {
 		return offset, obj
@@ -1418,7 +1418,7 @@ func ReadMsgSForwardToServerByBytes(indata []byte, obj *SForwardToServer) (int, 
 	}
 	return endpos, obj
 }
-func WriteMsgSForwardToServerByObj(data []byte, obj *SForwardToServer) int {
+func WriteMsgSForwardToModuleByObj(data []byte, obj *SForwardToModule) int {
 	if obj == nil {
 		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
@@ -1444,13 +1444,13 @@ func WriteMsgSForwardToServerByObj(data []byte, obj *SForwardToServer) int {
 	offset += Data_slen
 	return offset
 }
-func GetSizeSForwardToServer(obj *SForwardToServer) int {
+func GetSizeSForwardToModule(obj *SForwardToModule) int {
 	if obj == nil {
 		return 4
 	}
 	return 4 + 4 + len(obj.FromModuleID) + 4 + len(obj.ToModuleID) + 2 + 4 + len(obj.Data)*1
 }
-func ReadMsgServerMessageByBytes(indata []byte, obj *ServerMessage) (int, *ServerMessage) {
+func ReadMsgModuleMessageByBytes(indata []byte, obj *ModuleMessage) (int, *ModuleMessage) {
 	offset := 0
 	if len(indata) < 4 {
 		return 0, nil
@@ -1461,7 +1461,7 @@ func ReadMsgServerMessageByBytes(indata []byte, obj *ServerMessage) (int, *Serve
 		return 4, nil
 	}
 	if obj == nil {
-		obj = &ServerMessage{}
+		obj = &ModuleMessage{}
 	}
 	if offset+objsize > len(indata) {
 		return offset, obj
@@ -1496,7 +1496,7 @@ func ReadMsgServerMessageByBytes(indata []byte, obj *ServerMessage) (int, *Serve
 	}
 	return endpos, obj
 }
-func WriteMsgServerMessageByObj(data []byte, obj *ServerMessage) int {
+func WriteMsgModuleMessageByObj(data []byte, obj *ModuleMessage) int {
 	if obj == nil {
 		binary.BigEndian.PutUint32(data[0:4], 0)
 		return 4
@@ -1519,7 +1519,7 @@ func WriteMsgServerMessageByObj(data []byte, obj *ServerMessage) int {
 	offset += Data_slen
 	return offset
 }
-func GetSizeServerMessage(obj *ServerMessage) int {
+func GetSizeModuleMessage(obj *ModuleMessage) int {
 	if obj == nil {
 		return 4
 	}

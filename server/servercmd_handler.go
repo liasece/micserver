@@ -17,15 +17,15 @@ func (this *serverCmdHandler) HookServer(serverHook base.ServerHook) {
 	this.serverHook = serverHook
 }
 
-func (this *serverCmdHandler) onForwardToServer(conn *connect.Server,
-	smsg *servercomm.SForwardToServer) {
+func (this *serverCmdHandler) onForwardToModule(conn *connect.Server,
+	smsg *servercomm.SForwardToModule) {
 	if this.serverHook != nil {
-		msg := &servercomm.ServerMessage{
+		msg := &servercomm.ModuleMessage{
 			FromModule: conn.ModuleInfo,
 			MsgID:      smsg.MsgID,
 			Data:       smsg.Data,
 		}
-		this.serverHook.OnServerMessage(msg)
+		this.serverHook.OnModuleMessage(msg)
 	}
 }
 
@@ -67,12 +67,12 @@ func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 	msgbinary *msg.MessageBinary) {
 	switch msgbinary.CmdID {
-	case servercomm.SForwardToServerID:
+	case servercomm.SForwardToModuleID:
 		// 服务器间用户空间消息转发
 		if this.serverHook != nil {
-			layerMsg := &servercomm.SForwardToServer{}
+			layerMsg := &servercomm.SForwardToModule{}
 			layerMsg.ReadBinary(msgbinary.ProtoData)
-			this.onForwardToServer(conn, layerMsg)
+			this.onForwardToModule(conn, layerMsg)
 		}
 	case servercomm.SForwardFromGateID:
 		var layerMsg *servercomm.SForwardFromGate
