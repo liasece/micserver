@@ -1,11 +1,11 @@
 package testmsg
 
-type SServerInfo struct {
-	ServerID   string
-	ServerAddr string
+type SModuleInfo struct {
+	ModuleID   string
+	ModuleAddr string
 	// 服务器序号 重复不影响正常运行
-	// 但是其改动会影响 配置读取/ServerName/Log文件名
-	ServerNumber uint32
+	// 但是其改动会影响 配置读取/ModuleName/Log文件名
+	ModuleNumber uint32
 	// 服务器数字版本
 	// 命名规则为： YYYYMMDDhhmm (年月日时分)
 	Version uint64
@@ -24,12 +24,12 @@ type TestMyProto struct {
 	Uint32_nil_1               uint32
 	Uint64_nil_1               uint64
 	String_nil_1               string
-	MyType_nil_1               SServerInfo
-	MyTypeP_nil_1              *SServerInfo
-	MyTypeP1_nil_1             *SServerInfo
-	MyType_1_nil_1             SServerInfo
-	MyTypeP_1_nil_1            *SServerInfo
-	MyTypeP1_1_nil_1           *SServerInfo
+	MyType_nil_1               SModuleInfo
+	MyTypeP_nil_1              *SModuleInfo
+	MyTypeP1_nil_1             *SModuleInfo
+	MyType_1_nil_1             SModuleInfo
+	MyTypeP_1_nil_1            *SModuleInfo
+	MyTypeP1_1_nil_1           *SModuleInfo
 	SliceInt_nil_1             []int
 	SliceByte_nil_1            []byte
 	SliceInt8_nil_1            []int8
@@ -41,10 +41,10 @@ type TestMyProto struct {
 	SliceUint16_nil_1          []uint16
 	SliceUint32_nil_1          []uint32
 	SliceUint64_nil_1          []uint64
-	SliceMyType_nil_1          []SServerInfo
-	SliceMyTypeP_nil_1         []*SServerInfo
-	SliceMyType1_nil_1         []SServerInfo
-	SliceMyTypeP1_nil_1        []*SServerInfo
+	SliceMyType_nil_1          []SModuleInfo
+	SliceMyTypeP_nil_1         []*SModuleInfo
+	SliceMyType1_nil_1         []SModuleInfo
+	SliceMyTypeP1_nil_1        []*SModuleInfo
 	Int_nil_nil_1              int
 	Byte_nil_nil_1             byte
 	Int8_nil_nil_1             int8
@@ -57,12 +57,12 @@ type TestMyProto struct {
 	Uint32_nil_nil_1           uint32
 	Uint64_nil_nil_1           uint64
 	String_nil_nil_1           string
-	MyType_nil_nil_1           SServerInfo
-	MyTypeP_nil_nil_1          *SServerInfo
-	MyTypeP1_nil_nil_1         *SServerInfo
-	MyType_1_nil_nil_1         SServerInfo
-	MyTypeP_1_nil_nil_1        *SServerInfo
-	MyTypeP1_1_nil_nil_1       *SServerInfo
+	MyType_nil_nil_1           SModuleInfo
+	MyTypeP_nil_nil_1          *SModuleInfo
+	MyTypeP1_nil_nil_1         *SModuleInfo
+	MyType_1_nil_nil_1         SModuleInfo
+	MyTypeP_1_nil_nil_1        *SModuleInfo
+	MyTypeP1_1_nil_nil_1       *SModuleInfo
 	SliceInt_nil_nil_1         []int
 	SliceByte_nil_nil_1        []byte
 	SliceInt8_nil_nil_1        []int8
@@ -74,14 +74,14 @@ type TestMyProto struct {
 	SliceUint16_nil_nil_1      []uint16
 	SliceUint32_nil_nil_1      []uint32
 	SliceUint64_nil_nil_1      []uint64
-	SliceMyType_nil_nil_1      []SServerInfo
-	SliceMyTypeP_nil_nil_1     []*SServerInfo
-	SliceMyType1_nil_nil_1     []SServerInfo
-	SliceMyTypeP1_nil_nil_1    []*SServerInfo
-	SliceMyType_1_nil_nil_1    []SServerInfo
-	SliceMyTypeP_1_nil_nil_1   []*SServerInfo
-	SliceMyType1_1_nil_nil_1   []SServerInfo
-	SliceMyTypeP1_1_nil_nil_1  []*SServerInfo
+	SliceMyType_nil_nil_1      []SModuleInfo
+	SliceMyTypeP_nil_nil_1     []*SModuleInfo
+	SliceMyType1_nil_nil_1     []SModuleInfo
+	SliceMyTypeP1_nil_nil_1    []*SModuleInfo
+	SliceMyType_1_nil_nil_1    []SModuleInfo
+	SliceMyTypeP_1_nil_nil_1   []*SModuleInfo
+	SliceMyType1_1_nil_nil_1   []SModuleInfo
+	SliceMyTypeP1_1_nil_nil_1  []*SModuleInfo
 	MapIntInt_nil_nil_1        map[int]int
 	MapInt8Int_nil_nil_1       map[int8]int
 	MapInt16Int_nil_nil_1      map[int16]int
@@ -118,12 +118,12 @@ type TestMyProto struct {
 	Uint32                     uint32
 	Uint64                     uint64
 	String                     string
-	MyType                     SServerInfo
-	MyTypeP                    *SServerInfo
-	MyTypeP1                   *SServerInfo
-	MyType_1                   SServerInfo
-	MyTypeP_1                  *SServerInfo
-	MyTypeP1_1                 *SServerInfo
+	MyType                     SModuleInfo
+	MyTypeP                    *SModuleInfo
+	MyTypeP1                   *SModuleInfo
+	MyType_1                   SModuleInfo
+	MyTypeP_1                  *SModuleInfo
+	MyTypeP1_1                 *SModuleInfo
 	SliceInt                   []int
 	SliceByte                  []byte
 	SliceInt8                  []int8
@@ -135,10 +135,10 @@ type TestMyProto struct {
 	SliceUint16                []uint16
 	SliceUint32                []uint32
 	SliceUint64                []uint64
-	SliceMyType                []SServerInfo
-	SliceMyTypeP               []*SServerInfo
-	SliceMyType1               []SServerInfo
-	SliceMyTypeP1              []*SServerInfo
+	SliceMyType                []SModuleInfo
+	SliceMyTypeP               []*SModuleInfo
+	SliceMyType1               []SModuleInfo
+	SliceMyTypeP1              []*SModuleInfo
 	Int_nil                    int
 	Byte_nil                   byte
 	Int8_nil                   int8
@@ -151,12 +151,12 @@ type TestMyProto struct {
 	Uint32_nil                 uint32
 	Uint64_nil                 uint64
 	String_nil                 string
-	MyType_nil                 SServerInfo
-	MyTypeP_nil                *SServerInfo
-	MyTypeP1_nil               *SServerInfo
-	MyType_1_nil               SServerInfo
-	MyTypeP_1_nil              *SServerInfo
-	MyTypeP1_1_nil             *SServerInfo
+	MyType_nil                 SModuleInfo
+	MyTypeP_nil                *SModuleInfo
+	MyTypeP1_nil               *SModuleInfo
+	MyType_1_nil               SModuleInfo
+	MyTypeP_1_nil              *SModuleInfo
+	MyTypeP1_1_nil             *SModuleInfo
 	SliceInt_nil               []int
 	SliceByte_nil              []byte
 	SliceInt8_nil              []int8
@@ -168,14 +168,14 @@ type TestMyProto struct {
 	SliceUint16_nil            []uint16
 	SliceUint32_nil            []uint32
 	SliceUint64_nil            []uint64
-	SliceMyType_nil            []SServerInfo
-	SliceMyTypeP_nil           []*SServerInfo
-	SliceMyType1_nil           []SServerInfo
-	SliceMyTypeP1_nil          []*SServerInfo
-	SliceMyType_1_nil          []SServerInfo
-	SliceMyTypeP_1_nil         []*SServerInfo
-	SliceMyType1_1_nil         []SServerInfo
-	SliceMyTypeP1_1_nil        []*SServerInfo
+	SliceMyType_nil            []SModuleInfo
+	SliceMyTypeP_nil           []*SModuleInfo
+	SliceMyType1_nil           []SModuleInfo
+	SliceMyTypeP1_nil          []*SModuleInfo
+	SliceMyType_1_nil          []SModuleInfo
+	SliceMyTypeP_1_nil         []*SModuleInfo
+	SliceMyType1_1_nil         []SModuleInfo
+	SliceMyTypeP1_1_nil        []*SModuleInfo
 	MapIntInt_nil              map[int]int
 	MapInt8Int_nil             map[int8]int
 	MapInt16Int_nil            map[int16]int
@@ -242,18 +242,18 @@ type TestMyProto struct {
 	MapIntByteUint64_nil       map[byte]uint64
 	MapIntInt32Uint64_nil      map[int32]uint64
 	MapIntInt64Uint64_nil      map[int64]uint64
-	MapIntMyType_nil           map[int]SServerInfo
-	MapInt8MyType_nil          map[int8]SServerInfo
-	MapInt16MyType_nil         map[int16]SServerInfo
-	MapIntByteMyType_nil       map[byte]SServerInfo
-	MapIntInt32MyType_nil      map[int32]SServerInfo
-	MapIntInt64MyType_nil      map[int64]SServerInfo
-	MapIntMyTypeP_nil          map[int]*SServerInfo
-	MapInt8MyTypeP_nil         map[int8]*SServerInfo
-	MapInt16MyTypeP_nil        map[int16]*SServerInfo
-	MapIntByteMyTypeP_nil      map[byte]*SServerInfo
-	MapIntInt32MyTypeP_nil     map[int32]*SServerInfo
-	MapIntInt64MyTypeP_nil     map[int64]*SServerInfo
+	MapIntMyType_nil           map[int]SModuleInfo
+	MapInt8MyType_nil          map[int8]SModuleInfo
+	MapInt16MyType_nil         map[int16]SModuleInfo
+	MapIntByteMyType_nil       map[byte]SModuleInfo
+	MapIntInt32MyType_nil      map[int32]SModuleInfo
+	MapIntInt64MyType_nil      map[int64]SModuleInfo
+	MapIntMyTypeP_nil          map[int]*SModuleInfo
+	MapInt8MyTypeP_nil         map[int8]*SModuleInfo
+	MapInt16MyTypeP_nil        map[int16]*SModuleInfo
+	MapIntByteMyTypeP_nil      map[byte]*SModuleInfo
+	MapIntInt32MyTypeP_nil     map[int32]*SModuleInfo
+	MapIntInt64MyTypeP_nil     map[int64]*SModuleInfo
 	Mapstring_nil              map[string]string
 	Mapstring1_nil             map[string]string
 	MapIntInt32Uint32_1_nil    map[int32]uint32
@@ -264,10 +264,10 @@ type TestMyProto struct {
 	MapIntByteUint64_1_nil     map[byte]uint64
 	MapIntInt32Uint64_1_nil    map[int32]uint64
 	MapIntInt64Uint64_1_nil    map[int64]uint64
-	SliceMyType_1              []SServerInfo
-	SliceMyTypeP_1             []*SServerInfo
-	SliceMyType1_1             []SServerInfo
-	SliceMyTypeP1_1            []*SServerInfo
+	SliceMyType_1              []SModuleInfo
+	SliceMyTypeP_1             []*SModuleInfo
+	SliceMyType1_1             []SModuleInfo
+	SliceMyTypeP1_1            []*SModuleInfo
 	MapIntInt                  map[int]int
 	MapInt8Int                 map[int8]int
 	MapInt16Int                map[int16]int
@@ -334,18 +334,18 @@ type TestMyProto struct {
 	MapIntByteUint64           map[byte]uint64
 	MapIntInt32Uint64          map[int32]uint64
 	MapIntInt64Uint64          map[int64]uint64
-	MapIntMyType               map[int]SServerInfo
-	MapInt8MyType              map[int8]SServerInfo
-	MapInt16MyType             map[int16]SServerInfo
-	MapIntByteMyType           map[byte]SServerInfo
-	MapIntInt32MyType          map[int32]SServerInfo
-	MapIntInt64MyType          map[int64]SServerInfo
-	MapIntMyTypeP              map[int]*SServerInfo
-	MapInt8MyTypeP             map[int8]*SServerInfo
-	MapInt16MyTypeP            map[int16]*SServerInfo
-	MapIntByteMyTypeP          map[byte]*SServerInfo
-	MapIntInt32MyTypeP         map[int32]*SServerInfo
-	MapIntInt64MyTypeP         map[int64]*SServerInfo
+	MapIntMyType               map[int]SModuleInfo
+	MapInt8MyType              map[int8]SModuleInfo
+	MapInt16MyType             map[int16]SModuleInfo
+	MapIntByteMyType           map[byte]SModuleInfo
+	MapIntInt32MyType          map[int32]SModuleInfo
+	MapIntInt64MyType          map[int64]SModuleInfo
+	MapIntMyTypeP              map[int]*SModuleInfo
+	MapInt8MyTypeP             map[int8]*SModuleInfo
+	MapInt16MyTypeP            map[int16]*SModuleInfo
+	MapIntByteMyTypeP          map[byte]*SModuleInfo
+	MapIntInt32MyTypeP         map[int32]*SModuleInfo
+	MapIntInt64MyTypeP         map[int64]*SModuleInfo
 	Mapstring                  map[string]string
 	Mapstring1                 map[string]string
 	MapIntInt32Uint32_1        map[int32]uint32
@@ -358,10 +358,10 @@ type TestMyProto struct {
 	MapIntInt64Uint64_1        map[int64]uint64
 }
 
-var testServerInfo SServerInfo = SServerInfo{
-	ServerID:     "123",
-	ServerAddr:   "123",
-	ServerNumber: 123,
+var testModuleInfo SModuleInfo = SModuleInfo{
+	ModuleID:     "123",
+	ModuleAddr:   "123",
+	ModuleNumber: 123,
 	Version:      123,
 }
 
@@ -378,8 +378,8 @@ var TetstValue TestMyProto = TestMyProto{
 	Uint32:       115,
 	Uint64:       115,
 	String:       "115",
-	MyType:       testServerInfo,
-	MyTypeP:      &testServerInfo,
+	MyType:       testModuleInfo,
+	MyTypeP:      &testModuleInfo,
 	MyTypeP1:     nil,
 	SliceInt:     []int{115},
 	SliceByte:    []byte{115},
@@ -391,10 +391,10 @@ var TetstValue TestMyProto = TestMyProto{
 	SliceUint16:  []uint16{115},
 	SliceUint32:  []uint32{115},
 	SliceUint64:  []uint64{115},
-	SliceMyType:  []SServerInfo{testServerInfo},
-	SliceMyTypeP: []*SServerInfo{&testServerInfo, nil, &testServerInfo},
-	// SliceMyType1:       []SServerInfo{testServerInfo},
-	// SliceMyTypeP1:      []*SServerInfo{&testServerInfo, nil, &testServerInfo},
+	SliceMyType:  []SModuleInfo{testModuleInfo},
+	SliceMyTypeP: []*SModuleInfo{&testModuleInfo, nil, &testModuleInfo},
+	// SliceMyType1:       []SModuleInfo{testModuleInfo},
+	// SliceMyTypeP1:      []*SModuleInfo{&testModuleInfo, nil, &testModuleInfo},
 	MapIntInt:         map[int]int{1: 115, 2: 116, 3: 117},
 	MapInt8Int:        map[int8]int{1: 115, 2: 116, 3: 117},
 	MapInt16Int:       map[int16]int{1: 115, 2: 116, 3: 117},
@@ -460,18 +460,18 @@ var TetstValue TestMyProto = TestMyProto{
 	MapIntByteUint64:  map[byte]uint64{1: 115, 2: 116, 3: 117},
 	MapIntInt32Uint64: map[int32]uint64{1: 115, 2: 116, 3: 117},
 	MapIntInt64Uint64: map[int64]uint64{1: 115, 2: 116, 3: 117},
-	MapIntMyType:      map[int]SServerInfo{1: testServerInfo, 2: testServerInfo, 3: testServerInfo, 4: testServerInfo, 5: testServerInfo, 6: testServerInfo, 7: testServerInfo, 8: testServerInfo, 9: testServerInfo},
-	MapInt8MyType:     map[int8]SServerInfo{1: testServerInfo, 2: testServerInfo, 3: testServerInfo, 4: testServerInfo, 5: testServerInfo, 6: testServerInfo, 7: testServerInfo, 8: testServerInfo, 9: testServerInfo},
-	MapInt16MyType:    map[int16]SServerInfo{1: testServerInfo, 2: testServerInfo, 3: testServerInfo, 4: testServerInfo, 5: testServerInfo, 6: testServerInfo, 7: testServerInfo, 8: testServerInfo, 9: testServerInfo},
-	MapIntByteMyType:  map[byte]SServerInfo{1: testServerInfo, 2: testServerInfo, 3: testServerInfo, 4: testServerInfo, 5: testServerInfo, 6: testServerInfo, 7: testServerInfo, 8: testServerInfo, 9: testServerInfo},
-	MapIntInt32MyType: map[int32]SServerInfo{1: testServerInfo, 2: testServerInfo, 3: testServerInfo, 4: testServerInfo, 5: testServerInfo, 6: testServerInfo, 7: testServerInfo, 8: testServerInfo, 9: testServerInfo},
-	// MapIntInt64MyType: map[int64]SServerInfo{1: testServerInfo, 2: testServerInfo, 3: testServerInfo, 4: testServerInfo, 5: testServerInfo, 6: testServerInfo, 7: testServerInfo, 8: testServerInfo, 9: testServerInfo},
-	MapIntMyTypeP:   map[int]*SServerInfo{1: &testServerInfo, 2: nil, 3: nil, 4: nil, 5: &testServerInfo, 6: &testServerInfo, 7: &testServerInfo, 8: &testServerInfo, 9: &testServerInfo},
-	MapInt8MyTypeP:  map[int8]*SServerInfo{1: &testServerInfo, 2: nil, 3: &testServerInfo, 4: &testServerInfo, 5: &testServerInfo, 6: &testServerInfo, 7: &testServerInfo, 8: &testServerInfo, 9: &testServerInfo},
-	MapInt16MyTypeP: map[int16]*SServerInfo{1: &testServerInfo, 2: nil, 3: &testServerInfo, 4: &testServerInfo, 5: &testServerInfo, 6: &testServerInfo, 7: &testServerInfo, 8: &testServerInfo, 9: &testServerInfo},
-	// MapIntByteMyTypeP:  map[byte]*SServerInfo{1: &testServerInfo, 2: nil, 3: &testServerInfo, 4: &testServerInfo, 5: &testServerInfo, 6: &testServerInfo, 7: &testServerInfo, 8: &testServerInfo, 9: &testServerInfo},
-	MapIntInt32MyTypeP: map[int32]*SServerInfo{1: &testServerInfo, 2: nil, 3: &testServerInfo, 4: &testServerInfo, 5: &testServerInfo, 6: &testServerInfo, 7: &testServerInfo, 8: &testServerInfo, 9: &testServerInfo},
-	MapIntInt64MyTypeP: map[int64]*SServerInfo{1: &testServerInfo, 2: nil, 3: &testServerInfo, 4: &testServerInfo, 5: &testServerInfo, 6: &testServerInfo, 7: &testServerInfo, 8: &testServerInfo, 9: &testServerInfo},
+	MapIntMyType:      map[int]SModuleInfo{1: testModuleInfo, 2: testModuleInfo, 3: testModuleInfo, 4: testModuleInfo, 5: testModuleInfo, 6: testModuleInfo, 7: testModuleInfo, 8: testModuleInfo, 9: testModuleInfo},
+	MapInt8MyType:     map[int8]SModuleInfo{1: testModuleInfo, 2: testModuleInfo, 3: testModuleInfo, 4: testModuleInfo, 5: testModuleInfo, 6: testModuleInfo, 7: testModuleInfo, 8: testModuleInfo, 9: testModuleInfo},
+	MapInt16MyType:    map[int16]SModuleInfo{1: testModuleInfo, 2: testModuleInfo, 3: testModuleInfo, 4: testModuleInfo, 5: testModuleInfo, 6: testModuleInfo, 7: testModuleInfo, 8: testModuleInfo, 9: testModuleInfo},
+	MapIntByteMyType:  map[byte]SModuleInfo{1: testModuleInfo, 2: testModuleInfo, 3: testModuleInfo, 4: testModuleInfo, 5: testModuleInfo, 6: testModuleInfo, 7: testModuleInfo, 8: testModuleInfo, 9: testModuleInfo},
+	MapIntInt32MyType: map[int32]SModuleInfo{1: testModuleInfo, 2: testModuleInfo, 3: testModuleInfo, 4: testModuleInfo, 5: testModuleInfo, 6: testModuleInfo, 7: testModuleInfo, 8: testModuleInfo, 9: testModuleInfo},
+	// MapIntInt64MyType: map[int64]SModuleInfo{1: testModuleInfo, 2: testModuleInfo, 3: testModuleInfo, 4: testModuleInfo, 5: testModuleInfo, 6: testModuleInfo, 7: testModuleInfo, 8: testModuleInfo, 9: testModuleInfo},
+	MapIntMyTypeP:   map[int]*SModuleInfo{1: &testModuleInfo, 2: nil, 3: nil, 4: nil, 5: &testModuleInfo, 6: &testModuleInfo, 7: &testModuleInfo, 8: &testModuleInfo, 9: &testModuleInfo},
+	MapInt8MyTypeP:  map[int8]*SModuleInfo{1: &testModuleInfo, 2: nil, 3: &testModuleInfo, 4: &testModuleInfo, 5: &testModuleInfo, 6: &testModuleInfo, 7: &testModuleInfo, 8: &testModuleInfo, 9: &testModuleInfo},
+	MapInt16MyTypeP: map[int16]*SModuleInfo{1: &testModuleInfo, 2: nil, 3: &testModuleInfo, 4: &testModuleInfo, 5: &testModuleInfo, 6: &testModuleInfo, 7: &testModuleInfo, 8: &testModuleInfo, 9: &testModuleInfo},
+	// MapIntByteMyTypeP:  map[byte]*SModuleInfo{1: &testModuleInfo, 2: nil, 3: &testModuleInfo, 4: &testModuleInfo, 5: &testModuleInfo, 6: &testModuleInfo, 7: &testModuleInfo, 8: &testModuleInfo, 9: &testModuleInfo},
+	MapIntInt32MyTypeP: map[int32]*SModuleInfo{1: &testModuleInfo, 2: nil, 3: &testModuleInfo, 4: &testModuleInfo, 5: &testModuleInfo, 6: &testModuleInfo, 7: &testModuleInfo, 8: &testModuleInfo, 9: &testModuleInfo},
+	MapIntInt64MyTypeP: map[int64]*SModuleInfo{1: &testModuleInfo, 2: nil, 3: &testModuleInfo, 4: &testModuleInfo, 5: &testModuleInfo, 6: &testModuleInfo, 7: &testModuleInfo, 8: &testModuleInfo, 9: &testModuleInfo},
 	// Mapstring:          map[string]string{"1": "115"},
 	Mapstring1: map[string]string{"1": "115"},
 }

@@ -18,13 +18,13 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	this.connectMutex.Lock()
 	defer this.connectMutex.Unlock()
 
-	this.Syslog("收到登陆请求 Server:%s", tarinfo.ServerID)
+	this.Syslog("收到登陆请求 Server:%s", tarinfo.ModuleID)
 
 	// 来源服务器请求登陆本服务器
-	myconn := this.GetServer(fmt.Sprint(tarinfo.ServerID))
+	myconn := this.GetServer(fmt.Sprint(tarinfo.ModuleID))
 	if myconn != nil {
 		this.Syslog("[SubnetManager.OnServerLogin] 重复连接 %s 优先级：%d:%d",
-			tarinfo.ServerID,
+			tarinfo.ModuleID,
 			myconn.ConnectPriority, tarinfo.ConnectPriority)
 		if myconn.ConnectPriority < tarinfo.ConnectPriority {
 			// 对方连接的优先级比较高，删除我方连接
@@ -41,15 +41,15 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 			return
 		}
 	}
-	serverInfo := &servercomm.ServerInfo{}
+	serverInfo := &servercomm.ModuleInfo{}
 
 	// 来源服务器地址
 	remoteaddr := conn.RemoteAddr()
 	// 获取来源服务器ID在本地的配置
-	serverInfo.ServerID = tarinfo.ServerID
-	serverInfo.ServerAddr = tarinfo.ServerAddr
+	serverInfo.ModuleID = tarinfo.ModuleID
+	serverInfo.ModuleAddr = tarinfo.ModuleAddr
 	// 检查是否获取信息成功
-	if serverInfo.ServerID == "" {
+	if serverInfo.ModuleID == "" {
 		// 如果获取信息不成功
 		this.Error("[SubNetManager.OnServerLogin] "+
 			"连接分配异常 未知服务器连接 "+
@@ -64,14 +64,14 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	this.Syslog("[SubNetManager.OnServerLogin] "+
 		"客户端连接验证成功 "+
 		" SerID[%s] IP[%s]",
-		serverInfo.ServerID, serverInfo.ServerAddr)
+		serverInfo.ModuleID, serverInfo.ModuleAddr)
 
 	serverInfo.Version = tarinfo.Version
 
 	// 来源服务器检查完毕
 	// 完善来源服务器在本服务器的信息
-	this.ChangeServerTempid(conn, fmt.Sprint(serverInfo.ServerID))
-	conn.ServerInfo = serverInfo
+	this.ChangeServerTempid(conn, fmt.Sprint(serverInfo.ModuleID))
+	conn.ModuleInfo = serverInfo
 	conn.SetVertify(true)
 	conn.SetTerminateTime(0) // 清除终止时间状态
 	// 向来源服务器回复登陆成功消息
@@ -86,7 +86,7 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	this.NotifyAllServerInfo(conn)
 	// 把来源服务器信息广播给其它所有服务器
 	notifymsg := &servercomm.SStartMyNotifyCommand{}
-	notifymsg.ServerInfo = serverInfo
+	notifymsg.ModuleInfo = serverInfo
 	this.BroadcastCmd(notifymsg)
 }
 
@@ -105,7 +105,7 @@ func (this *SubnetManager) BindTCPSubnet(settings *conf.ModuleConfig) error {
 	}
 	this.Syslog("[SubNetManager.BindTCPSubnet] "+
 		"服务器绑定成功 IPPort[%s]", addr)
-	this.myServerInfo.ServerAddr = addr
+	this.myServerInfo.ModuleAddr = addr
 	go this.TCPServerListenerProcess(netlisten)
 	return nil
 }
@@ -162,7 +162,7 @@ func (this *SubnetManager) BindChanSubnet(settings *conf.ModuleConfig) error {
 		return nil
 	}
 	serverChan := make(chan *process.ChanServerHandshake, 1000)
-	process.AddServerChan(this.myServerInfo.ServerID, serverChan)
+	process.AddServerChan(this.myServerInfo.ModuleID, serverChan)
 	go this.ChanServerListenerProcess(serverChan)
 	this.Syslog("BindChanSubnet ChanServer 注册成功")
 	return nil
@@ -178,7 +178,7 @@ func (this *SubnetManager) ChanServerListenerProcess(
 		}
 	}()
 	defer func() {
-		process.DeleteServerChan(this.myServerInfo.ServerID)
+		process.DeleteServerChan(this.myServerInfo.ModuleID)
 		close(serverChan)
 	}()
 	for true {
@@ -210,27 +210,27 @@ func (this *SubnetManager) mChanServerListener(
 
 func (this *SubnetManager) processChanServerRequest(
 	newinfo *process.ChanServerHandshake) {
-	remoteChan := process.GetServerChan(newinfo.ServerInfo.ServerID)
+	remoteChan := process.GetServerChan(newinfo.ModuleInfo.ModuleID)
 	if remoteChan != nil {
 		if newinfo.Seq == 0 {
 			this.connectMutex.Lock()
-			oldconn := this.GetServer(newinfo.ServerInfo.ServerID)
+			oldconn := this.GetServer(newinfo.ModuleInfo.ModuleID)
 			// 重复连接
 			if oldconn != nil {
 				this.Syslog("[SubnetManager.mChanServerListener] "+
-					"ServerID[%s] 重复的连接", newinfo.ServerInfo.ServerID)
+					"ModuleID[%s] 重复的连接", newinfo.ModuleInfo.ModuleID)
 			} else {
 				// 请求开始
 				newMsgChan := make(chan *msg.MessageBinary, 1000)
 				remoteChan <- &process.ChanServerHandshake{
-					ServerInfo:    this.myServerInfo,
+					ModuleInfo:    this.myServerInfo,
 					ServerMsgChan: newMsgChan,
 					ClientMsgChan: newinfo.ClientMsgChan,
 					Seq:           newinfo.Seq + 1,
 				}
 				this.Syslog("[SubNetManager.mChanServerListener] "+
-					"收到新的 ServerChan 连接 ServerID[%s]",
-					newinfo.ServerInfo.ServerID)
+					"收到新的 ServerChan 连接 ModuleID[%s]",
+					newinfo.ModuleInfo.ModuleID)
 				// 建立本地通信Server对象
 				conn := this.NewChanServer(connect.ServerSCTypeTask,
 					newinfo.ClientMsgChan, newMsgChan, "",
@@ -241,20 +241,20 @@ func (this *SubnetManager) processChanServerRequest(
 			this.connectMutex.Unlock()
 		} else if newinfo.Seq == 1 {
 			this.connectMutex.Lock()
-			oldconn := this.GetServer(newinfo.ServerInfo.ServerID)
+			oldconn := this.GetServer(newinfo.ModuleInfo.ModuleID)
 			// 重复连接
 			if oldconn != nil {
 				this.Syslog("[SubnetManager.mChanServerListener] "+
-					"ServerID[%s] 重复的连接", newinfo.ServerInfo.ServerID)
+					"ModuleID[%s] 重复的连接", newinfo.ModuleInfo.ModuleID)
 			} else {
 				// 请求回复
 				this.Syslog("[SubNetManager.mChanServerListener] "+
-					"收到 ServerChan 连接请求回复 ServerID[%s]",
-					newinfo.ServerInfo.ServerID)
+					"收到 ServerChan 连接请求回复 ModuleID[%s]",
+					newinfo.ModuleInfo.ModuleID)
 				// 建立本地通信Server对象
 				this.doConnectChanServer(
 					newinfo.ServerMsgChan, newinfo.ClientMsgChan,
-					newinfo.ServerInfo.ServerID)
+					newinfo.ModuleInfo.ModuleID)
 			}
 			this.connectMutex.Unlock()
 		}

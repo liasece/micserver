@@ -102,10 +102,10 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 			}
 			return
 		}
-		conn.ServerInfo = recvmsg.Destination
+		conn.ModuleInfo = recvmsg.Destination
 		this.Syslog("[SubnetManager.msgParseTCPConn] "+
 			"连接服务器验证成功,id:%s,ipport:%s",
-			conn.ServerInfo.ServerID, conn.ServerInfo.ServerAddr)
+			conn.ModuleInfo.ModuleID, conn.ModuleInfo.ModuleAddr)
 		return
 	case servercomm.SLoginCommandID:
 		recvmsg := &servercomm.SLoginCommand{}
@@ -117,9 +117,9 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 		conn.IsNormalDisconnect = true
 		this.connectMutex.Lock()
 		defer this.connectMutex.Unlock()
-		this.connInfos.RemoveConnInfo(conn.ServerInfo.ServerID)
+		this.connInfos.RemoveConnInfo(conn.ModuleInfo.ModuleID)
 		this.Syslog("[msgParseTCPConn] 服务器已主动关闭，不再尝试连接它了 "+
-			"ServerInfo[%s]", conn.ServerInfo.GetJson())
+			"ModuleInfo[%s]", conn.ModuleInfo.GetJson())
 		return
 	case servercomm.SNotifyAllInfoID:
 		// 收到所有服务器的配置信息

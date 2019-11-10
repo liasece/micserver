@@ -25,13 +25,13 @@ type Server struct {
 	gateBase           *gate.GateBase
 
 	// server info
-	serverid string
+	moduleid string
 	isStop   bool
 	stopChan chan bool
 }
 
-func (this *Server) Init(serverid string) {
-	this.serverid = serverid
+func (this *Server) Init(moduleid string) {
+	this.moduleid = moduleid
 	this.stopChan = make(chan bool)
 	this.ROCServer.Init(this)
 }
@@ -57,7 +57,7 @@ func (this *Server) HookGate(gateHook gatebase.GateHook) {
 
 func (this *Server) BindSubnet(subnetAddrMap map[string]string) {
 	for k, addr := range subnetAddrMap {
-		if k != this.serverid {
+		if k != this.moduleid {
 			this.subnetManager.TryConnectServer(k, addr)
 		}
 	}
@@ -68,7 +68,7 @@ func (this *Server) InitGate(gateaddr string) {
 		Logger: this.Logger,
 	}
 	this.clientEventHandler.server = this
-	this.gateBase.Init(this.serverid)
+	this.gateBase.Init(this.moduleid)
 	this.gateBase.BindOuterTCP(gateaddr)
 
 	// 事件监听
@@ -129,7 +129,7 @@ func (this *Server) BroadcastServerCmd(msgstr msg.MsgStruct) {
 }
 
 // 获取一个均衡的负载服务器
-func (this *Server) GetBalanceServerID(servertype string) string {
+func (this *Server) GetBalanceModuleID(servertype string) string {
 	server := this.subnetManager.GetRandomServer(servertype)
 	if server != nil {
 		return server.GetTempID()
@@ -141,16 +141,16 @@ func (this *Server) GetBalanceServerID(servertype string) string {
 func (this *Server) SendBytesToClient(gateid string,
 	to string, msgid uint16, data []byte) error {
 	sec := false
-	if this.serverid == gateid {
+	if this.moduleid == gateid {
 		if this.DoSendBytesToClient(
-			this.serverid, gateid, to, msgid, data) == nil {
+			this.moduleid, gateid, to, msgid, data) == nil {
 			sec = true
 		}
 	} else {
 		conn := this.subnetManager.GetServer(gateid)
 		if conn != nil {
 			forward := &servercomm.SForwardToClient{}
-			forward.FromServerID = this.serverid
+			forward.FromModuleID = this.moduleid
 			forward.MsgID = msgid
 			forward.ToClientID = to
 			forward.ToGateID = gateid
@@ -193,9 +193,9 @@ func (this *Server) DoSendBytesToClient(fromserver string, gateid string,
 func (this *Server) getServerMsgPack(msgstr msg.MsgStruct,
 	tarconn *connect.Server) msg.MsgStruct {
 	res := &servercomm.SForwardToServer{}
-	res.FromServerID = this.serverid
+	res.FromModuleID = this.moduleid
 	if tarconn != nil {
-		res.ToServerID = tarconn.ServerInfo.ServerID
+		res.ToModuleID = tarconn.ModuleInfo.ModuleID
 	}
 	res.MsgID = msgstr.GetMsgId()
 	size := msgstr.GetSize()
@@ -208,9 +208,9 @@ func (this *Server) getServerMsgPack(msgstr msg.MsgStruct,
 func (this *Server) getFarwardFromGateMsgPack(msgid uint16, data []byte,
 	fromconn *connect.Client, tarconn *connect.Server) msg.MsgStruct {
 	res := &servercomm.SForwardFromGate{}
-	res.FromServerID = this.serverid
+	res.FromModuleID = this.moduleid
 	if tarconn != nil {
-		res.ToServerID = tarconn.ServerInfo.ServerID
+		res.ToModuleID = tarconn.ModuleInfo.ModuleID
 	}
 	if fromconn != nil {
 		res.Session = make(map[string]string)

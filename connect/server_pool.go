@@ -25,33 +25,33 @@ func (this *ServerPool) Init(groupID uint16) {
 }
 
 func (this *ServerPool) NewTCPServer(sctype TServerSCType,
-	conn net.Conn, serverid string,
+	conn net.Conn, moduleid string,
 	onRecv func(*Server, *msg.MessageBinary),
 	onClose func(*Server)) *Server {
 	tcptask := &Server{}
 	tcptask.SetLogger(this.Logger)
 	tcptask.InitTCP(sctype, conn, onRecv, onClose)
 	tcptask.Logger = this.Logger
-	if serverid == "" {
+	if moduleid == "" {
 		this.AddServerAuto(tcptask)
 	} else {
-		this.AddServer(tcptask, serverid)
+		this.AddServer(tcptask, moduleid)
 	}
 	return tcptask
 }
 
 func (this *ServerPool) NewChanServer(sctype TServerSCType,
 	sendChan chan *msg.MessageBinary, recvChan chan *msg.MessageBinary,
-	serverid string, onRecv func(*Server, *msg.MessageBinary),
+	moduleid string, onRecv func(*Server, *msg.MessageBinary),
 	onClose func(*Server)) *Server {
 	tcptask := &Server{}
 	tcptask.SetLogger(this.Logger)
 	tcptask.InitChan(sctype, sendChan, recvChan, onRecv, onClose)
 	tcptask.Logger = this.Logger
-	if serverid == "" {
+	if moduleid == "" {
 		this.AddServerAuto(tcptask)
 	} else {
-		this.AddServer(tcptask, serverid)
+		this.AddServer(tcptask, moduleid)
 	}
 	return tcptask
 }
@@ -71,7 +71,7 @@ func (this *ServerPool) BroadcastByType(servertype string,
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
-		if util.GetModuleIDType(value.ServerInfo.ServerID) == servertype {
+		if util.GetModuleIDType(value.ModuleInfo.ModuleID) == servertype {
 			value.SendCmd(v)
 		}
 		return true
@@ -94,7 +94,7 @@ func (this *ServerPool) GetMinServer(servertype string) *Server {
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
-		if util.GetModuleIDType(value.ServerInfo.ServerID) == servertype {
+		if util.GetModuleIDType(value.ModuleInfo.ModuleID) == servertype {
 			if jobnum >= value.GetJobNum() {
 				jobnum = value.GetJobNum()
 				res = value
@@ -111,9 +111,9 @@ func (this *ServerPool) GetLatestVersionByType(servertype string) uint64 {
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
-		if util.GetModuleIDType(value.ServerInfo.ServerID) == servertype &&
-			value.ServerInfo.Version > latestVersion {
-			latestVersion = value.ServerInfo.Version
+		if util.GetModuleIDType(value.ModuleInfo.ModuleID) == servertype &&
+			value.ModuleInfo.Version > latestVersion {
+			latestVersion = value.ModuleInfo.Version
 		}
 		return true
 	})
@@ -124,7 +124,7 @@ func (this *ServerPool) GetLatestVersionByType(servertype string) uint64 {
 func (this *ServerPool) GetMinServerLatestVersion(
 	servertype string) *Server {
 	var jobnum uint32 = 0xFFFFFFFF
-	var serverid uint64 = 0
+	var moduleid uint64 = 0
 
 	latestVersion := this.GetLatestVersionByType(servertype)
 
@@ -132,19 +132,19 @@ func (this *ServerPool) GetMinServerLatestVersion(
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
 		key := tkey.(uint64)
-		if util.GetModuleIDType(value.ServerInfo.ServerID) == servertype &&
-			value.ServerInfo.Version == latestVersion {
+		if util.GetModuleIDType(value.ModuleInfo.ModuleID) == servertype &&
+			value.ModuleInfo.Version == latestVersion {
 			if jobnum >= value.GetJobNum() {
 				jobnum = value.GetJobNum()
-				serverid = key
+				moduleid = key
 			}
 		}
 		return true
 	})
-	if serverid == 0 {
+	if moduleid == 0 {
 		return nil
 	}
-	if tcptask, found := this.allSockets.Load(serverid); found {
+	if tcptask, found := this.allSockets.Load(moduleid); found {
 		return tcptask.(*Server)
 	}
 	return nil
@@ -158,7 +158,7 @@ func (this *ServerPool) GetRandomServer(
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
 		key := tkey.(string)
-		if util.GetModuleIDType(value.ServerInfo.ServerID) == servertype {
+		if util.GetModuleIDType(value.ModuleInfo.ModuleID) == servertype {
 			tasklist = append(tasklist, key)
 		}
 		return true
@@ -168,9 +168,9 @@ func (this *ServerPool) GetRandomServer(
 	if length > 0 {
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		tmpindex := r.Intn(length)
-		serverid := tasklist[tmpindex]
+		moduleid := tasklist[tmpindex]
 
-		if tcptask, found := this.allSockets.Load(serverid); found {
+		if tcptask, found := this.allSockets.Load(moduleid); found {
 			return tcptask.(*Server)
 		}
 	}
@@ -193,8 +193,8 @@ func (this *ServerPool) RemoveServer(tempid string) {
 		// 删除连接
 		this.remove(tempid)
 		this.Syslog("[ServerPool] 断开连接 TmpID[%s] 当前连接数量"+
-			" LinkSum[%d] ServerID[%s]",
-			tempid, this.ServerSum(), value.ServerInfo.ServerID)
+			" LinkSum[%d] ModuleID[%s]",
+			tempid, this.ServerSum(), value.ModuleInfo.ModuleID)
 		return
 	}
 }
@@ -203,15 +203,15 @@ func (this *ServerPool) AddServer(connct *Server, tmpid string) {
 	connct.SetTempID(tmpid)
 	this.add(tmpid, connct)
 	this.Syslog("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
-		" LinkSum[%d] ServerID[%s]",
-		connct.GetTempID(), this.ServerSum(), connct.ServerInfo.ServerID)
+		" LinkSum[%d] ModuleID[%s]",
+		connct.GetTempID(), this.ServerSum(), connct.ModuleInfo.ModuleID)
 }
 
 func (this *ServerPool) AddServerAuto(connct *Server) {
 	this.add(connct.GetTempID(), connct)
 	this.Syslog("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
-		" LinkSum[%d] ServerID[%s]",
-		connct.GetTempID(), this.ServerSum(), connct.ServerInfo.ServerID)
+		" LinkSum[%d] ModuleID[%s]",
+		connct.GetTempID(), this.ServerSum(), connct.ModuleInfo.ModuleID)
 }
 
 // 修改链接的 tempip

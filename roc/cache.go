@@ -9,7 +9,7 @@ const (
 )
 
 type catchServerInfo struct {
-	serverid string
+	moduleid string
 }
 
 type serverInfoMap map[string]*catchServerInfo
@@ -40,58 +40,58 @@ func (this *Cache) catchGetTypeMust(objType ROCObjType) objIDToServerMap {
 	}
 }
 
-func (this *Cache) catchGetServerMust(serverid string) *catchServerInfo {
+func (this *Cache) catchGetServerMust(moduleid string) *catchServerInfo {
 	if this.catchServer == nil {
 		this.catchServer = make(serverInfoMap)
 	}
-	if v, ok := this.catchServer[serverid]; !ok {
+	if v, ok := this.catchServer[moduleid]; !ok {
 		v = &catchServerInfo{
-			serverid: serverid,
+			moduleid: moduleid,
 		}
-		this.catchServer[serverid] = v
+		this.catchServer[moduleid] = v
 		return v
 	} else {
 		return v
 	}
 }
 
-func (this *Cache) Set(objType ROCObjType, objID string, serverid string) {
+func (this *Cache) Set(objType ROCObjType, objID string, moduleid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
 	m := this.catchGetTypeMust(objType)
-	server := this.catchGetServerMust(serverid)
+	server := this.catchGetServerMust(moduleid)
 	m[objID] = server
 }
 
-func (this *Cache) SetM(objType ROCObjType, objIDs []string, serverid string) {
+func (this *Cache) SetM(objType ROCObjType, objIDs []string, moduleid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
 	m := this.catchGetTypeMust(objType)
-	server := this.catchGetServerMust(serverid)
+	server := this.catchGetServerMust(moduleid)
 	for _, v := range objIDs {
 		m[v] = server
 	}
 }
 
-func (this *Cache) Del(objType ROCObjType, objID string, serverid string) {
+func (this *Cache) Del(objType ROCObjType, objID string, moduleid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
 	m := this.catchGetTypeMust(objType)
-	if info, ok := m[objID]; ok && info.serverid == serverid {
+	if info, ok := m[objID]; ok && info.moduleid == moduleid {
 		delete(m, objID)
 	}
 }
 
-func (this *Cache) DelM(objType ROCObjType, objIDs []string, serverid string) {
+func (this *Cache) DelM(objType ROCObjType, objIDs []string, moduleid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
 	m := this.catchGetTypeMust(objType)
 	for _, v := range objIDs {
-		if info, ok := m[v]; ok && info.serverid == serverid {
+		if info, ok := m[v]; ok && info.moduleid == moduleid {
 			delete(m, v)
 		}
 	}
@@ -103,7 +103,7 @@ func (this *Cache) Get(objType ROCObjType, objID string) string {
 
 	m := this.catchGetTypeMust(objType)
 	if v, ok := m[objID]; ok && v != nil {
-		return v.serverid
+		return v.moduleid
 	}
 	return ""
 }

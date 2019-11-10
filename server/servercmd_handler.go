@@ -21,7 +21,7 @@ func (this *serverCmdHandler) onForwardToServer(conn *connect.Server,
 	smsg *servercomm.SForwardToServer) {
 	if this.serverHook != nil {
 		msg := &servercomm.ServerMessage{
-			FromServer: conn.ServerInfo,
+			FromModule: conn.ModuleInfo,
 			MsgID:      smsg.MsgID,
 			Data:       smsg.Data,
 		}
@@ -33,7 +33,7 @@ func (this *serverCmdHandler) onForwardFromGate(conn *connect.Server,
 	smsg *servercomm.SForwardFromGate) {
 	if this.serverHook != nil {
 		msg := &servercomm.ClientMessage{
-			FromServer:   conn.ServerInfo,
+			FromModule:   conn.ModuleInfo,
 			ClientConnID: smsg.ClientConnID,
 			Session:      smsg.Session,
 			MsgID:        smsg.MsgID,
@@ -44,7 +44,7 @@ func (this *serverCmdHandler) onForwardFromGate(conn *connect.Server,
 }
 
 func (this *serverCmdHandler) onForwardToClient(smsg *servercomm.SForwardToClient) {
-	err := this.server.DoSendBytesToClient(smsg.FromServerID, smsg.ToGateID,
+	err := this.server.DoSendBytesToClient(smsg.FromModuleID, smsg.ToGateID,
 		smsg.ToClientID, smsg.MsgID, smsg.Data)
 	if err != nil {
 		this.server.Error("this.doSendBytesToClient Err:%s", err.Error())

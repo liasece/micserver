@@ -8,7 +8,7 @@ import (
 )
 
 type ChanServerHandshake struct {
-	ServerInfo    *servercomm.ServerInfo
+	ModuleInfo    *servercomm.ModuleInfo
 	ClientMsgChan chan *msg.MessageBinary
 	ServerMsgChan chan *msg.MessageBinary
 	Seq           int

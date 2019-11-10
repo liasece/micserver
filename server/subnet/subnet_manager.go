@@ -34,19 +34,19 @@ type SubnetManager struct {
 	runningMsgChan   []chan *ConnectMsgQueueStruct
 	maxRunningMsgNum int32
 	// 我的服务器信息
-	myServerInfo *servercomm.ServerInfo
+	myServerInfo *servercomm.ModuleInfo
 	// 子网系统钩子
 	subnetHook base.SubnetHook
 }
 
 func (this *SubnetManager) Init(moudleConf *conf.ModuleConfig) {
-	this.myServerInfo = &servercomm.ServerInfo{}
+	this.myServerInfo = &servercomm.ModuleInfo{}
 	this.moudleConf = moudleConf
 	this.ServerPool.Logger = this.Logger
 	// 初始化消息处理队列
 	this.InitMsgQueue(int32(moudleConf.GetInt64(conf.MsgThreadNum)))
 	// 我的服务器信息
-	this.myServerInfo.ServerID = this.moudleConf.ID
+	this.myServerInfo.ModuleID = this.moudleConf.ID
 	this.connInfos.Logger = this.Logger
 	// 初始化连接
 	this.BindTCPSubnet(this.moudleConf)
@@ -61,8 +61,8 @@ func (this *SubnetManager) HookSubnet(subnetHook base.SubnetHook) {
 func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uint64 {
 	latestVersion := uint64(0)
 	this.connInfos.RangeConnInfo(
-		func(value *servercomm.ServerInfo) bool {
-			if util.GetModuleIDType(value.ServerID) == servertype &&
+		func(value *servercomm.ModuleInfo) bool {
+			if util.GetModuleIDType(value.ModuleID) == servertype &&
 				value.Version > latestVersion {
 				latestVersion = value.Version
 			}
@@ -75,9 +75,9 @@ func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uin
 func (this *SubnetManager) NotifyAllServerInfo(
 	tcptask *connect.Server) {
 	retmsg := &servercomm.SNotifyAllInfo{}
-	retmsg.ServerInfos = make([]*servercomm.ServerInfo, 0)
+	retmsg.ServerInfos = make([]*servercomm.ModuleInfo, 0)
 	this.connInfos.RangeConnInfo(func(
-		value *servercomm.ServerInfo) bool {
+		value *servercomm.ModuleInfo) bool {
 		retmsg.ServerInfos = append(retmsg.ServerInfos, value)
 		return true
 	})

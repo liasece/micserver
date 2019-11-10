@@ -14,7 +14,7 @@ import (
 )
 
 type requestAgent struct {
-	fromServerID string
+	fromModuleID string
 	callpath     string
 	callarg      []byte
 	seq          int64
@@ -22,7 +22,7 @@ type requestAgent struct {
 }
 
 type responseAgent struct {
-	fromServerID string
+	fromModuleID string
 	seq          int64
 	data         []byte
 	err          string
@@ -82,23 +82,23 @@ func (this *ROCServer) NewROC(objtype roc.ROCObjType) {
 func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) {
 	objType := callpath.GetObjType()
 	objID := callpath.GetObjID()
-	serverid := roc.GetCache().Get(objType, objID)
+	moduleid := roc.GetCache().Get(objType, objID)
 	this.Info("ROCCallNR {%s:%s(%s:%s):%v}",
-		serverid, callpath, objType, objID, callarg)
+		moduleid, callpath, objType, objID, callarg)
 	// 构造消息
 	sendmsg := &servercomm.SROCRequest{
-		FromServerID: this.server.serverid,
+		FromModuleID: this.server.moduleid,
 		Seq:          this.newSeq(),
 		CallStr:      callpath.String(),
 		CallArg:      callarg,
 	}
-	if serverid == this.server.serverid {
-		sendmsg.ToServerID = serverid
+	if moduleid == this.server.moduleid {
+		sendmsg.ToModuleID = moduleid
 		this.onMsgROCRequest(sendmsg)
 	} else {
-		server := this.server.subnetManager.GetServer(serverid)
+		server := this.server.subnetManager.GetServer(moduleid)
 		if server != nil {
-			sendmsg.ToServerID = serverid
+			sendmsg.ToModuleID = moduleid
 			server.SendCmd(sendmsg)
 		} else {
 			this.server.subnetManager.BroadcastCmd(sendmsg)
@@ -117,13 +117,13 @@ func (this *ROCServer) ROCCallBlock(callpath *roc.ROCPath,
 	callarg []byte) ([]byte, error) {
 	objType := callpath.GetObjType()
 	objID := callpath.GetObjID()
-	serverid := roc.GetCache().Get(objType, objID)
+	moduleid := roc.GetCache().Get(objType, objID)
 	this.Info("ROCCallBlock {%s:%s(%s:%s:%d):%v}",
-		serverid, callpath, objType, objID, hash.GetStringHash(string(objID)),
+		moduleid, callpath, objType, objID, hash.GetStringHash(string(objID)),
 		callarg)
 	// 构造消息
 	sendmsg := &servercomm.SROCRequest{
-		FromServerID: this.server.serverid,
+		FromModuleID: this.server.moduleid,
 		Seq:          this.newSeq(),
 		CallStr:      callpath.String(),
 		CallArg:      callarg,
@@ -132,13 +132,13 @@ func (this *ROCServer) ROCCallBlock(callpath *roc.ROCPath,
 
 	ch := this.addBlockChan(sendmsg.Seq)
 
-	if serverid == this.server.serverid {
-		sendmsg.ToServerID = serverid
+	if moduleid == this.server.moduleid {
+		sendmsg.ToModuleID = moduleid
 		this.onMsgROCRequest(sendmsg)
 	} else {
-		server := this.server.subnetManager.GetServer(serverid)
+		server := this.server.subnetManager.GetServer(moduleid)
 		if server != nil {
-			sendmsg.ToServerID = serverid
+			sendmsg.ToModuleID = moduleid
 			server.SendCmd(sendmsg)
 		} else {
 			this.server.subnetManager.BroadcastCmd(sendmsg)
@@ -155,14 +155,14 @@ func (this *ROCServer) onMsgROCRequest(msg *servercomm.SROCRequest) {
 		callarg:      msg.CallArg,
 		seq:          msg.Seq,
 		needReturn:   msg.NeedReturn,
-		fromServerID: msg.FromServerID,
+		fromModuleID: msg.FromModuleID,
 	}
 	this.rocRequestChan <- agent
 }
 
 func (this *ROCServer) onMsgROCResponse(msg *servercomm.SROCResponse) {
 	agent := &responseAgent{
-		fromServerID: msg.FromServerID,
+		fromModuleID: msg.FromModuleID,
 		seq:          msg.ReqSeq,
 		data:         msg.ResData,
 		err:          msg.Error,
@@ -191,17 +191,17 @@ func (this *ROCServer) rocRequestProcess() {
 				// this.Debug("ROC调用成功 res:%+v", res)
 			}
 			if agent.needReturn {
-				if agent.fromServerID == this.server.serverid {
+				if agent.fromModuleID == this.server.moduleid {
 					// 本地服务器调用结果
 
 				} else {
 					server := this.server.subnetManager.GetServer(
-						agent.fromServerID)
+						agent.fromModuleID)
 					if server != nil {
 						// 返回执行结果
 						sendmsg := &servercomm.SROCResponse{
-							FromServerID: this.server.serverid,
-							ToServerID:   agent.fromServerID,
+							FromModuleID: this.server.moduleid,
+							ToModuleID:   agent.fromModuleID,
 							ReqSeq:       agent.seq,
 							ResData:      res,
 							Error:        err.Error(),
@@ -237,10 +237,10 @@ func (this *ROCServer) rocResponseProcess() {
 func (this *ROCServer) OnROCObjAdd(obj roc.IObj) {
 	// 保存本地映射缓存
 	roc.GetCache().Set(obj.GetROCObjType(), obj.GetROCObjID(),
-		this.server.serverid)
+		this.server.moduleid)
 	this.Debug("OnROCObjAdd roc cache set type[%s] "+
 		"id[%s] host[%s]",
-		obj.GetROCObjType(), obj.GetROCObjID(), this.server.serverid)
+		obj.GetROCObjType(), obj.GetROCObjID(), this.server.moduleid)
 	this.rocAddCacheChan <- obj
 }
 
@@ -248,10 +248,10 @@ func (this *ROCServer) OnROCObjAdd(obj roc.IObj) {
 func (this *ROCServer) OnROCObjDel(obj roc.IObj) {
 	// 保存本地映射缓存
 	roc.GetCache().Del(obj.GetROCObjType(), obj.GetROCObjID(),
-		this.server.serverid)
+		this.server.moduleid)
 	this.Debug("OnROCObjDel roc cache del type[%s] "+
 		"id[%s] host[%s]",
-		obj.GetROCObjType(), obj.GetROCObjID(), this.server.serverid)
+		obj.GetROCObjType(), obj.GetROCObjID(), this.server.moduleid)
 	this.rocDelCacheChan <- obj
 }
 
@@ -314,7 +314,7 @@ func (this *ROCServer) rocObjNoticeProcess() {
 		if !this.server.isStop {
 			if tmpAddListI > 0 {
 				sendmsg := &servercomm.SROCBind{
-					HostServerID: this.server.serverid,
+					HostModuleID: this.server.moduleid,
 					IsDelete:     false,
 					ObjType:      string(tmpAddList[0].GetROCObjType()),
 					ObjIDs:       make([]string, tmpAddListI),
@@ -331,7 +331,7 @@ func (this *ROCServer) rocObjNoticeProcess() {
 			}
 			if tmpDelListI > 0 {
 				sendmsg := &servercomm.SROCBind{
-					HostServerID: this.server.serverid,
+					HostModuleID: this.server.moduleid,
 					IsDelete:     true,
 					ObjType:      string(tmpDelList[0].GetROCObjType()),
 					ObjIDs:       make([]string, tmpDelListI),
@@ -355,7 +355,7 @@ func (this *ROCServer) sendROCBindMsg(sendmsg *servercomm.SROCBind) {
 
 	this.server.subnetManager.RangeServer(
 		func(s *connect.Server) bool {
-			if !process.HasModule(s.ServerInfo.ServerID) {
+			if !process.HasModule(s.ModuleInfo.ModuleID) {
 				s.SendCmd(sendmsg)
 			}
 			return true
@@ -365,11 +365,11 @@ func (this *ROCServer) sendROCBindMsg(sendmsg *servercomm.SROCBind) {
 // 当收到ROC绑定信息时
 func (this *ROCServer) onMsgROCBind(msg *servercomm.SROCBind) {
 	if !msg.IsDelete {
-		roc.GetCache().SetM(roc.ROCObjType(msg.ObjType), msg.ObjIDs, msg.HostServerID)
+		roc.GetCache().SetM(roc.ROCObjType(msg.ObjType), msg.ObjIDs, msg.HostModuleID)
 	} else {
-		roc.GetCache().DelM(roc.ROCObjType(msg.ObjType), msg.ObjIDs, msg.HostServerID)
+		roc.GetCache().DelM(roc.ROCObjType(msg.ObjType), msg.ObjIDs, msg.HostModuleID)
 	}
 	this.Debug("onMsgROCBind roc cache setm type[%s] "+
 		"ids%+v host[%s]",
-		msg.ObjType, msg.ObjIDs, msg.HostServerID)
+		msg.ObjType, msg.ObjIDs, msg.HostModuleID)
 }

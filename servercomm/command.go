@@ -1,11 +1,11 @@
 package servercomm
 
-type ServerInfo struct {
-	ServerID   string
-	ServerAddr string
+type ModuleInfo struct {
+	ModuleID   string
+	ModuleAddr string
 	// 服务器序号 重复不影响正常运行
 	// 但是其改动会影响 配置读取/ServerName/Log文件名
-	ServerNumber uint32
+	ModuleNumber uint32
 	// 服务器数字版本
 	// 命名规则为： YYYYMMDDhhmm (年月日时分)
 	Version uint64
@@ -21,13 +21,13 @@ type STestCommand struct {
 }
 
 type SLoginCommand struct {
-	ServerID   string
-	ServerAddr string // IP
+	ModuleID   string
+	ModuleAddr string // IP
 	// 登录优先级
 	ConnectPriority int64
 	// 服务器序号 重复不影响正常运行
 	// 但是其改动会影响 配置读取/ServerName/Log文件名
-	ServerNumber uint32
+	ModuleNumber uint32
 	// 服务器数字版本
 	// 命名规则为： YYYYMMDDhhmm (年月日时分)
 	Version uint64
@@ -39,7 +39,7 @@ type SLogoutCommand struct {
 
 // 通知我所连接的服务器启动成功
 type SSeverStartOKCommand struct {
-	Serverid uint32
+	ModuleID string
 }
 
 const (
@@ -54,29 +54,29 @@ const (
 // 登录服务器返回
 type SLoginRetCommand struct {
 	Loginfailed uint32      // 是否连接成功,0成功
-	Destination *ServerInfo //	tcptask 所在服务器信息
+	Destination *ModuleInfo //	tcptask 所在服务器信息
 }
 
 // super通知其它服务器启动成功
 type SStartRelyNotifyCommand struct {
-	ServerInfos []*ServerInfo // 启动成功服务器信息
+	ServerInfos []*ModuleInfo // 启动成功服务器信息
 }
 
 // 启动验证通过通知其它服务器我的新
 type SStartMyNotifyCommand struct {
-	ServerInfo *ServerInfo // 启动成功服务器信息
+	ModuleInfo *ModuleInfo // 启动成功服务器信息
 }
 
 // super 通知所有服务器配置信息
 type SNotifyAllInfo struct {
-	ServerInfos []*ServerInfo // 成功服务器信息
+	ServerInfos []*ModuleInfo // 成功服务器信息
 }
 
 // 通知说明的目标服务器安全退出
 // 此消息发送的前提是当前存在可以替代目标服务器的服务器
 type SNotifySafelyQuit struct {
 	// 目标服务器的信息应该是最新的信息，目标服务器会将该信息改成最新的
-	TargetServerInfo *ServerInfo
+	TargetServerInfo *ModuleInfo
 }
 
 type SUpdateSession struct {
@@ -85,20 +85,20 @@ type SUpdateSession struct {
 }
 
 type SForwardToServer struct {
-	FromServerID string
-	ToServerID   string
+	FromModuleID string
+	ToModuleID   string
 	MsgID        uint16
 	Data         []byte
 }
 
 type ServerMessage struct {
-	FromServer *ServerInfo
+	FromModule *ModuleInfo
 	MsgID      uint16
 	Data       []byte
 }
 
 type SForwardToClient struct {
-	FromServerID string
+	FromModuleID string
 	ToGateID     string
 	ToClientID   string
 	MsgID        uint16
@@ -106,8 +106,8 @@ type SForwardToClient struct {
 }
 
 type SForwardFromGate struct {
-	FromServerID string
-	ToServerID   string
+	FromModuleID string
+	ToModuleID   string
 	ClientConnID string
 	Session      map[string]string
 	MsgID        uint16
@@ -115,7 +115,7 @@ type SForwardFromGate struct {
 }
 
 type ClientMessage struct {
-	FromServer   *ServerInfo
+	FromModule   *ModuleInfo
 	ClientConnID string
 	Session      map[string]string
 	MsgID        uint16
@@ -125,8 +125,8 @@ type ClientMessage struct {
 // ROC调用请求
 type SROCRequest struct {
 	// 请求信息
-	FromServerID string
-	ToServerID   string
+	FromModuleID string
+	ToModuleID   string
 	Seq          int64
 	// 调用信息
 	CallStr    string
@@ -137,8 +137,8 @@ type SROCRequest struct {
 // ROC调用响应
 type SROCResponse struct {
 	// 响应信息
-	FromServerID string
-	ToServerID   string
+	FromModuleID string
+	ToModuleID   string
 	ReqSeq       int64
 	// 响应数据
 	ResData []byte
@@ -147,7 +147,7 @@ type SROCResponse struct {
 
 // ROC绑定信息
 type SROCBind struct {
-	HostServerID string
+	HostModuleID string
 	IsDelete     bool
 	ObjType      string
 	ObjIDs       []string

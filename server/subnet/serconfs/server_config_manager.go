@@ -13,49 +13,49 @@ type ConnInfosManager struct {
 }
 
 func (this *ConnInfosManager) GetConnInfo(
-	serverid string) *servercomm.ServerInfo {
-	if value, found := this.ConnInfos.Load(serverid); found {
-		return value.(*servercomm.ServerInfo)
+	moduleid string) *servercomm.ModuleInfo {
+	if value, found := this.ConnInfos.Load(moduleid); found {
+		return value.(*servercomm.ModuleInfo)
 	}
-	return &servercomm.ServerInfo{}
+	return &servercomm.ModuleInfo{}
 }
 
 func (this *ConnInfosManager) AddConnInfo(
-	newinfo *servercomm.ServerInfo) {
-	if newinfo.ServerID == "" {
+	newinfo *servercomm.ModuleInfo) {
+	if newinfo.ModuleID == "" {
 		log.Error("[ConnInfosManager.AddConnInfo] "+
 			"尝试添加一个ID为空的服务器 拒绝 Info[%s]", newinfo.GetJson())
 		return
 	}
 	log.Debug("[ConnInfosManager.AddConnInfo] "+
 		"添加服务器信息 Info[%s]", newinfo.GetJson())
-	if _, finded := this.ConnInfos.Load(newinfo.ServerID); !finded {
+	if _, finded := this.ConnInfos.Load(newinfo.ModuleID); !finded {
 		this.ConnInfoSum++
 	}
-	this.ConnInfos.Store(newinfo.ServerID, newinfo)
+	this.ConnInfos.Store(newinfo.ModuleID, newinfo)
 }
 
-func (this *ConnInfosManager) RemoveConnInfo(serverid string) {
-	this.ConnInfos.Delete(serverid)
+func (this *ConnInfosManager) RemoveConnInfo(moduleid string) {
+	this.ConnInfos.Delete(moduleid)
 }
 
 func (this *ConnInfosManager) RangeConnInfo(
-	callback func(*servercomm.ServerInfo) bool) {
+	callback func(*servercomm.ModuleInfo) bool) {
 	this.ConnInfos.Range(func(tkey interface{},
 		tvalue interface{}) bool {
-		value := tvalue.(*servercomm.ServerInfo)
+		value := tvalue.(*servercomm.ModuleInfo)
 		return callback(value)
 	})
 }
 
 func (this *ConnInfosManager) ExistConnInfo(
-	info *servercomm.ServerInfo) bool {
-	tconfig, finded := this.ConnInfos.Load(info.ServerID)
-	config := tconfig.(*servercomm.ServerInfo)
+	info *servercomm.ModuleInfo) bool {
+	tconfig, finded := this.ConnInfos.Load(info.ModuleID)
+	config := tconfig.(*servercomm.ModuleInfo)
 	if !finded {
 		return false
 	}
-	if config.ServerID != info.ServerID {
+	if config.ModuleID != info.ModuleID {
 		return false
 	}
 	return true

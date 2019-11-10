@@ -26,8 +26,8 @@ func (this *clientEventHandler) OnAcceptClientConnect(conn net.Conn) {
 }
 
 func (this *clientEventHandler) OnNewClient(client *connect.Client) {
-	moduleType := util.GetModuleIDType(this.server.serverid)
-	client.SetBind(moduleType, this.server.serverid)
+	moduleType := util.GetModuleIDType(this.server.moduleid)
+	client.SetBind(moduleType, this.server.moduleid)
 
 	if this.gateHook != nil {
 		this.gateHook.OnNewClient(client)

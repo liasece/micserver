@@ -39,7 +39,7 @@ func (this *SubnetManager) tryConnectServerThread(id string, addr string) {
 		select {
 		case <-c:
 			this.Syslog("[SubnetManager.tryConnectServerThread] "+
-				"正在连接 ServerID[%s] IPPort[%s]",
+				"正在连接 ModuleID[%s] IPPort[%s]",
 				id, addr)
 			err := this.ConnectServer(id, addr)
 			if err != nil && err.Error() != "重复连接" {
@@ -63,7 +63,7 @@ func (this *SubnetManager) TryConnectServer(id string, addr string) {
 		this.serverexitchan[id] = make(chan bool, 100)
 	} else {
 		this.Syslog("[SubnetManager.TryConnectServer] "+
-			"ServerID[%s] 守护线程已启动，不再重复启动",
+			"ModuleID[%s] 守护线程已启动，不再重复启动",
 			id)
 		return
 	}
@@ -80,16 +80,16 @@ func (this *SubnetManager) ConnectServer(id string,
 	// 重复连接
 	if oldconn != nil {
 		this.Syslog("[SubnetManager.ConnectServer] "+
-			"ServerID[%s] 重复的连接", id)
+			"ModuleID[%s] 重复的连接", id)
 		return errors.New("重复连接")
 	}
 	// this.Syslog("[SubnetManager.ConnectServer] "+
-	// 	"服务器连接创建地址开始 ServerID[%s] ServerIPPort[%s]",
+	// 	"服务器连接创建地址开始 ModuleID[%s] ServerIPPort[%s]",
 	// 	id, addr)
 	if chanServer := process.GetServerChan(id); chanServer != nil {
 		newMsgChan := make(chan *msg.MessageBinary, 1000)
 		chanServer <- &process.ChanServerHandshake{
-			ServerInfo:    this.myServerInfo,
+			ModuleInfo:    this.myServerInfo,
 			ServerMsgChan: nil,
 			ClientMsgChan: newMsgChan,
 			Seq:           0,
@@ -113,7 +113,7 @@ func (this *SubnetManager) ConnectServer(id string,
 	}
 
 	// this.Syslog("[SubnetManager.ConnectServer] "+
-	// 	"开始连接服务器 ServerID[%s] IPPort[%s]", id,
+	// 	"开始连接服务器 ModuleID[%s] IPPort[%s]", id,
 	// 	addr)
 
 	return nil
@@ -146,8 +146,8 @@ func (this *SubnetManager) onClientConnected(conn *connect.Server) {
 	// 开始请求登陆
 	// 构造登陆消息
 	sendmsg := &servercomm.SLoginCommand{}
-	sendmsg.ServerID = this.myServerInfo.ServerID
-	sendmsg.ServerAddr = this.moudleConf.GetString(conf.SubnetTCPAddr)
+	sendmsg.ModuleID = this.myServerInfo.ModuleID
+	sendmsg.ModuleAddr = this.moudleConf.GetString(conf.SubnetTCPAddr)
 	sendmsg.ConnectPriority = conn.ConnectPriority
 	// 发送登陆请求
 	conn.SendCmd(sendmsg)
@@ -162,15 +162,15 @@ func (this *SubnetManager) onClientDisconnected(conn *connect.Server) {
 		conn.GetSCType() == connect.ServerSCTypeClient {
 		this.connectMutex.Lock()
 		defer this.connectMutex.Unlock()
-		if this.serverexitchan[fmt.Sprint(conn.ServerInfo.ServerID)] != nil {
-			this.serverexitchan[fmt.Sprint(conn.ServerInfo.ServerID)] <- true
+		if this.serverexitchan[fmt.Sprint(conn.ModuleInfo.ModuleID)] != nil {
+			this.serverexitchan[fmt.Sprint(conn.ModuleInfo.ModuleID)] <- true
 			this.Warn("[onClientDisconnected] "+
-				"服务服务器断开连接,准备重新连接 ServerID[%s]",
-				conn.ServerInfo.ServerID)
+				"服务服务器断开连接,准备重新连接 ModuleID[%s]",
+				conn.ModuleInfo.ModuleID)
 		} else {
 			this.Syslog("[onClientDisconnected] "+
-				"服务器重连管道已关闭,取消重连 ServerID[%s]",
-				fmt.Sprint(conn.ServerInfo.ServerID))
+				"服务器重连管道已关闭,取消重连 ModuleID[%s]",
+				fmt.Sprint(conn.ModuleInfo.ModuleID))
 		}
 	}
 }
