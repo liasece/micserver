@@ -28,6 +28,7 @@ const (
 	SROCResponseID            = 54
 	SROCBindID                = 55
 )
+
 const (
 	ModuleInfoName              = "servercomm.ModuleInfo"
 	STimeTickCommandName        = "servercomm.STimeTickCommand"
@@ -54,143 +55,183 @@ const (
 func (this *ModuleInfo) WriteBinary(data []byte) int {
 	return WriteMsgModuleInfoByObj(data, this)
 }
+
 func (this *STimeTickCommand) WriteBinary(data []byte) int {
 	return WriteMsgSTimeTickCommandByObj(data, this)
 }
+
 func (this *STestCommand) WriteBinary(data []byte) int {
 	return WriteMsgSTestCommandByObj(data, this)
 }
+
 func (this *SLoginCommand) WriteBinary(data []byte) int {
 	return WriteMsgSLoginCommandByObj(data, this)
 }
+
 func (this *SLogoutCommand) WriteBinary(data []byte) int {
 	return WriteMsgSLogoutCommandByObj(data, this)
 }
+
 func (this *SSeverStartOKCommand) WriteBinary(data []byte) int {
 	return WriteMsgSSeverStartOKCommandByObj(data, this)
 }
+
 func (this *SLoginRetCommand) WriteBinary(data []byte) int {
 	return WriteMsgSLoginRetCommandByObj(data, this)
 }
+
 func (this *SStartRelyNotifyCommand) WriteBinary(data []byte) int {
 	return WriteMsgSStartRelyNotifyCommandByObj(data, this)
 }
+
 func (this *SStartMyNotifyCommand) WriteBinary(data []byte) int {
 	return WriteMsgSStartMyNotifyCommandByObj(data, this)
 }
+
 func (this *SNotifyAllInfo) WriteBinary(data []byte) int {
 	return WriteMsgSNotifyAllInfoByObj(data, this)
 }
+
 func (this *SNotifySafelyQuit) WriteBinary(data []byte) int {
 	return WriteMsgSNotifySafelyQuitByObj(data, this)
 }
+
 func (this *SUpdateSession) WriteBinary(data []byte) int {
 	return WriteMsgSUpdateSessionByObj(data, this)
 }
+
 func (this *SForwardToModule) WriteBinary(data []byte) int {
 	return WriteMsgSForwardToModuleByObj(data, this)
 }
+
 func (this *ModuleMessage) WriteBinary(data []byte) int {
 	return WriteMsgModuleMessageByObj(data, this)
 }
+
 func (this *SForwardToClient) WriteBinary(data []byte) int {
 	return WriteMsgSForwardToClientByObj(data, this)
 }
+
 func (this *SForwardFromGate) WriteBinary(data []byte) int {
 	return WriteMsgSForwardFromGateByObj(data, this)
 }
+
 func (this *ClientMessage) WriteBinary(data []byte) int {
 	return WriteMsgClientMessageByObj(data, this)
 }
+
 func (this *SROCRequest) WriteBinary(data []byte) int {
 	return WriteMsgSROCRequestByObj(data, this)
 }
+
 func (this *SROCResponse) WriteBinary(data []byte) int {
 	return WriteMsgSROCResponseByObj(data, this)
 }
+
 func (this *SROCBind) WriteBinary(data []byte) int {
 	return WriteMsgSROCBindByObj(data, this)
 }
+
 func (this *ModuleInfo) ReadBinary(data []byte) int {
 	size, _ := ReadMsgModuleInfoByBytes(data, this)
 	return size
 }
+
 func (this *STimeTickCommand) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSTimeTickCommandByBytes(data, this)
 	return size
 }
+
 func (this *STestCommand) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSTestCommandByBytes(data, this)
 	return size
 }
+
 func (this *SLoginCommand) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSLoginCommandByBytes(data, this)
 	return size
 }
+
 func (this *SLogoutCommand) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSLogoutCommandByBytes(data, this)
 	return size
 }
+
 func (this *SSeverStartOKCommand) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSSeverStartOKCommandByBytes(data, this)
 	return size
 }
+
 func (this *SLoginRetCommand) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSLoginRetCommandByBytes(data, this)
 	return size
 }
+
 func (this *SStartRelyNotifyCommand) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSStartRelyNotifyCommandByBytes(data, this)
 	return size
 }
+
 func (this *SStartMyNotifyCommand) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSStartMyNotifyCommandByBytes(data, this)
 	return size
 }
+
 func (this *SNotifyAllInfo) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSNotifyAllInfoByBytes(data, this)
 	return size
 }
+
 func (this *SNotifySafelyQuit) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSNotifySafelyQuitByBytes(data, this)
 	return size
 }
+
 func (this *SUpdateSession) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSUpdateSessionByBytes(data, this)
 	return size
 }
+
 func (this *SForwardToModule) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSForwardToModuleByBytes(data, this)
 	return size
 }
+
 func (this *ModuleMessage) ReadBinary(data []byte) int {
 	size, _ := ReadMsgModuleMessageByBytes(data, this)
 	return size
 }
+
 func (this *SForwardToClient) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSForwardToClientByBytes(data, this)
 	return size
 }
+
 func (this *SForwardFromGate) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSForwardFromGateByBytes(data, this)
 	return size
 }
+
 func (this *ClientMessage) ReadBinary(data []byte) int {
 	size, _ := ReadMsgClientMessageByBytes(data, this)
 	return size
 }
+
 func (this *SROCRequest) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSROCRequestByBytes(data, this)
 	return size
 }
+
 func (this *SROCResponse) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSROCResponseByBytes(data, this)
 	return size
 }
+
 func (this *SROCBind) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSROCBindByBytes(data, this)
 	return size
 }
+
 func MsgIdToString(id uint16) string {
 	switch id {
 	case ModuleInfoID:
@@ -237,6 +278,7 @@ func MsgIdToString(id uint16) string {
 		return ""
 	}
 }
+
 func StringToMsgId(msgname string) uint16 {
 	switch msgname {
 	case ModuleInfoName:
@@ -283,266 +325,347 @@ func StringToMsgId(msgname string) uint16 {
 		return 0
 	}
 }
+
 func (this *ModuleInfo) GetMsgId() uint16 {
 	return ModuleInfoID
 }
+
 func (this *STimeTickCommand) GetMsgId() uint16 {
 	return STimeTickCommandID
 }
+
 func (this *STestCommand) GetMsgId() uint16 {
 	return STestCommandID
 }
+
 func (this *SLoginCommand) GetMsgId() uint16 {
 	return SLoginCommandID
 }
+
 func (this *SLogoutCommand) GetMsgId() uint16 {
 	return SLogoutCommandID
 }
+
 func (this *SSeverStartOKCommand) GetMsgId() uint16 {
 	return SSeverStartOKCommandID
 }
+
 func (this *SLoginRetCommand) GetMsgId() uint16 {
 	return SLoginRetCommandID
 }
+
 func (this *SStartRelyNotifyCommand) GetMsgId() uint16 {
 	return SStartRelyNotifyCommandID
 }
+
 func (this *SStartMyNotifyCommand) GetMsgId() uint16 {
 	return SStartMyNotifyCommandID
 }
+
 func (this *SNotifyAllInfo) GetMsgId() uint16 {
 	return SNotifyAllInfoID
 }
+
 func (this *SNotifySafelyQuit) GetMsgId() uint16 {
 	return SNotifySafelyQuitID
 }
+
 func (this *SUpdateSession) GetMsgId() uint16 {
 	return SUpdateSessionID
 }
+
 func (this *SForwardToModule) GetMsgId() uint16 {
 	return SForwardToModuleID
 }
+
 func (this *ModuleMessage) GetMsgId() uint16 {
 	return ModuleMessageID
 }
+
 func (this *SForwardToClient) GetMsgId() uint16 {
 	return SForwardToClientID
 }
+
 func (this *SForwardFromGate) GetMsgId() uint16 {
 	return SForwardFromGateID
 }
+
 func (this *ClientMessage) GetMsgId() uint16 {
 	return ClientMessageID
 }
+
 func (this *SROCRequest) GetMsgId() uint16 {
 	return SROCRequestID
 }
+
 func (this *SROCResponse) GetMsgId() uint16 {
 	return SROCResponseID
 }
+
 func (this *SROCBind) GetMsgId() uint16 {
 	return SROCBindID
 }
+
 func (this *ModuleInfo) GetMsgName() string {
 	return ModuleInfoName
 }
+
 func (this *STimeTickCommand) GetMsgName() string {
 	return STimeTickCommandName
 }
+
 func (this *STestCommand) GetMsgName() string {
 	return STestCommandName
 }
+
 func (this *SLoginCommand) GetMsgName() string {
 	return SLoginCommandName
 }
+
 func (this *SLogoutCommand) GetMsgName() string {
 	return SLogoutCommandName
 }
+
 func (this *SSeverStartOKCommand) GetMsgName() string {
 	return SSeverStartOKCommandName
 }
+
 func (this *SLoginRetCommand) GetMsgName() string {
 	return SLoginRetCommandName
 }
+
 func (this *SStartRelyNotifyCommand) GetMsgName() string {
 	return SStartRelyNotifyCommandName
 }
+
 func (this *SStartMyNotifyCommand) GetMsgName() string {
 	return SStartMyNotifyCommandName
 }
+
 func (this *SNotifyAllInfo) GetMsgName() string {
 	return SNotifyAllInfoName
 }
+
 func (this *SNotifySafelyQuit) GetMsgName() string {
 	return SNotifySafelyQuitName
 }
+
 func (this *SUpdateSession) GetMsgName() string {
 	return SUpdateSessionName
 }
+
 func (this *SForwardToModule) GetMsgName() string {
 	return SForwardToModuleName
 }
+
 func (this *ModuleMessage) GetMsgName() string {
 	return ModuleMessageName
 }
+
 func (this *SForwardToClient) GetMsgName() string {
 	return SForwardToClientName
 }
+
 func (this *SForwardFromGate) GetMsgName() string {
 	return SForwardFromGateName
 }
+
 func (this *ClientMessage) GetMsgName() string {
 	return ClientMessageName
 }
+
 func (this *SROCRequest) GetMsgName() string {
 	return SROCRequestName
 }
+
 func (this *SROCResponse) GetMsgName() string {
 	return SROCResponseName
 }
+
 func (this *SROCBind) GetMsgName() string {
 	return SROCBindName
 }
+
 func (this *ModuleInfo) GetSize() int {
 	return GetSizeModuleInfo(this)
 }
+
 func (this *STimeTickCommand) GetSize() int {
 	return GetSizeSTimeTickCommand(this)
 }
+
 func (this *STestCommand) GetSize() int {
 	return GetSizeSTestCommand(this)
 }
+
 func (this *SLoginCommand) GetSize() int {
 	return GetSizeSLoginCommand(this)
 }
+
 func (this *SLogoutCommand) GetSize() int {
 	return GetSizeSLogoutCommand(this)
 }
+
 func (this *SSeverStartOKCommand) GetSize() int {
 	return GetSizeSSeverStartOKCommand(this)
 }
+
 func (this *SLoginRetCommand) GetSize() int {
 	return GetSizeSLoginRetCommand(this)
 }
+
 func (this *SStartRelyNotifyCommand) GetSize() int {
 	return GetSizeSStartRelyNotifyCommand(this)
 }
+
 func (this *SStartMyNotifyCommand) GetSize() int {
 	return GetSizeSStartMyNotifyCommand(this)
 }
+
 func (this *SNotifyAllInfo) GetSize() int {
 	return GetSizeSNotifyAllInfo(this)
 }
+
 func (this *SNotifySafelyQuit) GetSize() int {
 	return GetSizeSNotifySafelyQuit(this)
 }
+
 func (this *SUpdateSession) GetSize() int {
 	return GetSizeSUpdateSession(this)
 }
+
 func (this *SForwardToModule) GetSize() int {
 	return GetSizeSForwardToModule(this)
 }
+
 func (this *ModuleMessage) GetSize() int {
 	return GetSizeModuleMessage(this)
 }
+
 func (this *SForwardToClient) GetSize() int {
 	return GetSizeSForwardToClient(this)
 }
+
 func (this *SForwardFromGate) GetSize() int {
 	return GetSizeSForwardFromGate(this)
 }
+
 func (this *ClientMessage) GetSize() int {
 	return GetSizeClientMessage(this)
 }
+
 func (this *SROCRequest) GetSize() int {
 	return GetSizeSROCRequest(this)
 }
+
 func (this *SROCResponse) GetSize() int {
 	return GetSizeSROCResponse(this)
 }
+
 func (this *SROCBind) GetSize() int {
 	return GetSizeSROCBind(this)
 }
+
 func (this *ModuleInfo) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *STimeTickCommand) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *STestCommand) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SLoginCommand) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SLogoutCommand) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SSeverStartOKCommand) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SLoginRetCommand) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SStartRelyNotifyCommand) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SStartMyNotifyCommand) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SNotifyAllInfo) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SNotifySafelyQuit) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SUpdateSession) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SForwardToModule) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *ModuleMessage) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SForwardToClient) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SForwardFromGate) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *ClientMessage) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SROCRequest) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SROCResponse) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func (this *SROCBind) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
+
 func readBinaryString(data []byte) string {
 	strfunclen := binary.LittleEndian.Uint32(data[:4])
 	if int(strfunclen)+4 > len(data) {
@@ -550,40 +673,48 @@ func readBinaryString(data []byte) string {
 	}
 	return string(data[4 : 4+strfunclen])
 }
+
 func writeBinaryString(data []byte, obj string) int {
 	objlen := len(obj)
 	binary.LittleEndian.PutUint32(data[:4], uint32(objlen))
 	copy(data[4:4+objlen], obj)
 	return 4 + objlen
 }
+
 func bool2int(value bool) int {
 	if value {
 		return 1
 	}
 	return 0
 }
+
 func readBinaryInt(data []byte) int {
 	return int(int32(binary.LittleEndian.Uint32(data)))
 }
+
 func writeBinaryInt(data []byte, num int) {
 	binary.LittleEndian.PutUint32(data, uint32(int32(num)))
 }
+
 func readBinaryInt8(data []byte) int8 {
 	// 大端模式
 	num := int8(0)
 	num |= int8(data[0]) << 0
 	return num
 }
+
 func writeBinaryInt8(data []byte, num int8) {
 	// 大端模式
 	data[0] = byte(num)
 }
+
 func readBinaryBool(data []byte) bool {
 	// 大端模式
 	num := int8(0)
 	num |= int8(data[0]) << 0
 	return num > 0
 }
+
 func writeBinaryBool(data []byte, num bool) {
 	// 大端模式
 	if num == true {
@@ -592,34 +723,43 @@ func writeBinaryBool(data []byte, num bool) {
 		data[0] = byte(0)
 	}
 }
+
 func readBinaryUint8(data []byte) uint8 {
 	return uint8(data[0])
 }
+
 func writeBinaryUint8(data []byte, num uint8) {
 	data[0] = byte(num)
 }
+
 func readBinaryUint(data []byte) uint {
 	return uint(binary.LittleEndian.Uint32(data))
 }
+
 func writeBinaryUint(data []byte, num uint) {
 	binary.LittleEndian.PutUint32(data, uint32(num))
 }
+
 func writeBinaryFloat32(data []byte, num float32) {
 	bits := math.Float32bits(num)
 	binary.LittleEndian.PutUint32(data, bits)
 }
+
 func readBinaryFloat32(data []byte) float32 {
 	bits := binary.LittleEndian.Uint32(data)
 	return math.Float32frombits(bits)
 }
+
 func writeBinaryFloat64(data []byte, num float64) {
 	bits := math.Float64bits(num)
 	binary.LittleEndian.PutUint64(data, bits)
 }
+
 func readBinaryFloat64(data []byte) float64 {
 	bits := binary.LittleEndian.Uint64(data)
 	return math.Float64frombits(bits)
 }
+
 func ReadMsgModuleInfoByBytes(indata []byte, obj *ModuleInfo) (int, *ModuleInfo) {
 	offset := 0
 	if len(indata) < 4 {
@@ -660,8 +800,10 @@ func ReadMsgModuleInfoByBytes(indata []byte, obj *ModuleInfo) (int, *ModuleInfo)
 	}
 	obj.Version = binary.LittleEndian.Uint64(data[offset : offset+8])
 	offset += 8
+
 	return endpos, obj
 }
+
 func WriteMsgModuleInfoByObj(data []byte, obj *ModuleInfo) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -679,14 +821,18 @@ func WriteMsgModuleInfoByObj(data []byte, obj *ModuleInfo) int {
 	offset += 4
 	binary.LittleEndian.PutUint64(data[offset:offset+8], obj.Version)
 	offset += 8
+
 	return offset
 }
+
 func GetSizeModuleInfo(obj *ModuleInfo) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + 4 + len(obj.ModuleID) + 4 + len(obj.ModuleAddr) + 4 + 8
 }
+
 func ReadMsgSTimeTickCommandByBytes(indata []byte, obj *STimeTickCommand) (int, *STimeTickCommand) {
 	offset := 0
 	if len(indata) < 4 {
@@ -712,8 +858,10 @@ func ReadMsgSTimeTickCommandByBytes(indata []byte, obj *STimeTickCommand) (int, 
 	}
 	obj.Testno = binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
+
 	return endpos, obj
 }
+
 func WriteMsgSTimeTickCommandByObj(data []byte, obj *STimeTickCommand) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -725,14 +873,18 @@ func WriteMsgSTimeTickCommandByObj(data []byte, obj *STimeTickCommand) int {
 	offset += 4
 	binary.LittleEndian.PutUint32(data[offset:offset+4], obj.Testno)
 	offset += 4
+
 	return offset
 }
+
 func GetSizeSTimeTickCommand(obj *STimeTickCommand) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + 4
 }
+
 func ReadMsgSTestCommandByBytes(indata []byte, obj *STestCommand) (int, *STestCommand) {
 	offset := 0
 	if len(indata) < 4 {
@@ -763,8 +915,10 @@ func ReadMsgSTestCommandByBytes(indata []byte, obj *STestCommand) (int, *STestCo
 	}
 	obj.Testttring = readBinaryString(data[offset:])
 	offset += 4 + len(obj.Testttring)
+
 	return endpos, obj
 }
+
 func WriteMsgSTestCommandByObj(data []byte, obj *STestCommand) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -778,14 +932,18 @@ func WriteMsgSTestCommandByObj(data []byte, obj *STestCommand) int {
 	offset += 4
 	writeBinaryString(data[offset:], obj.Testttring)
 	offset += 4 + len(obj.Testttring)
+
 	return offset
 }
+
 func GetSizeSTestCommand(obj *STestCommand) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + 4 + 4 + len(obj.Testttring)
 }
+
 func ReadMsgSLoginCommandByBytes(indata []byte, obj *SLoginCommand) (int, *SLoginCommand) {
 	offset := 0
 	if len(indata) < 4 {
@@ -831,8 +989,10 @@ func ReadMsgSLoginCommandByBytes(indata []byte, obj *SLoginCommand) (int, *SLogi
 	}
 	obj.Version = binary.LittleEndian.Uint64(data[offset : offset+8])
 	offset += 8
+
 	return endpos, obj
 }
+
 func WriteMsgSLoginCommandByObj(data []byte, obj *SLoginCommand) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -852,15 +1012,19 @@ func WriteMsgSLoginCommandByObj(data []byte, obj *SLoginCommand) int {
 	offset += 4
 	binary.LittleEndian.PutUint64(data[offset:offset+8], obj.Version)
 	offset += 8
+
 	return offset
 }
+
 func GetSizeSLoginCommand(obj *SLoginCommand) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + 4 + len(obj.ModuleID) + 4 + len(obj.ModuleAddr) + 8 + 4 +
 		8
 }
+
 func ReadMsgSLogoutCommandByBytes(indata []byte, obj *SLogoutCommand) (int, *SLogoutCommand) {
 	offset := 0
 	if len(indata) < 4 {
@@ -878,8 +1042,10 @@ func ReadMsgSLogoutCommandByBytes(indata []byte, obj *SLogoutCommand) (int, *SLo
 		return offset, obj
 	}
 	endpos := offset + objsize
+
 	return endpos, obj
 }
+
 func WriteMsgSLogoutCommandByObj(data []byte, obj *SLogoutCommand) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -889,14 +1055,18 @@ func WriteMsgSLogoutCommandByObj(data []byte, obj *SLogoutCommand) int {
 	offset := 0
 	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
+
 	return offset
 }
+
 func GetSizeSLogoutCommand(obj *SLogoutCommand) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + 0
 }
+
 func ReadMsgSSeverStartOKCommandByBytes(indata []byte, obj *SSeverStartOKCommand) (int, *SSeverStartOKCommand) {
 	offset := 0
 	if len(indata) < 4 {
@@ -922,8 +1092,10 @@ func ReadMsgSSeverStartOKCommandByBytes(indata []byte, obj *SSeverStartOKCommand
 	}
 	obj.ModuleID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ModuleID)
+
 	return endpos, obj
 }
+
 func WriteMsgSSeverStartOKCommandByObj(data []byte, obj *SSeverStartOKCommand) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -935,14 +1107,18 @@ func WriteMsgSSeverStartOKCommandByObj(data []byte, obj *SSeverStartOKCommand) i
 	offset += 4
 	writeBinaryString(data[offset:], obj.ModuleID)
 	offset += 4 + len(obj.ModuleID)
+
 	return offset
 }
+
 func GetSizeSSeverStartOKCommand(obj *SSeverStartOKCommand) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + 4 + len(obj.ModuleID)
 }
+
 func ReadMsgSLoginRetCommandByBytes(indata []byte, obj *SLoginRetCommand) (int, *SLoginRetCommand) {
 	offset := 0
 	if len(indata) < 4 {
@@ -974,8 +1150,10 @@ func ReadMsgSLoginRetCommandByBytes(indata []byte, obj *SLoginRetCommand) (int, 
 	rsize_Destination := 0
 	rsize_Destination, obj.Destination = ReadMsgModuleInfoByBytes(data[offset:], nil)
 	offset += rsize_Destination
+
 	return endpos, obj
 }
+
 func WriteMsgSLoginRetCommandByObj(data []byte, obj *SLoginRetCommand) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -988,14 +1166,18 @@ func WriteMsgSLoginRetCommandByObj(data []byte, obj *SLoginRetCommand) int {
 	binary.LittleEndian.PutUint32(data[offset:offset+4], obj.Loginfailed)
 	offset += 4
 	offset += WriteMsgModuleInfoByObj(data[offset:], obj.Destination)
+
 	return offset
 }
+
 func GetSizeSLoginRetCommand(obj *SLoginRetCommand) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + 4 + obj.Destination.GetSize()
 }
+
 func ReadMsgSStartRelyNotifyCommandByBytes(indata []byte, obj *SStartRelyNotifyCommand) (int, *SStartRelyNotifyCommand) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1023,14 +1205,17 @@ func ReadMsgSStartRelyNotifyCommandByBytes(indata []byte, obj *SStartRelyNotifyC
 	offset += 4
 	if ServerInfos_slen != 0xffffffff {
 		obj.ServerInfos = make([]*ModuleInfo, ServerInfos_slen)
+
 		for i1i := 0; ServerInfos_slen > i1i; i1i++ {
 			rsize_ServerInfos := 0
 			rsize_ServerInfos, obj.ServerInfos[i1i] = ReadMsgModuleInfoByBytes(data[offset:], nil)
 			offset += rsize_ServerInfos
 		}
 	}
+
 	return endpos, obj
 }
+
 func WriteMsgSStartRelyNotifyCommandByObj(data []byte, obj *SStartRelyNotifyCommand) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1052,8 +1237,10 @@ func WriteMsgSStartRelyNotifyCommandByObj(data []byte, obj *SStartRelyNotifyComm
 		offset += WriteMsgModuleInfoByObj(data[offset:], obj.ServerInfos[i1i])
 		i1i++
 	}
+
 	return offset
 }
+
 func GetSizeSStartRelyNotifyCommand(obj *SStartRelyNotifyCommand) int {
 	if obj == nil {
 		return 4
@@ -1065,8 +1252,10 @@ func GetSizeSStartRelyNotifyCommand(obj *SStartRelyNotifyCommand) int {
 		sizerelyModuleInfo1 += obj.ServerInfos[i1i].GetSize()
 		i1i++
 	}
+
 	return 4 + 4 + sizerelyModuleInfo1
 }
+
 func ReadMsgSStartMyNotifyCommandByBytes(indata []byte, obj *SStartMyNotifyCommand) (int, *SStartMyNotifyCommand) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1093,8 +1282,10 @@ func ReadMsgSStartMyNotifyCommandByBytes(indata []byte, obj *SStartMyNotifyComma
 	rsize_ModuleInfo := 0
 	rsize_ModuleInfo, obj.ModuleInfo = ReadMsgModuleInfoByBytes(data[offset:], nil)
 	offset += rsize_ModuleInfo
+
 	return endpos, obj
 }
+
 func WriteMsgSStartMyNotifyCommandByObj(data []byte, obj *SStartMyNotifyCommand) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1105,14 +1296,18 @@ func WriteMsgSStartMyNotifyCommandByObj(data []byte, obj *SStartMyNotifyCommand)
 	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	offset += WriteMsgModuleInfoByObj(data[offset:], obj.ModuleInfo)
+
 	return offset
 }
+
 func GetSizeSStartMyNotifyCommand(obj *SStartMyNotifyCommand) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + obj.ModuleInfo.GetSize()
 }
+
 func ReadMsgSNotifyAllInfoByBytes(indata []byte, obj *SNotifyAllInfo) (int, *SNotifyAllInfo) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1140,14 +1335,17 @@ func ReadMsgSNotifyAllInfoByBytes(indata []byte, obj *SNotifyAllInfo) (int, *SNo
 	offset += 4
 	if ServerInfos_slen != 0xffffffff {
 		obj.ServerInfos = make([]*ModuleInfo, ServerInfos_slen)
+
 		for i1i := 0; ServerInfos_slen > i1i; i1i++ {
 			rsize_ServerInfos := 0
 			rsize_ServerInfos, obj.ServerInfos[i1i] = ReadMsgModuleInfoByBytes(data[offset:], nil)
 			offset += rsize_ServerInfos
 		}
 	}
+
 	return endpos, obj
 }
+
 func WriteMsgSNotifyAllInfoByObj(data []byte, obj *SNotifyAllInfo) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1169,8 +1367,10 @@ func WriteMsgSNotifyAllInfoByObj(data []byte, obj *SNotifyAllInfo) int {
 		offset += WriteMsgModuleInfoByObj(data[offset:], obj.ServerInfos[i1i])
 		i1i++
 	}
+
 	return offset
 }
+
 func GetSizeSNotifyAllInfo(obj *SNotifyAllInfo) int {
 	if obj == nil {
 		return 4
@@ -1182,8 +1382,10 @@ func GetSizeSNotifyAllInfo(obj *SNotifyAllInfo) int {
 		sizerelyModuleInfo1 += obj.ServerInfos[i1i].GetSize()
 		i1i++
 	}
+
 	return 4 + 4 + sizerelyModuleInfo1
 }
+
 func ReadMsgSNotifySafelyQuitByBytes(indata []byte, obj *SNotifySafelyQuit) (int, *SNotifySafelyQuit) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1210,8 +1412,10 @@ func ReadMsgSNotifySafelyQuitByBytes(indata []byte, obj *SNotifySafelyQuit) (int
 	rsize_TargetServerInfo := 0
 	rsize_TargetServerInfo, obj.TargetServerInfo = ReadMsgModuleInfoByBytes(data[offset:], nil)
 	offset += rsize_TargetServerInfo
+
 	return endpos, obj
 }
+
 func WriteMsgSNotifySafelyQuitByObj(data []byte, obj *SNotifySafelyQuit) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1222,14 +1426,18 @@ func WriteMsgSNotifySafelyQuitByObj(data []byte, obj *SNotifySafelyQuit) int {
 	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	offset += WriteMsgModuleInfoByObj(data[offset:], obj.TargetServerInfo)
+
 	return offset
 }
+
 func GetSizeSNotifySafelyQuit(obj *SNotifySafelyQuit) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + obj.TargetServerInfo.GetSize()
 }
+
 func ReadMsgSUpdateSessionByBytes(indata []byte, obj *SUpdateSession) (int, *SUpdateSession) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1278,8 +1486,10 @@ func ReadMsgSUpdateSessionByBytes(indata []byte, obj *SUpdateSession) (int, *SUp
 			obj.Session[keySession] = valueSession
 		}
 	}
+
 	return endpos, obj
 }
+
 func WriteMsgSUpdateSessionByObj(data []byte, obj *SUpdateSession) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1303,8 +1513,10 @@ func WriteMsgSUpdateSessionByObj(data []byte, obj *SUpdateSession) int {
 		Session_vcatlen := writeBinaryString(data[offset:], Sessionvalue)
 		offset += Session_vcatlen
 	}
+
 	return offset
 }
+
 func GetSizeSUpdateSession(obj *SUpdateSession) int {
 	if obj == nil {
 		return 4
@@ -1314,8 +1526,10 @@ func GetSizeSUpdateSession(obj *SUpdateSession) int {
 		sizerelystring2 += len(Sessionvalue) + 4
 		sizerelystring2 += len(Sessionkey) + 4
 	}
+
 	return 4 + 4 + len(obj.ClientConnID) + 4 + sizerelystring2
 }
+
 func ReadMsgSForwardToModuleByBytes(indata []byte, obj *SForwardToModule) (int, *SForwardToModule) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1364,8 +1578,10 @@ func ReadMsgSForwardToModuleByBytes(indata []byte, obj *SForwardToModule) (int, 
 		copy(obj.Data, data[offset:offset+Data_slen])
 		offset += Data_slen
 	}
+
 	return endpos, obj
 }
+
 func WriteMsgSForwardToModuleByObj(data []byte, obj *SForwardToModule) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1390,14 +1606,18 @@ func WriteMsgSForwardToModuleByObj(data []byte, obj *SForwardToModule) int {
 	Data_slen := len(obj.Data)
 	copy(data[offset:offset+Data_slen], obj.Data)
 	offset += Data_slen
+
 	return offset
 }
+
 func GetSizeSForwardToModule(obj *SForwardToModule) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + 4 + len(obj.FromModuleID) + 4 + len(obj.ToModuleID) + 2 + 4 + len(obj.Data)*1
 }
+
 func ReadMsgModuleMessageByBytes(indata []byte, obj *ModuleMessage) (int, *ModuleMessage) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1442,8 +1662,10 @@ func ReadMsgModuleMessageByBytes(indata []byte, obj *ModuleMessage) (int, *Modul
 		copy(obj.Data, data[offset:offset+Data_slen])
 		offset += Data_slen
 	}
+
 	return endpos, obj
 }
+
 func WriteMsgModuleMessageByObj(data []byte, obj *ModuleMessage) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1465,14 +1687,18 @@ func WriteMsgModuleMessageByObj(data []byte, obj *ModuleMessage) int {
 	Data_slen := len(obj.Data)
 	copy(data[offset:offset+Data_slen], obj.Data)
 	offset += Data_slen
+
 	return offset
 }
+
 func GetSizeModuleMessage(obj *ModuleMessage) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + obj.FromModule.GetSize() + 2 + 4 + len(obj.Data)*1
 }
+
 func ReadMsgSForwardToClientByBytes(indata []byte, obj *SForwardToClient) (int, *SForwardToClient) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1526,8 +1752,10 @@ func ReadMsgSForwardToClientByBytes(indata []byte, obj *SForwardToClient) (int, 
 		copy(obj.Data, data[offset:offset+Data_slen])
 		offset += Data_slen
 	}
+
 	return endpos, obj
 }
+
 func WriteMsgSForwardToClientByObj(data []byte, obj *SForwardToClient) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1554,15 +1782,19 @@ func WriteMsgSForwardToClientByObj(data []byte, obj *SForwardToClient) int {
 	Data_slen := len(obj.Data)
 	copy(data[offset:offset+Data_slen], obj.Data)
 	offset += Data_slen
+
 	return offset
 }
+
 func GetSizeSForwardToClient(obj *SForwardToClient) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + 4 + len(obj.FromModuleID) + 4 + len(obj.ToGateID) + 4 + len(obj.ToClientID) + 2 +
 		4 + len(obj.Data)*1
 }
+
 func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int, *SForwardFromGate) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1639,8 +1871,10 @@ func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int, 
 		copy(obj.Data, data[offset:offset+Data_slen])
 		offset += Data_slen
 	}
+
 	return endpos, obj
 }
+
 func WriteMsgSForwardFromGateByObj(data []byte, obj *SForwardFromGate) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1679,8 +1913,10 @@ func WriteMsgSForwardFromGateByObj(data []byte, obj *SForwardFromGate) int {
 	Data_slen := len(obj.Data)
 	copy(data[offset:offset+Data_slen], obj.Data)
 	offset += Data_slen
+
 	return offset
 }
+
 func GetSizeSForwardFromGate(obj *SForwardFromGate) int {
 	if obj == nil {
 		return 4
@@ -1690,9 +1926,11 @@ func GetSizeSForwardFromGate(obj *SForwardFromGate) int {
 		sizerelystring4 += len(Sessionvalue) + 4
 		sizerelystring4 += len(Sessionkey) + 4
 	}
+
 	return 4 + 4 + len(obj.FromModuleID) + 4 + len(obj.ToModuleID) + 4 + len(obj.ClientConnID) + 4 + sizerelystring4 +
 		2 + 4 + len(obj.Data)*1
 }
+
 func ReadMsgClientMessageByBytes(indata []byte, obj *ClientMessage) (int, *ClientMessage) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1765,8 +2003,10 @@ func ReadMsgClientMessageByBytes(indata []byte, obj *ClientMessage) (int, *Clien
 		copy(obj.Data, data[offset:offset+Data_slen])
 		offset += Data_slen
 	}
+
 	return endpos, obj
 }
+
 func WriteMsgClientMessageByObj(data []byte, obj *ClientMessage) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1802,8 +2042,10 @@ func WriteMsgClientMessageByObj(data []byte, obj *ClientMessage) int {
 	Data_slen := len(obj.Data)
 	copy(data[offset:offset+Data_slen], obj.Data)
 	offset += Data_slen
+
 	return offset
 }
+
 func GetSizeClientMessage(obj *ClientMessage) int {
 	if obj == nil {
 		return 4
@@ -1813,9 +2055,11 @@ func GetSizeClientMessage(obj *ClientMessage) int {
 		sizerelystring3 += len(Sessionvalue) + 4
 		sizerelystring3 += len(Sessionkey) + 4
 	}
+
 	return 4 + obj.FromModule.GetSize() + 4 + len(obj.ClientConnID) + 4 + sizerelystring3 + 2 +
 		4 + len(obj.Data)*1
 }
+
 func ReadMsgSROCRequestByBytes(indata []byte, obj *SROCRequest) (int, *SROCRequest) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1874,8 +2118,10 @@ func ReadMsgSROCRequestByBytes(indata []byte, obj *SROCRequest) (int, *SROCReque
 	}
 	obj.NeedReturn = uint8(data[offset]) != 0
 	offset += 1
+
 	return endpos, obj
 }
+
 func WriteMsgSROCRequestByObj(data []byte, obj *SROCRequest) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1904,15 +2150,19 @@ func WriteMsgSROCRequestByObj(data []byte, obj *SROCRequest) int {
 	offset += CallArg_slen
 	data[offset] = uint8(bool2int(obj.NeedReturn))
 	offset += 1
+
 	return offset
 }
+
 func GetSizeSROCRequest(obj *SROCRequest) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + 4 + len(obj.FromModuleID) + 4 + len(obj.ToModuleID) + 8 + 4 + len(obj.CallStr) +
 		4 + len(obj.CallArg)*1 + 1
 }
+
 func ReadMsgSROCResponseByBytes(indata []byte, obj *SROCResponse) (int, *SROCResponse) {
 	offset := 0
 	if len(indata) < 4 {
@@ -1966,8 +2216,10 @@ func ReadMsgSROCResponseByBytes(indata []byte, obj *SROCResponse) (int, *SROCRes
 	}
 	obj.Error = readBinaryString(data[offset:])
 	offset += 4 + len(obj.Error)
+
 	return endpos, obj
 }
+
 func WriteMsgSROCResponseByObj(data []byte, obj *SROCResponse) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -1994,15 +2246,19 @@ func WriteMsgSROCResponseByObj(data []byte, obj *SROCResponse) int {
 	offset += ResData_slen
 	writeBinaryString(data[offset:], obj.Error)
 	offset += 4 + len(obj.Error)
+
 	return offset
 }
+
 func GetSizeSROCResponse(obj *SROCResponse) int {
 	if obj == nil {
 		return 4
 	}
+
 	return 4 + 4 + len(obj.FromModuleID) + 4 + len(obj.ToModuleID) + 8 + 4 + len(obj.ResData)*1 +
 		4 + len(obj.Error)
 }
+
 func ReadMsgSROCBindByBytes(indata []byte, obj *SROCBind) (int, *SROCBind) {
 	offset := 0
 	if len(indata) < 4 {
@@ -2053,8 +2309,10 @@ func ReadMsgSROCBindByBytes(indata []byte, obj *SROCBind) (int, *SROCBind) {
 			offset += 0
 		}
 	}
+
 	return endpos, obj
 }
+
 func WriteMsgSROCBindByObj(data []byte, obj *SROCBind) int {
 	if obj == nil {
 		binary.LittleEndian.PutUint32(data[0:4], 0)
@@ -2081,8 +2339,10 @@ func WriteMsgSROCBindByObj(data []byte, obj *SROCBind) int {
 		writeBinaryString(data[offset:offset+0], obj.ObjIDs[i4i])
 		offset += 0
 	}
+
 	return offset
 }
+
 func GetSizeSROCBind(obj *SROCBind) int {
 	if obj == nil {
 		return 4
@@ -2094,5 +2354,6 @@ func GetSizeSROCBind(obj *SROCBind) int {
 		sizerelystring4 += len(obj.ObjIDs[i4i]) + 4
 		i4i++
 	}
+
 	return 4 + 4 + len(obj.HostModuleID) + 1 + 4 + len(obj.ObjType) + 4 + sizerelystring4
 }

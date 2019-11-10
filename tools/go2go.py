@@ -162,8 +162,8 @@ def fmtcodeout(content) :
     reg = re.compile("{[ \t\r]+\n")
     content = re.sub(reg, "{\n", content)
 
-    reg = re.compile("\n\s+")
-    content = re.sub(reg, "\n", content)
+    reg = re.compile("\n\n\s+")
+    content = re.sub(reg, "\n\n", content)
     
     res = ""
     tmplevel = 0
@@ -304,13 +304,13 @@ def getgostringfunc():
         return ""\n\
     }\n\
     return string(data[4:4+'+jsonname+'len])\n\
-}\n'
+}\n\n'
     send = 'func writeBinaryString(data []byte,obj string) int {\
     objlen := len(obj)\n\
     binary.LittleEndian.PutUint32(data[:4],uint32(objlen))\n\
     copy(data[4:4+objlen], obj)\n\
     return 4+objlen\n\
-}\n'
+}\n\n'
     return read,send
 
 def getgobasefunc():
@@ -320,29 +320,29 @@ def getgobasefunc():
         return 1\n\
     }\n\
     return 0\n\
-}\n\
+}\n\n\
 func readBinaryInt(data []byte) int {\n\
     return int(int32(binary.LittleEndian.Uint32(data)))\n\
-}\n\
+}\n\n\
 func writeBinaryInt(data []byte, num int) {\n\
     binary.LittleEndian.PutUint32(data,uint32(int32(num)))\n\
-}\n\
+}\n\n\
 func readBinaryInt8(data []byte) int8 {\n\
     // 大端模式\n\
     num := int8(0)\n\
     num |= int8(data[0]) << 0\n\
     return num\n\
-}\n\
+}\n\n\
 func writeBinaryInt8(data []byte, num int8) {\n\
     // 大端模式\n\
     data[0] = byte(num)\n\
-}\n\
+}\n\n\
 func readBinaryBool(data []byte) bool {\n\
     // 大端模式\n\
     num := int8(0)\n\
     num |= int8(data[0]) << 0\n\
     return num>0\n\
-}\n\
+}\n\n\
 func writeBinaryBool(data []byte, num bool) {\n\
     // 大端模式\n\
     if num == true {\n\
@@ -350,35 +350,35 @@ func writeBinaryBool(data []byte, num bool) {\n\
     } else {\n\
     data[0] = byte(0)\n\
     }\n\
-}\n\
+}\n\n\
 func readBinaryUint8(data []byte) uint8 {\n\
 return uint8(data[0])\n\
-}\n\
+}\n\n\
 func writeBinaryUint8(data []byte, num uint8) {\n\
 data[0] = byte(num)\n\
-}\n\
+}\n\n\
 func readBinaryUint(data []byte) uint {\n\
 return uint(binary.LittleEndian.Uint32(data))\n\
-}\n\
+}\n\n\
 func writeBinaryUint(data []byte, num uint) {\n\
     binary.LittleEndian.PutUint32(data,uint32(num))\n\
-}\n\
+}\n\n\
 func writeBinaryFloat32(data []byte, num float32) {\n\
 bits := math.Float32bits(num)\n\
 binary.LittleEndian.PutUint32(data,bits)\n\
-}\n\
+}\n\n\
 func readBinaryFloat32(data []byte) float32 {\n\
 bits := binary.LittleEndian.Uint32(data)\n\
 return math.Float32frombits(bits)\n\
-}\n\
+}\n\n\
 func writeBinaryFloat64(data []byte, num float64) {\n\
 bits := math.Float64bits(num)\n\
 binary.LittleEndian.PutUint64(data,bits)\n\
-}\n\
+}\n\n\
 func readBinaryFloat64(data []byte) float64 {\n\
 bits := binary.LittleEndian.Uint64(data)\n\
 return math.Float64frombits(bits)\n\
-}\n'
+}\n\n'
     return code
 
 def getgostring(jsonname):
@@ -963,25 +963,27 @@ def getgomsg(msgdef):
             endpos := offset+objsize\n\
             '+getdatalencode+'\n\
             '+fieldcode+'\nreturn endpos,obj\n\
-        }'
-    ressend = 'func WriteMsg'+name+'ByObj(data []byte, obj *'+name+') int {\n\
-        if obj == nil {\n\
-            binary.LittleEndian.PutUint32(data[0:4],0)\n\
-            return 4\n\
-        }\n\
-        objsize := obj.GetSize() - 4\n\
-        offset := 0\n\
-        binary.LittleEndian.PutUint32(data[offset:offset+4],uint32(objsize))\n\
-        offset += 4\n\
-        '+fieldcodesend+'\nreturn offset\n\
-        }'
-    ressize = 'func GetSize'+name+'(obj *'+name+') int {\n\
-        if obj == nil {\n\
-            return 4\n\
-        }\n\
-        '+sizerely+'\n\
-        return 4 + '+size+'\n\
-        }\n'
+        }\n\n'
+    ressend = '\
+        func WriteMsg'+name+'ByObj(data []byte, obj *'+name+') int {\n\
+            if obj == nil {\n\
+                binary.LittleEndian.PutUint32(data[0:4],0)\n\
+                return 4\n\
+            }\n\
+            objsize := obj.GetSize() - 4\n\
+            offset := 0\n\
+            binary.LittleEndian.PutUint32(data[offset:offset+4],uint32(objsize))\n\
+            offset += 4\n\
+            '+fieldcodesend+'\nreturn offset\n\
+        }\n\n'
+    ressize = '\
+        func GetSize'+name+'(obj *'+name+') int {\n\
+            if obj == nil {\n\
+                return 4\n\
+            }\n\
+            '+sizerely+'\n\
+            return 4 + '+size+'\n\
+        }\n\n'
     return name,res,ressend,ressize
 
 # go 解析函数
@@ -1010,14 +1012,17 @@ def getgoheadfunc(names,types,packname,proto,onlynames):
         StringToMsgId += 'case '+i+'Name: \nreturn '+i+'ID\n'
         if proto == 'protobuf':
             resinterface += 'func (this *'+i+') WriteBinary(data []byte) int {\n\
-    this.MarshalTo(data)\nreturn this.ProtoSize()\n}\n\n'
+                this.MarshalTo(data)\n\
+                return this.ProtoSize()\n\
+            }\n\n'
             resinterfaceread += 'func (this *'+i+') ReadBinary(data []byte) int {\n\
-offset := len(data)\n\
-this.Unmarshal(data)\n\
-return offset\n}\n\n'
+                offset := len(data)\n\
+                this.Unmarshal(data)\n\
+                return offset\n\
+            }\n\n'
             resinterfacegetsize += 'func (this *'+i+') GetSize() int {\n\
-            return this.ProtoSize()\n\
-        }\n'
+                return this.ProtoSize()\n\
+            }\n\n'
         else :
             resinterface += 'func (this *'+i+') WriteBinary(data []byte) int {\n\
                 return WriteMsg'+ i +'ByObj(data,this)\n}\n\n'
@@ -1027,28 +1032,28 @@ return offset\n}\n\n'
                     return size\n\
                 }\n\n'
             resinterfacegetsize += 'func (this *'+i+') GetSize() int {\n\
-            return GetSize'+i+'(this)\n\
-        }\n'
+                return GetSize'+i+'(this)\n\
+            }\n\n'
         resinterfacegetid += 'func (this *'+i+') GetMsgId() uint16 {\n\
-            return '+i+'ID\n\
-        }\n'
+                return '+i+'ID\n\
+            }\n\n'
         resinterfacegetname += 'func (this *'+i+') GetMsgName() string {\n\
-            return '+i+'Name\n\
-        }\n'
+                return '+i+'Name\n\
+            }\n\n'
         resinterfacegetjsonstring += 'func (this *'+i+') GetJson() string {\n\
-            json,_ := json.Marshal(this)\n\
-            return string(json)\n\
-        }\n'
+                json,_ := json.Marshal(this)\n\
+                return string(json)\n\
+            }\n\n'
 
         constmsgid += ''+i+'ID = '+str(times+36)+'\n'
         constmsgname += ''+i+'Name = "'+packname+'.'+i+'"\n'
         times += 1
-    ressend += 'default:\nlog.Error("未知的消息名称："+msgname)\n}\n}\n'
-    ressend += 'default:\nreturn data,0\n}\n}\n'
-    MsgIdToString += 'default:\nreturn ""\n}\n}\n'
-    StringToMsgId += 'default:\nreturn 0\n}\n}\n'
-    constmsgid += ')\n'
-    constmsgname += ')\n'
+    ressend += 'default:\nlog.Error("未知的消息名称："+msgname)\n}\n}\n\n'
+    ressend += 'default:\nreturn data,0\n}\n}\n\n'
+    MsgIdToString += 'default:\nreturn ""\n}\n}\n\n'
+    StringToMsgId += 'default:\nreturn 0\n}\n}\n\n'
+    constmsgid += ')\n\n'
+    constmsgname += ')\n\n'
     if onlynames == True :
         return constmsgname+resinterfacegetname
     return "" + constmsgid + constmsgname  + resinterface+ resinterfaceread + MsgIdToString + StringToMsgId + resinterfacegetid + resinterfacegetname + resinterfacegetsize + resinterfacegetjsonstring
