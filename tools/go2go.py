@@ -211,16 +211,16 @@ def getMsgType(name,msgcontent):
     return name[0]
 
 def getgoint64(jsonname):
-    read = jsonname+' = readBinaryInt64(data[offset:offset+8])\n\
+    read = jsonname+' = int64(binary.LittleEndian.Uint64(data[offset:offset+8]))\n\
             offset+=8\n'
-    send = 'writeBinaryInt64(data[offset:offset+8], obj.'+jsonname+')\n\
+    send = 'binary.LittleEndian.PutUint64(data[offset:offset+8],uint64( obj.'+jsonname+'))\n\
             offset+=8\n'
     size = '8'
     return read,send,size
 def getgoint32(jsonname):
-    read = jsonname+' = readBinaryInt32(data[offset:offset+4])\n\
+    read = jsonname+' = int32(binary.LittleEndian.Uint32(data[offset:offset+4]))\n\
             offset+=4\n'
-    send = 'writeBinaryInt32(data[offset:offset+4], obj.'+jsonname+')\n\
+    send = 'binary.LittleEndian.PutUint32(data[offset:offset+4],uint32( obj.'+jsonname+'))\n\
             offset+=4\n'
     size = '4'
     return read,send,size
@@ -232,9 +232,9 @@ def getgoint(jsonname):
     size = '4'
     return read,send,size
 def getgoint16(jsonname):
-    read = jsonname+' = readBinaryInt16(data[offset:offset+2])\n\
+    read = jsonname+' = int16(binary.LittleEndian.Uint16(data[offset:offset+2]))\n\
             offset+=2\n'
-    send = 'writeBinaryInt16(data[offset:offset+2], obj.'+jsonname+')\n\
+    send = 'binary.LittleEndian.PutUint16(data[offset:offset+2],uint16( obj.'+jsonname+'))\n\
             offset+=2\n'
     size = '2'
     return read,send,size
@@ -246,30 +246,30 @@ def getgoint8(jsonname):
     size = '1'
     return read,send,size
 def getgouint64(jsonname):
-    read = jsonname+' = binary.BigEndian.Uint64(data[offset:offset+8])\n\
+    read = jsonname+' = binary.LittleEndian.Uint64(data[offset:offset+8])\n\
             offset+=8\n'
-    send = 'binary.BigEndian.PutUint64(data[offset:offset+8], obj.'+jsonname+')\n\
+    send = 'binary.LittleEndian.PutUint64(data[offset:offset+8], obj.'+jsonname+')\n\
             offset+=8\n'
     size = '8'
     return read,send,size
 def getgouint32(jsonname):
-    read = jsonname+' = binary.BigEndian.Uint32(data[offset:offset+4])\n\
+    read = jsonname+' = binary.LittleEndian.Uint32(data[offset:offset+4])\n\
             offset+=4\n'
-    send = 'binary.BigEndian.PutUint32(data[offset:offset+4], obj.'+jsonname+')\n\
+    send = 'binary.LittleEndian.PutUint32(data[offset:offset+4], obj.'+jsonname+')\n\
             offset+=4\n'
     size = '4'
     return read,send,size
 def getgouint(jsonname):
-    read = jsonname+' = uint(binary.BigEndian.Uint32(data[offset:offset+4]))\n\
+    read = jsonname+' = uint(binary.LittleEndian.Uint32(data[offset:offset+4]))\n\
             offset+=4\n'
-    send = 'binary.BigEndian.PutUint32(data[offset:offset+4], uint32(obj.'+jsonname+'))\n\
+    send = 'binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(obj.'+jsonname+'))\n\
             offset+=4\n'
     size = '4'
     return read,send,size
 def getgouint16(jsonname):
-    read = jsonname+' = binary.BigEndian.Uint16(data[offset:offset+2])\n\
+    read = jsonname+' = binary.LittleEndian.Uint16(data[offset:offset+2])\n\
             offset+=2\n'
-    send = 'binary.BigEndian.PutUint16(data[offset:offset+2], obj.'+jsonname+')\n\
+    send = 'binary.LittleEndian.PutUint16(data[offset:offset+2], obj.'+jsonname+')\n\
             offset+=2\n'
     size = '2'
     return read,send,size
@@ -299,7 +299,7 @@ def getgodouble(jsonname):
 def getgostringfunc():
     jsonname = "strfunc"
     read = 'func readBinaryString(data []byte) string {\
-    '+jsonname+'len := binary.BigEndian.Uint32(data[:4])\n\
+    '+jsonname+'len := binary.LittleEndian.Uint32(data[:4])\n\
     if int('+jsonname+'len) + 4 > len(data) {\n\
         return ""\n\
     }\n\
@@ -307,7 +307,7 @@ def getgostringfunc():
 }\n'
     send = 'func writeBinaryString(data []byte,obj string) int {\
     objlen := len(obj)\n\
-    binary.BigEndian.PutUint32(data[:4],uint32(objlen))\n\
+    binary.LittleEndian.PutUint32(data[:4],uint32(objlen))\n\
     copy(data[4:4+objlen], obj)\n\
     return 4+objlen\n\
 }\n'
@@ -321,63 +321,11 @@ def getgobasefunc():
     }\n\
     return 0\n\
 }\n\
-func readBinaryInt64(data []byte) int64 {\n\
-    // 大端模式\n\
-    num := int64(0)\n\
-    num |= int64(data[7]) << 0\n\
-    num |= int64(data[6]) << 8\n\
-    num |= int64(data[5]) << 16\n\
-    num |= int64(data[4]) << 24\n\
-    num |= int64(data[3]) << 32\n\
-    num |= int64(data[2]) << 40\n\
-    num |= int64(data[1]) << 48\n\
-    num |= int64(data[0]) << 56\n\
-    return num\n\
-}\n\
-func writeBinaryInt64(data []byte, num int64) {\n\
-    // 大端模式\n\
-    data[7] = byte((num >> 0) & 0xff)\n\
-    data[6] = byte((num >> 8) & 0xff)\n\
-    data[5] = byte((num >> 16) & 0xff)\n\
-    data[4] = byte((num >> 24) & 0xff)\n\
-    data[3] = byte((num >> 32) & 0xff)\n\
-    data[2] = byte((num >> 40) & 0xff)\n\
-    data[1] = byte((num >> 48) & 0xff)\n\
-    data[0] = byte((num >> 56) & 0xff)\n\
-}\n\
-func readBinaryInt32(data []byte) int32 {\n\
-    // 大端模式\n\
-    num := int32(0)\n\
-    num |= int32(data[3]) << 0\n\
-    num |= int32(data[2]) << 8\n\
-    num |= int32(data[1]) << 16\n\
-    num |= int32(data[0]) << 24\n\
-    return num\n\
-}\n\
-func writeBinaryInt32(data []byte, num int32) {\n\
-    // 大端模式\n\
-    data[3] = byte((num >> 0) & 0xff)\n\
-    data[2] = byte((num >> 8) & 0xff)\n\
-    data[1] = byte((num >> 16) & 0xff)\n\
-    data[0] = byte((num >> 24) & 0xff)\n\
-}\n\
 func readBinaryInt(data []byte) int {\n\
-    return int(readBinaryInt32(data))\n\
+    return int(int32(binary.LittleEndian.Uint32(data)))\n\
 }\n\
 func writeBinaryInt(data []byte, num int) {\n\
-    writeBinaryInt32(data,int32(num))\n\
-}\n\
-func readBinaryInt16(data []byte) int16 {\n\
-    // 大端模式\n\
-    num := int16(0)\n\
-    num |= int16(data[1]) << 0\n\
-    num |= int16(data[0]) << 8\n\
-    return num\n\
-}\n\
-func writeBinaryInt16(data []byte, num int16) {\n\
-    // 大端模式\n\
-    data[1] = byte((num >> 0) & 0xff)\n\
-    data[0] = byte((num >> 8) & 0xff)\n\
+    binary.LittleEndian.PutUint32(data,uint32(int32(num)))\n\
 }\n\
 func readBinaryInt8(data []byte) int8 {\n\
     // 大端模式\n\
@@ -410,25 +358,25 @@ func writeBinaryUint8(data []byte, num uint8) {\n\
 data[0] = byte(num)\n\
 }\n\
 func readBinaryUint(data []byte) uint {\n\
-return uint(binary.BigEndian.Uint32(data))\n\
+return uint(binary.LittleEndian.Uint32(data))\n\
 }\n\
 func writeBinaryUint(data []byte, num uint) {\n\
-    binary.BigEndian.PutUint32(data,uint32(num))\n\
+    binary.LittleEndian.PutUint32(data,uint32(num))\n\
 }\n\
 func writeBinaryFloat32(data []byte, num float32) {\n\
 bits := math.Float32bits(num)\n\
-binary.BigEndian.PutUint32(data,bits)\n\
+binary.LittleEndian.PutUint32(data,bits)\n\
 }\n\
 func readBinaryFloat32(data []byte) float32 {\n\
-bits := binary.BigEndian.Uint32(data)\n\
+bits := binary.LittleEndian.Uint32(data)\n\
 return math.Float32frombits(bits)\n\
 }\n\
 func writeBinaryFloat64(data []byte, num float64) {\n\
 bits := math.Float64bits(num)\n\
-binary.BigEndian.PutUint64(data,bits)\n\
+binary.LittleEndian.PutUint64(data,bits)\n\
 }\n\
 func readBinaryFloat64(data []byte) float64 {\n\
-bits := binary.BigEndian.Uint64(data)\n\
+bits := binary.LittleEndian.Uint64(data)\n\
 return math.Float64frombits(bits)\n\
 }\n'
     return code
@@ -571,23 +519,23 @@ def isbasetype(typestr):
 def getgobybasetypesub(typestr):
     global needpack
     if typestr == 'int64' :
-        return 'readBinaryInt64(data[offset:offset+8])','writeBinaryInt64',8
+        return 'int64(binary.LittleEndian.Uint64(data[offset:offset+8]))','writeBinaryInt64',8
     elif typestr == 'int32' :
-        return 'readBinaryInt32(data[offset:offset+4])','writeBinaryInt32',4
+        return 'int32(binary.LittleEndian.Uint32(data[offset:offset+4]))','writeBinaryInt32',4
     elif typestr == 'int':
         return 'readBinaryInt(data[offset:offset+4])','writeBinaryInt',4
     elif typestr == 'int16':
-        return 'readBinaryInt16(data[offset:offset+2])','writeBinaryInt16',2
+        return 'int16(binary.LittleEndian.Uint16(data[offset:offset+2]))','writeBinaryInt16',2
     elif typestr == 'int8':
         return 'readBinaryInt8(data[offset:offset+1])','writeBinaryInt8',1
     elif typestr == 'uint64' :
-        return 'binary.BigEndian.Uint64(data[offset:offset+8])','binary.BigEndian.PutUint64',8
+        return 'binary.LittleEndian.Uint64(data[offset:offset+8])','binary.LittleEndian.PutUint64',8
     elif typestr == 'uint32':
-        return 'binary.BigEndian.Uint32(data[offset:offset+4])','binary.BigEndian.PutUint32',4
+        return 'binary.LittleEndian.Uint32(data[offset:offset+4])','binary.LittleEndian.PutUint32',4
     elif typestr == 'uint':
         return 'readBinaryUint(data[offset:offset+4])','writeBinaryUint',4
     elif typestr == 'uint16':
-        return 'binary.BigEndian.Uint16(data[offset:offset+2])','binary.BigEndian.PutUint16',2
+        return 'binary.LittleEndian.Uint16(data[offset:offset+2])','binary.LittleEndian.PutUint16',2
     elif typestr == 'uint8' or typestr == 'byte':
         return 'readBinaryUint8(data[offset:offset+1])','writeBinaryUint8',1
     elif typestr == 'bool':
@@ -644,13 +592,13 @@ def getgoslice(typestr,jsonname,fieldnum):
             if offset + 4 > data__len{\n\
                 return endpos,obj\n\
             }\n\
-            '+jsonname+'_slen := int(binary.BigEndian.Uint32(data[offset:offset+4]))\n\
+            '+jsonname+'_slen := int(binary.LittleEndian.Uint32(data[offset:offset+4]))\n\
             offset += 4\n'
         send = '\
             if obj.'+jsonname+' == nil {\n\
-                binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)\n\
+                binary.LittleEndian.PutUint32(data[offset:offset+4],0xffffffff)\n\
             } else {\n\
-                binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
+                binary.LittleEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
             }\n\
             offset += 4\n'
         if isbasetype(subtype) :
@@ -781,14 +729,14 @@ def getgomap(typestr,jsonname,fieldnum):
             if offset + 4 > data__len{\n\
                 return endpos,obj\n\
             }\n\
-            '+jsonname+'_slen := binary.BigEndian.Uint32(data[offset:offset+4])\n\
+            '+jsonname+'_slen := binary.LittleEndian.Uint32(data[offset:offset+4])\n\
             offset += 4\n\
             '
         send = '\
             if obj.'+jsonname+' == nil {\n\
-                binary.BigEndian.PutUint32(data[offset:offset+4],0xffffffff)\n\
+                binary.LittleEndian.PutUint32(data[offset:offset+4],0xffffffff)\n\
             } else {\n\
-                binary.BigEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
+                binary.LittleEndian.PutUint32(data[offset:offset+4],uint32(len(obj.'+jsonname+')))\n\
             }\n\
             offset += 4\n'
         sizerely = ''
@@ -1001,7 +949,7 @@ def getgomsg(msgdef):
             if len(indata) < 4 {\n\
                 return 0,nil\n\
             }\n\
-            objsize := int(binary.BigEndian.Uint32(indata))\n\
+            objsize := int(binary.LittleEndian.Uint32(indata))\n\
             offset += 4\n\
             if objsize == 0 {\n\
                 return 4,nil\n\
@@ -1018,12 +966,12 @@ def getgomsg(msgdef):
         }'
     ressend = 'func WriteMsg'+name+'ByObj(data []byte, obj *'+name+') int {\n\
         if obj == nil {\n\
-            binary.BigEndian.PutUint32(data[0:4],0)\n\
+            binary.LittleEndian.PutUint32(data[0:4],0)\n\
             return 4\n\
         }\n\
         objsize := obj.GetSize() - 4\n\
         offset := 0\n\
-        binary.BigEndian.PutUint32(data[offset:offset+4],uint32(objsize))\n\
+        binary.LittleEndian.PutUint32(data[offset:offset+4],uint32(objsize))\n\
         offset += 4\n\
         '+fieldcodesend+'\nreturn offset\n\
         }'

@@ -544,7 +544,7 @@ func (this *SROCBind) GetJson() string {
 	return string(json)
 }
 func readBinaryString(data []byte) string {
-	strfunclen := binary.BigEndian.Uint32(data[:4])
+	strfunclen := binary.LittleEndian.Uint32(data[:4])
 	if int(strfunclen)+4 > len(data) {
 		return ""
 	}
@@ -552,7 +552,7 @@ func readBinaryString(data []byte) string {
 }
 func writeBinaryString(data []byte, obj string) int {
 	objlen := len(obj)
-	binary.BigEndian.PutUint32(data[:4], uint32(objlen))
+	binary.LittleEndian.PutUint32(data[:4], uint32(objlen))
 	copy(data[4:4+objlen], obj)
 	return 4 + objlen
 }
@@ -562,63 +562,11 @@ func bool2int(value bool) int {
 	}
 	return 0
 }
-func readBinaryInt64(data []byte) int64 {
-	// 大端模式
-	num := int64(0)
-	num |= int64(data[7]) << 0
-	num |= int64(data[6]) << 8
-	num |= int64(data[5]) << 16
-	num |= int64(data[4]) << 24
-	num |= int64(data[3]) << 32
-	num |= int64(data[2]) << 40
-	num |= int64(data[1]) << 48
-	num |= int64(data[0]) << 56
-	return num
-}
-func writeBinaryInt64(data []byte, num int64) {
-	// 大端模式
-	data[7] = byte((num >> 0) & 0xff)
-	data[6] = byte((num >> 8) & 0xff)
-	data[5] = byte((num >> 16) & 0xff)
-	data[4] = byte((num >> 24) & 0xff)
-	data[3] = byte((num >> 32) & 0xff)
-	data[2] = byte((num >> 40) & 0xff)
-	data[1] = byte((num >> 48) & 0xff)
-	data[0] = byte((num >> 56) & 0xff)
-}
-func readBinaryInt32(data []byte) int32 {
-	// 大端模式
-	num := int32(0)
-	num |= int32(data[3]) << 0
-	num |= int32(data[2]) << 8
-	num |= int32(data[1]) << 16
-	num |= int32(data[0]) << 24
-	return num
-}
-func writeBinaryInt32(data []byte, num int32) {
-	// 大端模式
-	data[3] = byte((num >> 0) & 0xff)
-	data[2] = byte((num >> 8) & 0xff)
-	data[1] = byte((num >> 16) & 0xff)
-	data[0] = byte((num >> 24) & 0xff)
-}
 func readBinaryInt(data []byte) int {
-	return int(readBinaryInt32(data))
+	return int(int32(binary.LittleEndian.Uint32(data)))
 }
 func writeBinaryInt(data []byte, num int) {
-	writeBinaryInt32(data, int32(num))
-}
-func readBinaryInt16(data []byte) int16 {
-	// 大端模式
-	num := int16(0)
-	num |= int16(data[1]) << 0
-	num |= int16(data[0]) << 8
-	return num
-}
-func writeBinaryInt16(data []byte, num int16) {
-	// 大端模式
-	data[1] = byte((num >> 0) & 0xff)
-	data[0] = byte((num >> 8) & 0xff)
+	binary.LittleEndian.PutUint32(data, uint32(int32(num)))
 }
 func readBinaryInt8(data []byte) int8 {
 	// 大端模式
@@ -651,25 +599,25 @@ func writeBinaryUint8(data []byte, num uint8) {
 	data[0] = byte(num)
 }
 func readBinaryUint(data []byte) uint {
-	return uint(binary.BigEndian.Uint32(data))
+	return uint(binary.LittleEndian.Uint32(data))
 }
 func writeBinaryUint(data []byte, num uint) {
-	binary.BigEndian.PutUint32(data, uint32(num))
+	binary.LittleEndian.PutUint32(data, uint32(num))
 }
 func writeBinaryFloat32(data []byte, num float32) {
 	bits := math.Float32bits(num)
-	binary.BigEndian.PutUint32(data, bits)
+	binary.LittleEndian.PutUint32(data, bits)
 }
 func readBinaryFloat32(data []byte) float32 {
-	bits := binary.BigEndian.Uint32(data)
+	bits := binary.LittleEndian.Uint32(data)
 	return math.Float32frombits(bits)
 }
 func writeBinaryFloat64(data []byte, num float64) {
 	bits := math.Float64bits(num)
-	binary.BigEndian.PutUint64(data, bits)
+	binary.LittleEndian.PutUint64(data, bits)
 }
 func readBinaryFloat64(data []byte) float64 {
-	bits := binary.BigEndian.Uint64(data)
+	bits := binary.LittleEndian.Uint64(data)
 	return math.Float64frombits(bits)
 }
 func ReadMsgModuleInfoByBytes(indata []byte, obj *ModuleInfo) (int, *ModuleInfo) {
@@ -677,7 +625,7 @@ func ReadMsgModuleInfoByBytes(indata []byte, obj *ModuleInfo) (int, *ModuleInfo)
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -705,31 +653,31 @@ func ReadMsgModuleInfoByBytes(indata []byte, obj *ModuleInfo) (int, *ModuleInfo)
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	obj.ModuleNumber = binary.BigEndian.Uint32(data[offset : offset+4])
+	obj.ModuleNumber = binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if offset+8 > data__len {
 		return endpos, obj
 	}
-	obj.Version = binary.BigEndian.Uint64(data[offset : offset+8])
+	obj.Version = binary.LittleEndian.Uint64(data[offset : offset+8])
 	offset += 8
 	return endpos, obj
 }
 func WriteMsgModuleInfoByObj(data []byte, obj *ModuleInfo) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	writeBinaryString(data[offset:], obj.ModuleID)
 	offset += 4 + len(obj.ModuleID)
 	writeBinaryString(data[offset:], obj.ModuleAddr)
 	offset += 4 + len(obj.ModuleAddr)
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.ModuleNumber)
+	binary.LittleEndian.PutUint32(data[offset:offset+4], obj.ModuleNumber)
 	offset += 4
-	binary.BigEndian.PutUint64(data[offset:offset+8], obj.Version)
+	binary.LittleEndian.PutUint64(data[offset:offset+8], obj.Version)
 	offset += 8
 	return offset
 }
@@ -744,7 +692,7 @@ func ReadMsgSTimeTickCommandByBytes(indata []byte, obj *STimeTickCommand) (int, 
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -762,20 +710,20 @@ func ReadMsgSTimeTickCommandByBytes(indata []byte, obj *STimeTickCommand) (int, 
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	obj.Testno = binary.BigEndian.Uint32(data[offset : offset+4])
+	obj.Testno = binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	return endpos, obj
 }
 func WriteMsgSTimeTickCommandByObj(data []byte, obj *STimeTickCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Testno)
+	binary.LittleEndian.PutUint32(data[offset:offset+4], obj.Testno)
 	offset += 4
 	return offset
 }
@@ -790,7 +738,7 @@ func ReadMsgSTestCommandByBytes(indata []byte, obj *STestCommand) (int, *STestCo
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -808,7 +756,7 @@ func ReadMsgSTestCommandByBytes(indata []byte, obj *STestCommand) (int, *STestCo
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	obj.Testno = binary.BigEndian.Uint32(data[offset : offset+4])
+	obj.Testno = binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if offset+4+len(obj.Testttring) > data__len {
 		return endpos, obj
@@ -819,14 +767,14 @@ func ReadMsgSTestCommandByBytes(indata []byte, obj *STestCommand) (int, *STestCo
 }
 func WriteMsgSTestCommandByObj(data []byte, obj *STestCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Testno)
+	binary.LittleEndian.PutUint32(data[offset:offset+4], obj.Testno)
 	offset += 4
 	writeBinaryString(data[offset:], obj.Testttring)
 	offset += 4 + len(obj.Testttring)
@@ -843,7 +791,7 @@ func ReadMsgSLoginCommandByBytes(indata []byte, obj *SLoginCommand) (int, *SLogi
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -871,38 +819,38 @@ func ReadMsgSLoginCommandByBytes(indata []byte, obj *SLoginCommand) (int, *SLogi
 	if offset+8 > data__len {
 		return endpos, obj
 	}
-	obj.ConnectPriority = readBinaryInt64(data[offset : offset+8])
+	obj.ConnectPriority = int64(binary.LittleEndian.Uint64(data[offset : offset+8]))
 	offset += 8
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	obj.ModuleNumber = binary.BigEndian.Uint32(data[offset : offset+4])
+	obj.ModuleNumber = binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if offset+8 > data__len {
 		return endpos, obj
 	}
-	obj.Version = binary.BigEndian.Uint64(data[offset : offset+8])
+	obj.Version = binary.LittleEndian.Uint64(data[offset : offset+8])
 	offset += 8
 	return endpos, obj
 }
 func WriteMsgSLoginCommandByObj(data []byte, obj *SLoginCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	writeBinaryString(data[offset:], obj.ModuleID)
 	offset += 4 + len(obj.ModuleID)
 	writeBinaryString(data[offset:], obj.ModuleAddr)
 	offset += 4 + len(obj.ModuleAddr)
-	writeBinaryInt64(data[offset:offset+8], obj.ConnectPriority)
+	binary.LittleEndian.PutUint64(data[offset:offset+8], uint64(obj.ConnectPriority))
 	offset += 8
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.ModuleNumber)
+	binary.LittleEndian.PutUint32(data[offset:offset+4], obj.ModuleNumber)
 	offset += 4
-	binary.BigEndian.PutUint64(data[offset:offset+8], obj.Version)
+	binary.LittleEndian.PutUint64(data[offset:offset+8], obj.Version)
 	offset += 8
 	return offset
 }
@@ -918,7 +866,7 @@ func ReadMsgSLogoutCommandByBytes(indata []byte, obj *SLogoutCommand) (int, *SLo
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -934,12 +882,12 @@ func ReadMsgSLogoutCommandByBytes(indata []byte, obj *SLogoutCommand) (int, *SLo
 }
 func WriteMsgSLogoutCommandByObj(data []byte, obj *SLogoutCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	return offset
 }
@@ -954,7 +902,7 @@ func ReadMsgSSeverStartOKCommandByBytes(indata []byte, obj *SSeverStartOKCommand
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -978,12 +926,12 @@ func ReadMsgSSeverStartOKCommandByBytes(indata []byte, obj *SSeverStartOKCommand
 }
 func WriteMsgSSeverStartOKCommandByObj(data []byte, obj *SSeverStartOKCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	writeBinaryString(data[offset:], obj.ModuleID)
 	offset += 4 + len(obj.ModuleID)
@@ -1000,7 +948,7 @@ func ReadMsgSLoginRetCommandByBytes(indata []byte, obj *SLoginRetCommand) (int, 
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1018,7 +966,7 @@ func ReadMsgSLoginRetCommandByBytes(indata []byte, obj *SLoginRetCommand) (int, 
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	obj.Loginfailed = binary.BigEndian.Uint32(data[offset : offset+4])
+	obj.Loginfailed = binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if offset+obj.Destination.GetSize() > data__len {
 		return endpos, obj
@@ -1030,14 +978,14 @@ func ReadMsgSLoginRetCommandByBytes(indata []byte, obj *SLoginRetCommand) (int, 
 }
 func WriteMsgSLoginRetCommandByObj(data []byte, obj *SLoginRetCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	binary.BigEndian.PutUint32(data[offset:offset+4], obj.Loginfailed)
+	binary.LittleEndian.PutUint32(data[offset:offset+4], obj.Loginfailed)
 	offset += 4
 	offset += WriteMsgModuleInfoByObj(data[offset:], obj.Destination)
 	return offset
@@ -1053,7 +1001,7 @@ func ReadMsgSStartRelyNotifyCommandByBytes(indata []byte, obj *SStartRelyNotifyC
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1071,7 +1019,7 @@ func ReadMsgSStartRelyNotifyCommandByBytes(indata []byte, obj *SStartRelyNotifyC
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	ServerInfos_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+	ServerInfos_slen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if ServerInfos_slen != 0xffffffff {
 		obj.ServerInfos = make([]*ModuleInfo, ServerInfos_slen)
@@ -1085,17 +1033,17 @@ func ReadMsgSStartRelyNotifyCommandByBytes(indata []byte, obj *SStartRelyNotifyC
 }
 func WriteMsgSStartRelyNotifyCommandByObj(data []byte, obj *SStartRelyNotifyCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	if obj.ServerInfos == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ServerInfos)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ServerInfos)))
 	}
 	offset += 4
 	i1i := 0
@@ -1124,7 +1072,7 @@ func ReadMsgSStartMyNotifyCommandByBytes(indata []byte, obj *SStartMyNotifyComma
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1149,12 +1097,12 @@ func ReadMsgSStartMyNotifyCommandByBytes(indata []byte, obj *SStartMyNotifyComma
 }
 func WriteMsgSStartMyNotifyCommandByObj(data []byte, obj *SStartMyNotifyCommand) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	offset += WriteMsgModuleInfoByObj(data[offset:], obj.ModuleInfo)
 	return offset
@@ -1170,7 +1118,7 @@ func ReadMsgSNotifyAllInfoByBytes(indata []byte, obj *SNotifyAllInfo) (int, *SNo
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1188,7 +1136,7 @@ func ReadMsgSNotifyAllInfoByBytes(indata []byte, obj *SNotifyAllInfo) (int, *SNo
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	ServerInfos_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+	ServerInfos_slen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if ServerInfos_slen != 0xffffffff {
 		obj.ServerInfos = make([]*ModuleInfo, ServerInfos_slen)
@@ -1202,17 +1150,17 @@ func ReadMsgSNotifyAllInfoByBytes(indata []byte, obj *SNotifyAllInfo) (int, *SNo
 }
 func WriteMsgSNotifyAllInfoByObj(data []byte, obj *SNotifyAllInfo) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	if obj.ServerInfos == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ServerInfos)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ServerInfos)))
 	}
 	offset += 4
 	i1i := 0
@@ -1241,7 +1189,7 @@ func ReadMsgSNotifySafelyQuitByBytes(indata []byte, obj *SNotifySafelyQuit) (int
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1266,12 +1214,12 @@ func ReadMsgSNotifySafelyQuitByBytes(indata []byte, obj *SNotifySafelyQuit) (int
 }
 func WriteMsgSNotifySafelyQuitByObj(data []byte, obj *SNotifySafelyQuit) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	offset += WriteMsgModuleInfoByObj(data[offset:], obj.TargetServerInfo)
 	return offset
@@ -1287,7 +1235,7 @@ func ReadMsgSUpdateSessionByBytes(indata []byte, obj *SUpdateSession) (int, *SUp
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1310,7 +1258,7 @@ func ReadMsgSUpdateSessionByBytes(indata []byte, obj *SUpdateSession) (int, *SUp
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	Session_slen := binary.BigEndian.Uint32(data[offset : offset+4])
+	Session_slen := binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if Session_slen != 0xffffffff {
 		obj.Session = make(map[string]string)
@@ -1334,19 +1282,19 @@ func ReadMsgSUpdateSessionByBytes(indata []byte, obj *SUpdateSession) (int, *SUp
 }
 func WriteMsgSUpdateSessionByObj(data []byte, obj *SUpdateSession) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	writeBinaryString(data[offset:], obj.ClientConnID)
 	offset += 4 + len(obj.ClientConnID)
 	if obj.Session == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Session)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Session)))
 	}
 	offset += 4
 	for Sessionkey, Sessionvalue := range obj.Session {
@@ -1373,7 +1321,7 @@ func ReadMsgSForwardToModuleByBytes(indata []byte, obj *SForwardToModule) (int, 
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1401,12 +1349,12 @@ func ReadMsgSForwardToModuleByBytes(indata []byte, obj *SForwardToModule) (int, 
 	if offset+2 > data__len {
 		return endpos, obj
 	}
-	obj.MsgID = binary.BigEndian.Uint16(data[offset : offset+2])
+	obj.MsgID = binary.LittleEndian.Uint16(data[offset : offset+2])
 	offset += 2
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	Data_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+	Data_slen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if Data_slen != 0xffffffff {
 		if offset+Data_slen > data__len {
@@ -1420,23 +1368,23 @@ func ReadMsgSForwardToModuleByBytes(indata []byte, obj *SForwardToModule) (int, 
 }
 func WriteMsgSForwardToModuleByObj(data []byte, obj *SForwardToModule) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	writeBinaryString(data[offset:], obj.FromModuleID)
 	offset += 4 + len(obj.FromModuleID)
 	writeBinaryString(data[offset:], obj.ToModuleID)
 	offset += 4 + len(obj.ToModuleID)
-	binary.BigEndian.PutUint16(data[offset:offset+2], obj.MsgID)
+	binary.LittleEndian.PutUint16(data[offset:offset+2], obj.MsgID)
 	offset += 2
 	if obj.Data == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
 	}
 	offset += 4
 	Data_slen := len(obj.Data)
@@ -1455,7 +1403,7 @@ func ReadMsgModuleMessageByBytes(indata []byte, obj *ModuleMessage) (int, *Modul
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1479,12 +1427,12 @@ func ReadMsgModuleMessageByBytes(indata []byte, obj *ModuleMessage) (int, *Modul
 	if offset+2 > data__len {
 		return endpos, obj
 	}
-	obj.MsgID = binary.BigEndian.Uint16(data[offset : offset+2])
+	obj.MsgID = binary.LittleEndian.Uint16(data[offset : offset+2])
 	offset += 2
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	Data_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+	Data_slen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if Data_slen != 0xffffffff {
 		if offset+Data_slen > data__len {
@@ -1498,20 +1446,20 @@ func ReadMsgModuleMessageByBytes(indata []byte, obj *ModuleMessage) (int, *Modul
 }
 func WriteMsgModuleMessageByObj(data []byte, obj *ModuleMessage) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	offset += WriteMsgModuleInfoByObj(data[offset:], obj.FromModule)
-	binary.BigEndian.PutUint16(data[offset:offset+2], obj.MsgID)
+	binary.LittleEndian.PutUint16(data[offset:offset+2], obj.MsgID)
 	offset += 2
 	if obj.Data == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
 	}
 	offset += 4
 	Data_slen := len(obj.Data)
@@ -1530,7 +1478,7 @@ func ReadMsgSForwardToClientByBytes(indata []byte, obj *SForwardToClient) (int, 
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1563,12 +1511,12 @@ func ReadMsgSForwardToClientByBytes(indata []byte, obj *SForwardToClient) (int, 
 	if offset+2 > data__len {
 		return endpos, obj
 	}
-	obj.MsgID = binary.BigEndian.Uint16(data[offset : offset+2])
+	obj.MsgID = binary.LittleEndian.Uint16(data[offset : offset+2])
 	offset += 2
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	Data_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+	Data_slen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if Data_slen != 0xffffffff {
 		if offset+Data_slen > data__len {
@@ -1582,12 +1530,12 @@ func ReadMsgSForwardToClientByBytes(indata []byte, obj *SForwardToClient) (int, 
 }
 func WriteMsgSForwardToClientByObj(data []byte, obj *SForwardToClient) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	writeBinaryString(data[offset:], obj.FromModuleID)
 	offset += 4 + len(obj.FromModuleID)
@@ -1595,12 +1543,12 @@ func WriteMsgSForwardToClientByObj(data []byte, obj *SForwardToClient) int {
 	offset += 4 + len(obj.ToGateID)
 	writeBinaryString(data[offset:], obj.ToClientID)
 	offset += 4 + len(obj.ToClientID)
-	binary.BigEndian.PutUint16(data[offset:offset+2], obj.MsgID)
+	binary.LittleEndian.PutUint16(data[offset:offset+2], obj.MsgID)
 	offset += 2
 	if obj.Data == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
 	}
 	offset += 4
 	Data_slen := len(obj.Data)
@@ -1620,7 +1568,7 @@ func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int, 
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1653,7 +1601,7 @@ func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int, 
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	Session_slen := binary.BigEndian.Uint32(data[offset : offset+4])
+	Session_slen := binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if Session_slen != 0xffffffff {
 		obj.Session = make(map[string]string)
@@ -1676,12 +1624,12 @@ func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int, 
 	if offset+2 > data__len {
 		return endpos, obj
 	}
-	obj.MsgID = binary.BigEndian.Uint16(data[offset : offset+2])
+	obj.MsgID = binary.LittleEndian.Uint16(data[offset : offset+2])
 	offset += 2
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	Data_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+	Data_slen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if Data_slen != 0xffffffff {
 		if offset+Data_slen > data__len {
@@ -1695,12 +1643,12 @@ func ReadMsgSForwardFromGateByBytes(indata []byte, obj *SForwardFromGate) (int, 
 }
 func WriteMsgSForwardFromGateByObj(data []byte, obj *SForwardFromGate) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	writeBinaryString(data[offset:], obj.FromModuleID)
 	offset += 4 + len(obj.FromModuleID)
@@ -1709,9 +1657,9 @@ func WriteMsgSForwardFromGateByObj(data []byte, obj *SForwardFromGate) int {
 	writeBinaryString(data[offset:], obj.ClientConnID)
 	offset += 4 + len(obj.ClientConnID)
 	if obj.Session == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Session)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Session)))
 	}
 	offset += 4
 	for Sessionkey, Sessionvalue := range obj.Session {
@@ -1720,12 +1668,12 @@ func WriteMsgSForwardFromGateByObj(data []byte, obj *SForwardFromGate) int {
 		Session_vcatlen := writeBinaryString(data[offset:], Sessionvalue)
 		offset += Session_vcatlen
 	}
-	binary.BigEndian.PutUint16(data[offset:offset+2], obj.MsgID)
+	binary.LittleEndian.PutUint16(data[offset:offset+2], obj.MsgID)
 	offset += 2
 	if obj.Data == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
 	}
 	offset += 4
 	Data_slen := len(obj.Data)
@@ -1750,7 +1698,7 @@ func ReadMsgClientMessageByBytes(indata []byte, obj *ClientMessage) (int, *Clien
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1779,7 +1727,7 @@ func ReadMsgClientMessageByBytes(indata []byte, obj *ClientMessage) (int, *Clien
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	Session_slen := binary.BigEndian.Uint32(data[offset : offset+4])
+	Session_slen := binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if Session_slen != 0xffffffff {
 		obj.Session = make(map[string]string)
@@ -1802,12 +1750,12 @@ func ReadMsgClientMessageByBytes(indata []byte, obj *ClientMessage) (int, *Clien
 	if offset+2 > data__len {
 		return endpos, obj
 	}
-	obj.MsgID = binary.BigEndian.Uint16(data[offset : offset+2])
+	obj.MsgID = binary.LittleEndian.Uint16(data[offset : offset+2])
 	offset += 2
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	Data_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+	Data_slen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if Data_slen != 0xffffffff {
 		if offset+Data_slen > data__len {
@@ -1821,20 +1769,20 @@ func ReadMsgClientMessageByBytes(indata []byte, obj *ClientMessage) (int, *Clien
 }
 func WriteMsgClientMessageByObj(data []byte, obj *ClientMessage) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	offset += WriteMsgModuleInfoByObj(data[offset:], obj.FromModule)
 	writeBinaryString(data[offset:], obj.ClientConnID)
 	offset += 4 + len(obj.ClientConnID)
 	if obj.Session == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Session)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Session)))
 	}
 	offset += 4
 	for Sessionkey, Sessionvalue := range obj.Session {
@@ -1843,12 +1791,12 @@ func WriteMsgClientMessageByObj(data []byte, obj *ClientMessage) int {
 		Session_vcatlen := writeBinaryString(data[offset:], Sessionvalue)
 		offset += Session_vcatlen
 	}
-	binary.BigEndian.PutUint16(data[offset:offset+2], obj.MsgID)
+	binary.LittleEndian.PutUint16(data[offset:offset+2], obj.MsgID)
 	offset += 2
 	if obj.Data == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Data)))
 	}
 	offset += 4
 	Data_slen := len(obj.Data)
@@ -1873,7 +1821,7 @@ func ReadMsgSROCRequestByBytes(indata []byte, obj *SROCRequest) (int, *SROCReque
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1901,7 +1849,7 @@ func ReadMsgSROCRequestByBytes(indata []byte, obj *SROCRequest) (int, *SROCReque
 	if offset+8 > data__len {
 		return endpos, obj
 	}
-	obj.Seq = readBinaryInt64(data[offset : offset+8])
+	obj.Seq = int64(binary.LittleEndian.Uint64(data[offset : offset+8]))
 	offset += 8
 	if offset+4+len(obj.CallStr) > data__len {
 		return endpos, obj
@@ -1911,7 +1859,7 @@ func ReadMsgSROCRequestByBytes(indata []byte, obj *SROCRequest) (int, *SROCReque
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	CallArg_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+	CallArg_slen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if CallArg_slen != 0xffffffff {
 		if offset+CallArg_slen > data__len {
@@ -1930,25 +1878,25 @@ func ReadMsgSROCRequestByBytes(indata []byte, obj *SROCRequest) (int, *SROCReque
 }
 func WriteMsgSROCRequestByObj(data []byte, obj *SROCRequest) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	writeBinaryString(data[offset:], obj.FromModuleID)
 	offset += 4 + len(obj.FromModuleID)
 	writeBinaryString(data[offset:], obj.ToModuleID)
 	offset += 4 + len(obj.ToModuleID)
-	writeBinaryInt64(data[offset:offset+8], obj.Seq)
+	binary.LittleEndian.PutUint64(data[offset:offset+8], uint64(obj.Seq))
 	offset += 8
 	writeBinaryString(data[offset:], obj.CallStr)
 	offset += 4 + len(obj.CallStr)
 	if obj.CallArg == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.CallArg)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.CallArg)))
 	}
 	offset += 4
 	CallArg_slen := len(obj.CallArg)
@@ -1970,7 +1918,7 @@ func ReadMsgSROCResponseByBytes(indata []byte, obj *SROCResponse) (int, *SROCRes
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -1998,12 +1946,12 @@ func ReadMsgSROCResponseByBytes(indata []byte, obj *SROCResponse) (int, *SROCRes
 	if offset+8 > data__len {
 		return endpos, obj
 	}
-	obj.ReqSeq = readBinaryInt64(data[offset : offset+8])
+	obj.ReqSeq = int64(binary.LittleEndian.Uint64(data[offset : offset+8]))
 	offset += 8
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	ResData_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+	ResData_slen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if ResData_slen != 0xffffffff {
 		if offset+ResData_slen > data__len {
@@ -2022,23 +1970,23 @@ func ReadMsgSROCResponseByBytes(indata []byte, obj *SROCResponse) (int, *SROCRes
 }
 func WriteMsgSROCResponseByObj(data []byte, obj *SROCResponse) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	writeBinaryString(data[offset:], obj.FromModuleID)
 	offset += 4 + len(obj.FromModuleID)
 	writeBinaryString(data[offset:], obj.ToModuleID)
 	offset += 4 + len(obj.ToModuleID)
-	writeBinaryInt64(data[offset:offset+8], obj.ReqSeq)
+	binary.LittleEndian.PutUint64(data[offset:offset+8], uint64(obj.ReqSeq))
 	offset += 8
 	if obj.ResData == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ResData)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ResData)))
 	}
 	offset += 4
 	ResData_slen := len(obj.ResData)
@@ -2060,7 +2008,7 @@ func ReadMsgSROCBindByBytes(indata []byte, obj *SROCBind) (int, *SROCBind) {
 	if len(indata) < 4 {
 		return 0, nil
 	}
-	objsize := int(binary.BigEndian.Uint32(indata))
+	objsize := int(binary.LittleEndian.Uint32(indata))
 	offset += 4
 	if objsize == 0 {
 		return 4, nil
@@ -2093,7 +2041,7 @@ func ReadMsgSROCBindByBytes(indata []byte, obj *SROCBind) (int, *SROCBind) {
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	ObjIDs_slen := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+	ObjIDs_slen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
 	offset += 4
 	if ObjIDs_slen != 0xffffffff {
 		if offset+(ObjIDs_slen*0) > data__len {
@@ -2109,12 +2057,12 @@ func ReadMsgSROCBindByBytes(indata []byte, obj *SROCBind) (int, *SROCBind) {
 }
 func WriteMsgSROCBindByObj(data []byte, obj *SROCBind) int {
 	if obj == nil {
-		binary.BigEndian.PutUint32(data[0:4], 0)
+		binary.LittleEndian.PutUint32(data[0:4], 0)
 		return 4
 	}
 	objsize := obj.GetSize() - 4
 	offset := 0
-	binary.BigEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
 	writeBinaryString(data[offset:], obj.HostModuleID)
 	offset += 4 + len(obj.HostModuleID)
@@ -2123,9 +2071,9 @@ func WriteMsgSROCBindByObj(data []byte, obj *SROCBind) int {
 	writeBinaryString(data[offset:], obj.ObjType)
 	offset += 4 + len(obj.ObjType)
 	if obj.ObjIDs == nil {
-		binary.BigEndian.PutUint32(data[offset:offset+4], 0xffffffff)
+		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
-		binary.BigEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ObjIDs)))
+		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.ObjIDs)))
 	}
 	offset += 4
 	ObjIDs_slen := len(obj.ObjIDs)
