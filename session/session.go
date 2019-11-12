@@ -6,6 +6,8 @@ import (
 	"sync"
 )
 
+type SessionKey string
+
 type ISInner_SendModuleMsg interface {
 	SInner_SendModuleMsg(gate string, msg msg.MsgStruct)
 }
@@ -39,6 +41,14 @@ func (this *Session) GetUUID() string {
 
 func (this *Session) SetUUID(value string) {
 	this.set("UUID", value)
+}
+
+func (this *Session) Get(key SessionKey) string {
+	return this.get(string(key))
+}
+
+func (this *Session) Set(key SessionKey, value string) {
+	this.set(string(key), value)
 }
 
 func (this *Session) GetConnectID() string {
