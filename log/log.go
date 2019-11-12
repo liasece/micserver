@@ -30,7 +30,7 @@ type Record struct {
 }
 
 func (r *Record) String() string {
-	return fmt.Sprintf("%s [%s] %s: %s\n", r.time, r.name, LEVEL_FLAGS[r.level], r.info)
+	return fmt.Sprintf("%s [%s] %s %s\n", r.time, r.name, LEVEL_FLAGS[r.level], r.info)
 }
 
 type Writer interface {
