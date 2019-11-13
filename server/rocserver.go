@@ -101,7 +101,8 @@ func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) {
 			sendmsg.ToModuleID = moduleid
 			server.SendCmd(sendmsg)
 		} else {
-			this.server.subnetManager.BroadcastCmd(sendmsg)
+			this.Warn("Can't find roc object location %s",
+				callpath.String())
 		}
 	}
 }
