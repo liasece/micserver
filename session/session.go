@@ -67,6 +67,10 @@ func (this *Session) SetBind(moduleType string, value string) {
 	this.set("bind_"+moduleType, value)
 }
 
+func (this *Session) HasBind(moduleType string) bool {
+	return this.HasKey("bind_" + moduleType)
+}
+
 func (this *Session) HasKey(key string) bool {
 	_, ok := this.m.Load(key)
 	return ok
