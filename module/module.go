@@ -42,7 +42,7 @@ type BaseModule struct {
 func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
 	this.configer = &configer
 	// 初始化logger
-	if this.configer.Exist(conf.LogWholePath) {
+	if this.configer.ExistInModule(conf.LogWholePath) {
 		this.Logger = log.NewLogger(this.configer.GetBool(conf.IsDaemon),
 			this.configer.GetString(conf.LogWholePath))
 		this.SetLogName(this.moduleID)

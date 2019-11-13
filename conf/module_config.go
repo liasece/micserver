@@ -34,11 +34,39 @@ func (this *ModuleConfig) exist(key ConfigKey) bool {
 	return false
 }
 
+func (this *ModuleConfig) existInModule(key ConfigKey) bool {
+	if this.Settings.Exist(key) {
+		return true
+	}
+	return false
+}
+
+func (this *ModuleConfig) existInApp(key ConfigKey) bool {
+	if this.AppSettings.Exist(key) {
+		return true
+	}
+	return false
+}
+
 func (this *ModuleConfig) Exist(key ConfigKey) bool {
 	if this == nil {
 		return false
 	}
 	return this.exist(key)
+}
+
+func (this *ModuleConfig) ExistInModule(key ConfigKey) bool {
+	if this == nil {
+		return false
+	}
+	return this.existInModule(key)
+}
+
+func (this *ModuleConfig) ExistInApp(key ConfigKey) bool {
+	if this == nil {
+		return false
+	}
+	return this.existInApp(key)
 }
 
 func (this *ModuleConfig) Get(key ConfigKey) interface{} {
