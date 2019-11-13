@@ -128,9 +128,10 @@ func (this *LogWriter) boostrapLogWriter() {
 	}
 
 	flushTimer := time.NewTimer(time.Millisecond * 500)
-	rotateTimer := time.NewTimer(time.Millisecond * 500)
+	rotateTimer := time.NewTimer(time.Millisecond * 100)
 	//	rotateTimer := time.NewTimer(time.Second * 10)
-
+	lastRecordTimeUnix60 := int64(0)
+	lastRecordTime := time.Now()
 	for {
 		select {
 		case r, ok = <-this.tunnel:
@@ -138,7 +139,25 @@ func (this *LogWriter) boostrapLogWriter() {
 				this.c <- true
 				return
 			}
+			needTryRotate := false
+			// 如果上一条记录的时间和这条记录的时间不是同一分钟，需要尝试增加log文件
+			nowTimeUnix60 := r.timeUnix / 60
+			if lastRecordTimeUnix60 != nowTimeUnix60 {
+				needTryRotate = true
+				lastRecordTime = time.Unix(r.timeUnix, 0)
+				// 更新最后一条记录的时间
+				lastRecordTimeUnix60 = nowTimeUnix60
+			}
 			for _, w := range this.writers {
+				if needTryRotate {
+					// 需要增加log文件
+					if r, ok := w.(Rotater); ok {
+						if err := r.RotateByTime(&lastRecordTime); err != nil {
+							syslog.Println(err)
+						}
+					}
+				}
+				// 写入log
 				if err := w.Write(r); err != nil {
 					syslog.Println(err)
 				}
@@ -155,17 +174,21 @@ func (this *LogWriter) boostrapLogWriter() {
 					}
 				}
 			}
-			flushTimer.Reset(time.Millisecond * 1000)
+			flushTimer.Reset(time.Millisecond * 500)
 		case <-rotateTimer.C:
 			//	fmt.Printf("start rotate file,actions, 1111\n")
-			for _, w := range this.writers {
-				if r, ok := w.(Rotater); ok {
-					if err := r.Rotate(); err != nil {
-						syslog.Println(err)
-					}
-				}
+			this.tryRotate()
+			rotateTimer.Reset(time.Second * 60)
+		}
+	}
+}
+
+func (this *LogWriter) tryRotate() {
+	for _, w := range this.writers {
+		if r, ok := w.(Rotater); ok {
+			if err := r.Rotate(); err != nil {
+				syslog.Println(err)
 			}
-			rotateTimer.Reset(time.Second * 10)
 		}
 	}
 }

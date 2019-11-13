@@ -82,11 +82,19 @@ func (w *FileWriter) Write(r *Record) error {
 
 func (w *FileWriter) Rotate() error {
 	now := time.Now()
+	return w.doRotate(&now)
+}
+
+func (w *FileWriter) RotateByTime(t *time.Time) error {
+	return w.doRotate(t)
+}
+
+func (w *FileWriter) doRotate(t *time.Time) error {
 	v := 0
 	rotate := false
 
 	for i, act := range w.actions {
-		v = act(&now)
+		v = act(t)
 		if v != w.variables[i] {
 			w.variables[i] = v
 			rotate = true

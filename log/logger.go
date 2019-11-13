@@ -155,6 +155,7 @@ func (l *Logger) deliverRecordToWriter(level int32, format string, args ...inter
 	r.time = l.lastTimeStr
 	r.level = level
 	r.name = l.logname
+	r.timeUnix = l.lastTime
 
 	l.logWriter.write(r)
 }

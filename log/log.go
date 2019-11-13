@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
 var (
@@ -22,11 +23,12 @@ const (
 const tunnel_size_default = 1024
 
 type Record struct {
-	time  string
-	name  string
-	code  string
-	info  string
-	level int32
+	time     string
+	name     string
+	code     string
+	info     string
+	level    int32
+	timeUnix int64
 }
 
 func (r *Record) String() string {
@@ -40,6 +42,7 @@ type Writer interface {
 
 type Rotater interface {
 	Rotate() error
+	RotateByTime(*time.Time) error
 	SetPathPattern(string, string) error
 }
 
