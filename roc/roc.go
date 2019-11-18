@@ -60,7 +60,7 @@ func (this *ROC) GetObj(id string) (IObj, bool) {
 	return vi.(IObj), ok
 }
 
-func (this *ROC) GetOrRegBoj(id string, obj IObj) (IObj, bool) {
+func (this *ROC) GetOrRegObj(id string, obj IObj) (IObj, bool) {
 	vi, isLoad := this.objPool.LoadOrStore(id, obj)
 	if !isLoad {
 		this.onRegObj(obj)
