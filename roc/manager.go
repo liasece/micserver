@@ -9,13 +9,18 @@ type ROCManager struct {
 	eventHook IROCObjEventHook
 }
 
-func (this *ROCManager) NewROC(objtype ROCObjType) {
+func (this *ROCManager) NewROC(objtype ROCObjType) *ROC {
+	var res *ROC
 	newroc := &ROC{}
-	_, isLoad := this.rocs.LoadOrStore(objtype, newroc)
+	vi, isLoad := this.rocs.LoadOrStore(objtype, newroc)
 	if !isLoad {
 		newroc.Init()
 		newroc.HookObjEvent(this)
+		res = newroc
+	} else {
+		res = vi.(*ROC)
 	}
+	return res
 }
 
 func (this *ROCManager) HookObjEvent(hook IROCObjEventHook) {

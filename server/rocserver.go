@@ -74,8 +74,8 @@ func (this *ROCServer) GetROC(objtype roc.ROCObjType) *roc.ROC {
 	return this._ROCManager.GetROC(objtype)
 }
 
-func (this *ROCServer) NewROC(objtype roc.ROCObjType) {
-	this._ROCManager.NewROC(objtype)
+func (this *ROCServer) NewROC(objtype roc.ROCObjType) *roc.ROC {
+	return this._ROCManager.NewROC(objtype)
 }
 
 // 无返回值的RPC调用
