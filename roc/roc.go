@@ -47,8 +47,15 @@ func (this *ROC) RegObj(obj IObj) error {
 // 删除远程调用对象
 func (this *ROC) DelObj(obj IObj) error {
 	id := obj.GetROCObjID()
+	return this.DelObjByID(id)
+}
+
+func (this *ROC) DelObjByID(id string) error {
+	localObj, ok := this.GetObj(id)
 	this.objPool.Delete(id)
-	this.onDelObj(obj)
+	if ok && localObj != nil {
+		this.onDelObj(localObj)
+	}
 	return nil
 }
 
