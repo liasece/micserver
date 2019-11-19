@@ -70,3 +70,10 @@ func (this *ROC) GetOrRegObj(id string, obj IObj) (IObj, bool) {
 	}
 	return vi.(IObj), isLoad
 }
+
+func (this *ROC) RangeObj(f func(obj IObj) bool) {
+	this.objPool.Range(func(vi, ki interface{}) bool {
+		v := vi.(IObj)
+		return f(v)
+	})
+}
