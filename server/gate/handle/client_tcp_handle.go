@@ -2,7 +2,6 @@ package handle
 
 import (
 	"net"
-	"time"
 
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
@@ -37,9 +36,6 @@ func (this *ClientTcpHandler) OnRecvMessage(client *connect.Client,
 		"MsgID[%d] Msgname[%s] CmdLen[%d] DataLen[%d]",
 		msgbin.CmdID, cmdname, msgbin.CmdLen, msgbin.DataLen)
 	// 接收到有效消息，开始处理
-	now := time.Now().Unix()
-	// 设置连接活动过期时间 5分钟
-	client.SetTerminateTime(now + 5*60)
 
 	if this.gateHook != nil {
 		this.gateHook.OnRecvClientMsg(client, msgbin)

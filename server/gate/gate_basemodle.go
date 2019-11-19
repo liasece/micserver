@@ -2,7 +2,6 @@ package gate
 
 import (
 	"net"
-	"time"
 
 	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/connect"
@@ -40,8 +39,6 @@ func (this *GateBase) addTCPClient(
 	conn.SetLogger(this.Logger)
 
 	this.OnNewClient(conn)
-	curtime := time.Now().Unix()
-	conn.SetTerminateTime(curtime + 20) // 20秒以后还没有验证通过就断开连接
 
 	conn.Debug("[GateBase.addTCPClient] "+
 		"新增客户端连接 TmpID[%s] 当前连接数量 NowSum[%d]",
