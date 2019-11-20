@@ -107,6 +107,15 @@ func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) {
 	}
 }
 
+// 获取ROC缓存中的位置信息
+// 返回目标ROC对象所在的moduleid
+func (this *ROCServer) GetROCObjCacheLocation(path *roc.ROCPath) string {
+	objType := path.GetObjType()
+	objID := path.GetObjID()
+	moduleid := roc.GetCache().Get(objType, objID)
+	return moduleid
+}
+
 func (this *ROCServer) addBlockChan(seq int64) chan *responseAgent {
 	ch := make(chan *responseAgent, 1)
 	this.rocBlockChanMap.Store(seq, ch)
