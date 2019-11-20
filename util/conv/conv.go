@@ -1,5 +1,9 @@
 package conv
 
+import (
+	"strconv"
+)
+
 func MustInterfaceToString(vi interface{}) string {
 	switch vi.(type) {
 	case string:
@@ -40,6 +44,11 @@ func MustInterfaceToInt64(vi interface{}) int64 {
 		return int64(vi.(float32))
 	case float64:
 		return int64(vi.(float64))
+	case string:
+		v, err := strconv.Atoi(vi.(string))
+		if err == nil {
+			return int64(v)
+		}
 	}
 	return 0
 }
@@ -60,6 +69,11 @@ func MustInterfaceToFloat64(vi interface{}) float64 {
 		return float64(vi.(float32))
 	case float64:
 		return float64(vi.(float64))
+	case string:
+		v, err := strconv.Atoi(vi.(string))
+		if err == nil {
+			return float64(v)
+		}
 	}
 	return 0
 }

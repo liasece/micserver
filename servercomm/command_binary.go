@@ -1463,6 +1463,11 @@ func ReadMsgSUpdateSessionByBytes(indata []byte, obj *SUpdateSession) (int, *SUp
 	}
 	obj.ClientConnID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ClientConnID)
+	if offset+4+len(obj.SessionUUID) > data__len {
+		return endpos, obj
+	}
+	obj.SessionUUID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.SessionUUID)
 	if offset+4 > data__len {
 		return endpos, obj
 	}
@@ -1470,7 +1475,7 @@ func ReadMsgSUpdateSessionByBytes(indata []byte, obj *SUpdateSession) (int, *SUp
 	offset += 4
 	if Session_slen != 0xffffffff {
 		obj.Session = make(map[string]string)
-		for i2i := uint32(0); i2i < Session_slen; i2i++ {
+		for i3i := uint32(0); i3i < Session_slen; i3i++ {
 			if offset+0 > data__len {
 				return endpos, obj
 			}
@@ -1501,6 +1506,8 @@ func WriteMsgSUpdateSessionByObj(data []byte, obj *SUpdateSession) int {
 	offset += 4
 	writeBinaryString(data[offset:], obj.ClientConnID)
 	offset += 4 + len(obj.ClientConnID)
+	writeBinaryString(data[offset:], obj.SessionUUID)
+	offset += 4 + len(obj.SessionUUID)
 	if obj.Session == nil {
 		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
 	} else {
@@ -1521,13 +1528,13 @@ func GetSizeSUpdateSession(obj *SUpdateSession) int {
 	if obj == nil {
 		return 4
 	}
-	sizerelystring2 := 0
+	sizerelystring3 := 0
 	for Sessionvalue, Sessionkey := range obj.Session {
-		sizerelystring2 += len(Sessionvalue) + 4
-		sizerelystring2 += len(Sessionkey) + 4
+		sizerelystring3 += len(Sessionvalue) + 4
+		sizerelystring3 += len(Sessionkey) + 4
 	}
 
-	return 4 + 4 + len(obj.ClientConnID) + 4 + sizerelystring2
+	return 4 + 4 + len(obj.ClientConnID) + 4 + len(obj.SessionUUID) + 4 + sizerelystring3
 }
 
 func ReadMsgSForwardToModuleByBytes(indata []byte, obj *SForwardToModule) (int, *SForwardToModule) {

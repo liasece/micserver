@@ -5,6 +5,7 @@ import (
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/server/base"
 	"github.com/liasece/micserver/servercomm"
+	"github.com/liasece/micserver/session"
 )
 
 type serverCmdHandler struct {
@@ -52,15 +53,27 @@ func (this *serverCmdHandler) onForwardToClient(smsg *servercomm.SForwardToClien
 }
 
 func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
+	var connectedSession *session.Session
 	client := this.server.GetClient(smsg.ClientConnID)
 	if client != nil {
 		client.Session.FromMap(smsg.Session)
-		if client.Session.GetUUID() != "" {
-			this.server.Info("[gate] 用户登陆成功 %s", smsg.GetJson())
-		}
+		connectedSession = client.Session
+		// if client.Session.GetUUID() != "" {
+		// 	this.server.Info("[gate] 用户登陆成功 %s", smsg.GetJson())
+		// }
 	} else {
 		this.server.Warn("serverCmdHandler.OnUpdateSession client == nil[%s]",
 			smsg.ClientConnID)
+	}
+
+	// 尝试更新本地 session
+	if smsg.SessionUUID != "" {
+		s := connectedSession
+		if s == nil {
+			s = &session.Session{}
+			s.SetUUID(smsg.SessionUUID)
+		}
+		this.server.sessionManager.MustUpdateFromMap(s, smsg.Session)
 	}
 }
 

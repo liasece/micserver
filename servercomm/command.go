@@ -81,6 +81,7 @@ type SNotifySafelyQuit struct {
 
 type SUpdateSession struct {
 	ClientConnID string
+	SessionUUID  string
 	Session      map[string]string
 }
 

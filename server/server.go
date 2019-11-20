@@ -11,6 +11,7 @@ import (
 	gatebase "github.com/liasece/micserver/server/gate/base"
 	"github.com/liasece/micserver/server/subnet"
 	"github.com/liasece/micserver/servercomm"
+	"github.com/liasece/micserver/session"
 	"github.com/liasece/micserver/util"
 )
 
@@ -23,6 +24,7 @@ type Server struct {
 	clientEventHandler clientEventHandler
 	subnetManager      *subnet.SubnetManager
 	gateBase           *gate.GateBase
+	sessionManager     session.SessionManager
 
 	// server info
 	moduleid string
@@ -141,6 +143,16 @@ func (this *Server) GetBalanceModuleID(moduletype string) string {
 		return server.GetTempID()
 	}
 	return ""
+}
+
+// 删除本地维护的 session
+func (this *Server) DeleteSession(uuid string) {
+	this.sessionManager.DeleteSession(uuid)
+}
+
+// 获取本地维护的 session
+func (this *Server) GetSession(uuid string) *session.Session {
+	return this.sessionManager.GetSession(uuid)
 }
 
 // 发送一个消息到客户端

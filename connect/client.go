@@ -13,7 +13,7 @@ type Client struct {
 	BaseConnect
 
 	// 会话信息 可在不同服务器之间同步的
-	session.Session
+	*session.Session
 
 	// 接收消息通道
 	readch chan *msg.MessageBinary
@@ -37,6 +37,7 @@ const ClientConnRecvBufferSize = 256 * 1024
 // netconn: 连接的net.Conn对象
 func (this *Client) InitTCP(netconn net.Conn, connHook ConnectHook) {
 	this.BaseConnect.Init()
+	this.Session = &session.Session{}
 	this.IConnection = NewTCP(netconn, this.Logger,
 		ClientConnSendChanSize, ClientConnSendBufferSize,
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
