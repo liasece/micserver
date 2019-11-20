@@ -155,6 +155,16 @@ func (this *Server) GetSession(uuid string) *session.Session {
 	return this.sessionManager.GetSession(uuid)
 }
 
+func (this *Server) MustUpdateSessionFromMap(uuid string, data map[string]string) {
+	s := this.server.sessionManager.GetSession(uuid)
+	if s == nil {
+		s = &session.Session{}
+		s.SetUUID(uuid)
+	}
+	this.server.sessionManager.MustUpdateFromMap(s, data)
+	this.server.Debug("Session Manager Update: %+v", s)
+}
+
 // 发送一个消息到客户端
 func (this *Server) SendBytesToClient(gateid string,
 	to string, msgid uint16, data []byte) error {
