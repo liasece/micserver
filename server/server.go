@@ -162,7 +162,7 @@ func (this *Server) MustUpdateSessionFromMap(uuid string, data map[string]string
 		s.SetUUID(uuid)
 	}
 	this.server.sessionManager.MustUpdateFromMap(s, data)
-	this.server.Debug("Session Manager Update: %+v", s)
+	this.server.Debug("Session Manager Update: %+v", data)
 }
 
 // 发送一个消息到客户端

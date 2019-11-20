@@ -79,7 +79,7 @@ func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 			}
 		}
 		this.server.sessionManager.MustUpdateFromMap(s, smsg.Session)
-		this.server.Debug("Session Manager Update: %+v", s)
+		this.server.Debug("Session Manager Update: %+v", smsg.Session)
 	}
 }
 
