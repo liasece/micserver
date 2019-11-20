@@ -62,9 +62,6 @@ func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 			// if client.Session.GetUUID() != "" {
 			// 	this.server.Info("[gate] 用户登陆成功 %s", smsg.GetJson())
 			// }
-		} else {
-			this.server.Warn("serverCmdHandler.OnUpdateSession client == nil[%s]",
-				smsg.ClientConnID)
 		}
 	}
 
