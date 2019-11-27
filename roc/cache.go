@@ -107,3 +107,17 @@ func (this *Cache) Get(objType ROCObjType, objID string) string {
 	}
 	return ""
 }
+
+func (this *Cache) RangeByType(objType ROCObjType,
+	f func(id string, location string) bool) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
+	m := this.catchGetTypeMust(objType)
+	for id, v := range m {
+		if !f(id, v.moduleid) {
+			break
+		}
+	}
+	return
+}

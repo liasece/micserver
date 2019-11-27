@@ -62,6 +62,7 @@ func (this *ROCServer) Init(server *Server) {
 	go this.rocResponseProcess()
 }
 
+// 生成一个 ROC 调用的序号，在每个模块中应该唯一
 func (this *ROCServer) newSeq() (res int64) {
 	this.seqMutex.Lock()
 	this.lastSeq++
@@ -70,15 +71,17 @@ func (this *ROCServer) newSeq() (res int64) {
 	return
 }
 
+// 获取指定ROC对象类型的ROC对象
 func (this *ROCServer) GetROC(objtype roc.ROCObjType) *roc.ROC {
 	return this._ROCManager.GetROC(objtype)
 }
 
+// 新建一个指定ROC对象类型的ROC对象
 func (this *ROCServer) NewROC(objtype roc.ROCObjType) *roc.ROC {
 	return this._ROCManager.NewROC(objtype)
 }
 
-// 无返回值的RPC调用
+// 无返回值的ROC调用
 func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) {
 	objType := callpath.GetObjType()
 	objID := callpath.GetObjID()
@@ -116,13 +119,20 @@ func (this *ROCServer) GetROCObjCacheLocation(path *roc.ROCPath) string {
 	return moduleid
 }
 
+// 遍历指定类型的ROC缓存
+func (this *ROCServer) RangeROCObjCacheByType(objType roc.ROCObjType,
+	f func(id string, location string) bool) {
+	roc.GetCache().RangeByType(objType, f)
+}
+
+// 根据ROC请求的序号，生成一个用于阻塞等待ROC返回的chan
 func (this *ROCServer) addBlockChan(seq int64) chan *responseAgent {
 	ch := make(chan *responseAgent, 1)
 	this.rocBlockChanMap.Store(seq, ch)
 	return ch
 }
 
-// 无返回值的RPC调用
+// 有返回值的RPC调用
 func (this *ROCServer) ROCCallBlock(callpath *roc.ROCPath,
 	callarg []byte) ([]byte, error) {
 	objType := callpath.GetObjType()
@@ -155,10 +165,12 @@ func (this *ROCServer) ROCCallBlock(callpath *roc.ROCPath,
 		}
 	}
 
+	// 等待返回值
 	agent := <-ch
 	return agent.data, errors.New(agent.err)
 }
 
+// 当收到ROC调用请求时
 func (this *ROCServer) onMsgROCRequest(msg *servercomm.SROCRequest) {
 	agent := &requestAgent{
 		callpath:     msg.CallStr,
@@ -170,6 +182,7 @@ func (this *ROCServer) onMsgROCRequest(msg *servercomm.SROCRequest) {
 	this.rocRequestChan <- agent
 }
 
+// 当收到ROC调用返回时
 func (this *ROCServer) onMsgROCResponse(msg *servercomm.SROCResponse) {
 	agent := &responseAgent{
 		fromModuleID: msg.FromModuleID,
@@ -236,6 +249,17 @@ func (this *ROCServer) rocResponseProcess() {
 		case agent := <-this.rocResponseChan:
 			// 处理ROC相应
 			this.Info("rocResponseProcess %+v", agent)
+			chi, ok := this.rocBlockChanMap.Load(agent.seq)
+			if ok {
+				if ch, ok := chi.(chan *responseAgent); ok {
+					// 写入返回值
+					ch <- agent
+				} else {
+					this.Error("ROC返回 chi.(chan *responseAgent) 错误")
+				}
+			} else {
+				this.Error("ROC返回 不存在目标ROC请求 %+v", agent)
+			}
 		case <-tm.C:
 			tm.Reset(time.Millisecond * 300)
 			break

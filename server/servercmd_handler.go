@@ -91,6 +91,7 @@ func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 			this.onForwardToModule(conn, layerMsg)
 		}
 	case servercomm.SForwardFromGateID:
+		// Gateway 转发过来的客户端消息
 		var layerMsg *servercomm.SForwardFromGate
 		if obj := msgbinary.GetObj(); obj != nil {
 			if m, ok := obj.(*servercomm.SForwardFromGate); ok {
@@ -101,7 +102,6 @@ func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 			layerMsg = &servercomm.SForwardFromGate{}
 			layerMsg.ReadBinary(msgbinary.ProtoData)
 		}
-		// Gateway 转发过来的客户端消息
 		this.onForwardFromGate(conn, layerMsg)
 	case servercomm.SForwardToClientID:
 		// 其他服务器转发过来的，要发送到客户端的消息
@@ -115,13 +115,20 @@ func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 		this.onUpdateSession(layerMsg)
 	case servercomm.SStartMyNotifyCommandID:
 	case servercomm.SROCBindID:
+		// ROC 对象绑定
 		layerMsg := &servercomm.SROCBind{}
 		layerMsg.ReadBinary(msgbinary.ProtoData)
 		this.server.ROCServer.onMsgROCBind(layerMsg)
 	case servercomm.SROCRequestID:
+		// ROC 调用请求
 		layerMsg := &servercomm.SROCRequest{}
 		layerMsg.ReadBinary(msgbinary.ProtoData)
 		this.server.ROCServer.onMsgROCRequest(layerMsg)
+	case servercomm.SROCResponseID:
+		// ROC 调用返回
+		layerMsg := &servercomm.SROCResponse{}
+		layerMsg.ReadBinary(msgbinary.ProtoData)
+		this.server.ROCServer.onMsgROCResponse(layerMsg)
 	default:
 		msgid := msgbinary.CmdID
 		msgname := servercomm.MsgIdToString(msgid)
