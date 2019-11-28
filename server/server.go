@@ -159,11 +159,15 @@ func (this *Server) MustUpdateSessionFromMap(uuid string, data map[string]string
 	s := this.server.sessionManager.GetSession(uuid)
 	if s == nil {
 		s = &session.Session{}
-		s.SetUUID(uuid)
+		this.server.sessionManager.UpdateSessionUUID(uuid, s)
 	}
 	this.server.sessionManager.MustUpdateFromMap(s, data)
 	this.server.Debug("[MustUpdateSessionFromMap] Session Manager Update: %+v",
 		data)
+}
+
+func (this *Server) UpdateSessionUUID(uuid string, session *session.Session) {
+	this.server.sessionManager.UpdateSessionUUID(uuid, session)
 }
 
 // 发送一个消息到客户端

@@ -64,3 +64,22 @@ func (this *SessionManager) MustUpdateFromMap(targetSession *Session,
 func (this *SessionManager) DeleteSession(uuid string) {
 	this.delete(uuid)
 }
+
+func (this *SessionManager) UpdateSessionUUID(uuid string, session *Session) {
+	if session == nil {
+		return
+	}
+	olduuid := session.GetUUID()
+	var oldsession *Session
+	if olduuid != "" {
+		oldsession = this.GetSession(olduuid)
+	}
+	if oldsession != nil {
+		session.OnlyAddKeyFromSession(oldsession)
+	}
+	if uuid != olduuid {
+		this.DeleteSession(olduuid)
+	}
+	session.setUUID(uuid)
+	this.Store(uuid, session)
+}

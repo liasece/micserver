@@ -112,7 +112,9 @@ func (this *Session) GetUUID() string {
 	return this.get(SessionKeyUUID)
 }
 
-func (this *Session) SetUUID(value string) {
+// 由于UUID关系到Session的管理，所以不可以直接设置session的UUID，
+// 应该通过SessionManager设置，或者使用不推荐的 Set(SessionKeyUUID,uuid) 设置
+func (this *Session) setUUID(value string) {
 	this.set(SessionKeyUUID, value)
 }
 
