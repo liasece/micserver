@@ -70,15 +70,19 @@ func (this *SessionManager) UpdateSessionUUID(uuid string, session *Session) {
 		return
 	}
 	olduuid := session.GetUUID()
-	var oldsession *Session
 	if olduuid != "" {
-		oldsession = this.GetSession(olduuid)
+		oldsession := this.GetSession(olduuid)
+		if oldsession != nil {
+			session.OnlyAddKeyFromSession(oldsession)
+		}
+		if uuid != olduuid {
+			this.DeleteSession(olduuid)
+		}
 	}
-	if oldsession != nil {
-		session.OnlyAddKeyFromSession(oldsession)
-	}
-	if uuid != olduuid {
-		this.DeleteSession(olduuid)
+	localsession := this.GetSession(uuid)
+	if localsession != session {
+		// 替换一个新的session对象
+		session.OnlyAddKeyFromSession(localsession)
 	}
 	session.setUUID(uuid)
 	this.Store(uuid, session)
