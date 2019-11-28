@@ -86,7 +86,7 @@ func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) {
 	objType := callpath.GetObjType()
 	objID := callpath.GetObjID()
 	moduleid := roc.GetCache().Get(objType, objID)
-	this.Info("ROCCallNR {%s:%s(%s:%s):%v}",
+	this.Info("ROCCallNR {%s:%s(%s:%s):%X}",
 		moduleid, callpath, objType, objID, callarg)
 	// 构造消息
 	sendmsg := &servercomm.SROCRequest{
@@ -143,7 +143,7 @@ func (this *ROCServer) ROCCallBlock(callpath *roc.ROCPath,
 	objType := callpath.GetObjType()
 	objID := callpath.GetObjID()
 	moduleid := roc.GetCache().Get(objType, objID)
-	this.Info("ROCCallBlock {%s:%s(%s:%s:%d):%v}",
+	this.Info("ROCCallBlock {%s:%s(%s:%s:%d):%X}",
 		moduleid, callpath, objType, objID, hash.GetStringHash(string(objID)),
 		callarg)
 	// 构造消息
