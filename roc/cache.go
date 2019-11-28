@@ -1,6 +1,7 @@
 package roc
 
 import (
+	"math/rand"
 	"sync"
 )
 
@@ -55,6 +56,7 @@ func (this *Cache) catchGetServerMust(moduleid string) *catchServerInfo {
 	}
 }
 
+// 添加目标对象
 func (this *Cache) Set(objType ROCObjType, objID string, moduleid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -64,6 +66,7 @@ func (this *Cache) Set(objType ROCObjType, objID string, moduleid string) {
 	m[objID] = server
 }
 
+// 同时添加多个
 func (this *Cache) SetM(objType ROCObjType, objIDs []string, moduleid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -75,6 +78,7 @@ func (this *Cache) SetM(objType ROCObjType, objIDs []string, moduleid string) {
 	}
 }
 
+// 删除目标对象
 func (this *Cache) Del(objType ROCObjType, objID string, moduleid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -85,6 +89,7 @@ func (this *Cache) Del(objType ROCObjType, objID string, moduleid string) {
 	}
 }
 
+// 同时删除多个
 func (this *Cache) DelM(objType ROCObjType, objIDs []string, moduleid string) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -97,6 +102,7 @@ func (this *Cache) DelM(objType ROCObjType, objIDs []string, moduleid string) {
 	}
 }
 
+// 获取缓存的目标对象在哪个模块上
 func (this *Cache) Get(objType ROCObjType, objID string) string {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -108,6 +114,7 @@ func (this *Cache) Get(objType ROCObjType, objID string) string {
 	return ""
 }
 
+// 遍历指定类型的ROC对象
 func (this *Cache) RangeByType(objType ROCObjType,
 	f func(id string, location string) bool) {
 	this.mutex.Lock()
@@ -120,4 +127,24 @@ func (this *Cache) RangeByType(objType ROCObjType,
 		}
 	}
 	return
+}
+
+// 随机获取一个目标类型的缓存对象ID
+func (this *Cache) RandomObjIDByType(objType ROCObjType) string {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
+	m := this.catchGetTypeMust(objType)
+	lenm := len(m)
+	if lenm > 0 {
+		// 只有目标类型的对象超过一个，才能从中随机一个
+		n := rand.Intn(lenm)
+		for id, _ := range m {
+			if n <= 0 {
+				return id
+			}
+			n--
+		}
+	}
+	return ""
 }

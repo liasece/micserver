@@ -125,6 +125,11 @@ func (this *ROCServer) RangeROCObjCacheByType(objType roc.ROCObjType,
 	roc.GetCache().RangeByType(objType, f)
 }
 
+// 遍历指定类型的ROC缓存
+func (this *ROCServer) RandomROCObjIDByType(objType roc.ROCObjType) string {
+	return roc.GetCache().RandomObjIDByType(objType)
+}
+
 // 根据ROC请求的序号，生成一个用于阻塞等待ROC返回的chan
 func (this *ROCServer) addBlockChan(seq int64) chan *responseAgent {
 	ch := make(chan *responseAgent, 1)
