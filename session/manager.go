@@ -80,7 +80,7 @@ func (this *SessionManager) UpdateSessionUUID(uuid string, session *Session) {
 		}
 	}
 	localsession := this.GetSession(uuid)
-	if localsession != session {
+	if localsession != nil && localsession != session {
 		// 替换一个新的session对象
 		session.OnlyAddKeyFromSession(localsession)
 	}
