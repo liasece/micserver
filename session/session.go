@@ -233,3 +233,10 @@ func (this *Session) FromMap(m map[string]string) {
 		this.set(SessionKey(k), v)
 	}
 }
+
+func (this *Session) OnlyAddKeyFromSession(dir *Session) {
+	dir.m.Range(func(ki, vi interface{}) bool {
+		this.m.LoadOrStore(ki, vi)
+		return true
+	})
+}

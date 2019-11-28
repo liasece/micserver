@@ -55,7 +55,8 @@ func (this *serverCmdHandler) onForwardToClient(smsg *servercomm.SForwardToClien
 	err := this.server.DoSendBytesToClient(smsg.FromModuleID, smsg.ToGateID,
 		smsg.ToClientID, smsg.MsgID, smsg.Data)
 	if err != nil {
-		this.server.Error("this.doSendBytesToClient Err:%s", err.Error())
+		this.server.Error("this.doSendBytesToClient Err:%s ServerMsg:%+v",
+			err.Error(), smsg)
 	}
 }
 
@@ -74,13 +75,22 @@ func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 
 	// 尝试更新本地 session
 	if smsg.SessionUUID != "" {
+		// 先从连接中的session复制
 		s := connectedSession
-		if s == nil {
-			s = this.server.sessionManager.GetSession(smsg.SessionUUID)
-			if s == nil {
-				s = &session.Session{}
-				s.SetUUID(smsg.SessionUUID)
+		localsession := this.server.sessionManager.GetSession(smsg.SessionUUID)
+		if localsession != nil {
+			if connectedSession != nil && connectedSession != localsession {
+				// 不是同一个session对象，需要将本地session复制为最新链接的session
+				connectedSession.OnlyAddKeyFromSession(localsession)
+				this.server.sessionManager.Store(smsg.SessionUUID,
+					connectedSession)
+				localsession = connectedSession
 			}
+			s = localsession
+		}
+		if s == nil {
+			s = &session.Session{}
+			s.SetUUID(smsg.SessionUUID)
 		}
 		this.server.sessionManager.MustUpdateFromMap(s, smsg.Session)
 		this.server.Debug("Session Manager Update: %+v", smsg.Session)
