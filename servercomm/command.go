@@ -118,7 +118,6 @@ type SForwardFromGate struct {
 type ClientMessage struct {
 	FromModule   *ModuleInfo
 	ClientConnID string
-	Session      map[string]string
 	MsgID        uint16
 	Data         []byte
 }

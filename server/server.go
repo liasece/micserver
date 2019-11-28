@@ -241,7 +241,6 @@ func (this *Server) getFarwardFromGateMsgPack(msgid uint16, data []byte,
 		res.ToModuleID = tarconn.ModuleInfo.ModuleID
 	}
 	if fromconn != nil {
-		res.Session = make(map[string]string)
 		res.ClientConnID = fromconn.GetConnectID()
 		res.Session = fromconn.ToMap()
 	}

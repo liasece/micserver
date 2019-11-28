@@ -1969,29 +1969,6 @@ func ReadMsgClientMessageByBytes(indata []byte, obj *ClientMessage) (int, *Clien
 	}
 	obj.ClientConnID = readBinaryString(data[offset:])
 	offset += 4 + len(obj.ClientConnID)
-	if offset+4 > data__len {
-		return endpos, obj
-	}
-	Session_slen := binary.LittleEndian.Uint32(data[offset : offset+4])
-	offset += 4
-	if Session_slen != 0xffffffff {
-		obj.Session = make(map[string]string)
-		for i3i := uint32(0); i3i < Session_slen; i3i++ {
-			if offset+0 > data__len {
-				return endpos, obj
-			}
-			keySession := readBinaryString(data[offset:])
-			Session_kcatlen := len(keySession)
-			offset += Session_kcatlen + 4
-			if offset+2 > data__len {
-				return endpos, obj
-			}
-			valueSession := readBinaryString(data[offset:])
-			Session_vcatlen := len(valueSession)
-			offset += Session_vcatlen + 4
-			obj.Session[keySession] = valueSession
-		}
-	}
 	if offset+2 > data__len {
 		return endpos, obj
 	}
@@ -2026,18 +2003,6 @@ func WriteMsgClientMessageByObj(data []byte, obj *ClientMessage) int {
 	offset += WriteMsgModuleInfoByObj(data[offset:], obj.FromModule)
 	writeBinaryString(data[offset:], obj.ClientConnID)
 	offset += 4 + len(obj.ClientConnID)
-	if obj.Session == nil {
-		binary.LittleEndian.PutUint32(data[offset:offset+4], 0xffffffff)
-	} else {
-		binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(len(obj.Session)))
-	}
-	offset += 4
-	for Sessionkey, Sessionvalue := range obj.Session {
-		Session_kcatlen := writeBinaryString(data[offset:], Sessionkey)
-		offset += Session_kcatlen
-		Session_vcatlen := writeBinaryString(data[offset:], Sessionvalue)
-		offset += Session_vcatlen
-	}
 	binary.LittleEndian.PutUint16(data[offset:offset+2], obj.MsgID)
 	offset += 2
 	if obj.Data == nil {
@@ -2057,14 +2022,8 @@ func GetSizeClientMessage(obj *ClientMessage) int {
 	if obj == nil {
 		return 4
 	}
-	sizerelystring3 := 0
-	for Sessionvalue, Sessionkey := range obj.Session {
-		sizerelystring3 += len(Sessionvalue) + 4
-		sizerelystring3 += len(Sessionkey) + 4
-	}
 
-	return 4 + obj.FromModule.GetSize() + 4 + len(obj.ClientConnID) + 4 + sizerelystring3 + 2 +
-		4 + len(obj.Data)*1
+	return 4 + obj.FromModule.GetSize() + 4 + len(obj.ClientConnID) + 2 + 4 + len(obj.Data)*1
 }
 
 func ReadMsgSROCRequestByBytes(indata []byte, obj *SROCRequest) (int, *SROCRequest) {

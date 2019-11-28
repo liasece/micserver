@@ -36,6 +36,32 @@ type Session struct {
 	m sync.Map
 }
 
+func NewSessionFromMap(session map[string]string) *Session {
+	res := &Session{}
+	res.FromMap(session)
+	return res
+}
+
+func getFromMap(session map[string]string, key SessionKey) string {
+	if v, ok := session[string(key)]; ok {
+		return v
+	}
+	return ""
+}
+
+func GetUUIDFromMap(session map[string]string) string {
+	return getFromMap(session, SessionKeyUUID)
+}
+
+func GetBindFromMap(session map[string]string,
+	moduleType string) string {
+	return getFromMap(session, SessionKeyBindHead+SessionKey(moduleType))
+}
+
+func GetConnectIDFromMap(session map[string]string) string {
+	return getFromMap(session, SessionKeyConnectID)
+}
+
 func (this *Session) get(key SessionKey) string {
 	if vi, ok := this.m.Load(string(key)); ok {
 		if vi == nil {

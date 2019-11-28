@@ -36,11 +36,18 @@ func (this *serverCmdHandler) onForwardFromGate(conn *connect.Server,
 		msg := &servercomm.ClientMessage{
 			FromModule:   conn.ModuleInfo,
 			ClientConnID: smsg.ClientConnID,
-			Session:      smsg.Session,
 			MsgID:        smsg.MsgID,
 			Data:         smsg.Data,
 		}
-		this.serverHook.OnClientMessage(msg)
+		uuid := session.GetUUIDFromMap(smsg.Session)
+		var se *session.Session
+		if uuid != "" {
+			se = this.server.GetSession(uuid)
+		}
+		if se == nil {
+			se = session.NewSessionFromMap(smsg.Session)
+		}
+		this.serverHook.OnClientMessage(se, msg)
 	}
 }
 
