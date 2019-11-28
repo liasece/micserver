@@ -93,7 +93,8 @@ func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 			s.SetUUID(smsg.SessionUUID)
 		}
 		this.server.sessionManager.MustUpdateFromMap(s, smsg.Session)
-		this.server.Debug("Session Manager Update: %+v", smsg.Session)
+		this.server.Debug("[onUpdateSession] Session Manager Update: %+v From:%s To:%s",
+			smsg.Session, smsg.FromModuleID, smsg.ToModuleID)
 	}
 }
 

@@ -193,12 +193,17 @@ func (this *Session) getServerSyncMsg() *servercomm.SUpdateSession {
 // 同步 Session 到 目标模块
 func (this *Session) SyncToModule(mod ISInner_SendModuleMsg,
 	targetServer string) {
-	mod.SInner_SendModuleMsg(targetServer, this.getServerSyncMsg())
+	msg := this.getServerSyncMsg()
+	msg.FromModuleID = mod.GetModuleID()
+	msg.ToModuleID = targetServer
+	mod.SInner_SendModuleMsg(targetServer, msg)
 }
 
 // 同步 Session 到 所有已绑定的模块
 func (this *Session) SyncToBindedModule(mod ISInner_SendModuleMsg) {
 	msg := this.getServerSyncMsg()
+	msg.FromModuleID = mod.GetModuleID()
+	msg.ToModuleID = "*binded*"
 	this.rangeBinded(func(moduletype string, moduleid string) bool {
 		if moduleid != mod.GetModuleID() {
 			mod.SInner_SendModuleMsg(moduleid, msg)

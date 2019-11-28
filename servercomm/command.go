@@ -80,6 +80,8 @@ type SNotifySafelyQuit struct {
 }
 
 type SUpdateSession struct {
+	FromModuleID string
+	ToModuleID   string
 	ClientConnID string
 	SessionUUID  string
 	Session      map[string]string
