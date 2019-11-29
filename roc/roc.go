@@ -79,7 +79,7 @@ func (this *ROC) GetOrRegObj(id string, obj IObj) (IObj, bool) {
 }
 
 func (this *ROC) RangeObj(f func(obj IObj) bool) {
-	this.objPool.Range(func(vi, ki interface{}) bool {
+	this.objPool.Range(func(ki, vi interface{}) bool {
 		v := vi.(IObj)
 		return f(v)
 	})
