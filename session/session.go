@@ -12,36 +12,36 @@ import (
 
 type SessionKey string
 
+// 系统中默认的一些 Session 的键
 const (
-	SessionKeyBindHead  SessionKey = "_s0_bind_"
+	// 索引绑定的服务器，仅是头部，该Key需要在后面拼接目标索引的Module类型
+	SessionKeyBindHead SessionKey = "_s0_bind_"
+	// gate 中用于描述链接的唯一ID
 	SessionKeyConnectID SessionKey = "_s0_connectid"
-	SessionKeyUUID      SessionKey = "_s0_uuid"
+	// session 的 UUID 是 session管理器 中的主键
+	SessionKeyUUID SessionKey = "_s0_uuid"
 )
 
-const (
-	GateModuelType = "gate"
-)
-
+// 用于提供给 session 向其他模块发送消息的接口
 type ISInner_SendModuleMsg interface {
 	GetModuleID() string
 	SInner_SendModuleMsg(gate string, msg msg.MsgStruct)
 }
 
+// 用于提供给 session 向客户端发送消息的接口
 type ISInner_SendClientMsg interface {
 	SInner_SendClientMsg(gateid string, connectid string, msgid uint16,
 		data []byte)
 }
 
-type Session struct {
-	m sync.Map
-}
-
+// 从一个Map结构中实例化一个session
 func NewSessionFromMap(session map[string]string) *Session {
 	res := &Session{}
 	res.FromMap(session)
 	return res
 }
 
+// 以session的格式从一个Map结构中获取键的值
 func getFromMap(session map[string]string, key SessionKey) string {
 	if v, ok := session[string(key)]; ok {
 		return v
@@ -49,24 +49,28 @@ func getFromMap(session map[string]string, key SessionKey) string {
 	return ""
 }
 
+// 以session的格式从一个Map结构中获取UUID
 func GetUUIDFromMap(session map[string]string) string {
 	return getFromMap(session, SessionKeyUUID)
 }
 
+// 以session的格式从一个Map结构中获取绑定的服务器
 func GetBindFromMap(session map[string]string,
 	moduleType string) string {
 	return getFromMap(session, SessionKeyBindHead+SessionKey(moduleType))
 }
 
+// 以session的格式从一个Map结构中获取gate中链接的ID
 func GetConnectIDFromMap(session map[string]string) string {
 	return getFromMap(session, SessionKeyConnectID)
 }
 
+type Session struct {
+	m sync.Map
+}
+
 func (this *Session) get(key SessionKey) string {
 	if vi, ok := this.m.Load(string(key)); ok {
-		if vi == nil {
-			return ""
-		}
 		return vi.(string)
 	}
 	return ""
@@ -76,12 +80,10 @@ func (this *Session) set(key SessionKey, value string) {
 	this.m.Store(string(key), value)
 }
 
+// 遍历所有已绑定的模块
 func (this *Session) rangeBinded(
 	f func(moduletype string, moduleid string) bool) {
 	this.m.Range(func(ki, vi interface{}) bool {
-		if ki == nil || vi == nil {
-			return true
-		}
 		k := ki.(string)
 		v := vi.(string)
 		if strings.HasPrefix(k, string(SessionKeyBindHead)) {
@@ -223,24 +225,22 @@ func (this *Session) SendMsg(mod ISInner_SendClientMsg, gatemoduletype string,
 func (this *Session) ToMap() map[string]string {
 	res := make(map[string]string)
 	this.m.Range(func(ki, vi interface{}) bool {
-		if ki != nil {
-			if vi != nil {
-				res[ki.(string)] = vi.(string)
-			} else {
-				res[ki.(string)] = ""
-			}
-		}
+		res[ki.(string)] = vi.(string)
 		return true
 	})
 	return res
 }
 
+// 用Map中有的键的值替换当前session中的值
 func (this *Session) FromMap(m map[string]string) {
 	for k, v := range m {
 		this.set(SessionKey(k), v)
 	}
 }
 
+// 将dir中有且this中没有的键增加到this中，不会修改任何this中已有的键值，
+// 只会增加this的键值。
+// 这是一种简单的通过另一个Session完善当前Session的方法。
 func (this *Session) OnlyAddKeyFromSession(dir *Session) {
 	dir.m.Range(func(ki, vi interface{}) bool {
 		this.m.LoadOrStore(ki, vi)

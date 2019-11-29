@@ -82,8 +82,7 @@ func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 			if connectedSession != nil && connectedSession != localsession {
 				// 不是同一个session对象，需要将本地session复制为最新链接的session
 				connectedSession.OnlyAddKeyFromSession(localsession)
-				this.server.sessionManager.Store(smsg.SessionUUID,
-					connectedSession)
+				this.server.sessionManager.Store(connectedSession)
 				localsession = connectedSession
 			}
 			s = localsession
