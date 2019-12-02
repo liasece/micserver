@@ -2,6 +2,7 @@
 package roc
 
 import (
+	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/util/pool"
 )
 
@@ -80,7 +81,11 @@ func (this *ROC) GetOrRegObj(id string, obj IObj) (IObj, bool) {
 
 func (this *ROC) RangeObj(f func(obj IObj) bool) {
 	this.objPool.Range(func(ki, vi interface{}) bool {
-		v := vi.(IObj)
+		v, ok := vi.(IObj)
+		if !ok {
+			log.Error("interface conversion: %+v is not roc.IObj", vi)
+			return true
+		}
 		return f(v)
 	})
 }
