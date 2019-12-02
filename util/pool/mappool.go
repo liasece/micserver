@@ -97,10 +97,14 @@ func (this *MapPool) Range(cb func(k, v interface{}) bool) {
 
 func (this *MapPool) LenTotal() int {
 	res := 0
-	this.groupPool.Range(func(_, pooli interface{}) bool {
-		pool := pooli.(*subPool)
-		res += pool.Len()
-		return true
-	})
+	if this.groupSum > 1 && this.getGroupFunc != nil {
+		this.groupPool.Range(func(_, pooli interface{}) bool {
+			pool := pooli.(*subPool)
+			res += pool.Len()
+			return true
+		})
+	} else {
+		res += this.pool.Len()
+	}
 	return res
 }
