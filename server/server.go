@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
@@ -196,7 +195,7 @@ func (this *Server) SendBytesToClient(gateid string,
 		}
 	}
 	if !sec {
-		return fmt.Errorf("目标客户端连接不存在")
+		return ErrTargetClientDontExist
 	}
 	return nil
 }
@@ -217,7 +216,7 @@ func (this *Server) DoSendBytesToClient(fromserver string, gateid string,
 		}
 	}
 	if !sec {
-		return fmt.Errorf("目标客户端连接不存在")
+		return ErrTargetClientDontExist
 	}
 	return nil
 }

@@ -55,8 +55,13 @@ func (this *serverCmdHandler) onForwardToClient(smsg *servercomm.SForwardToClien
 	err := this.server.DoSendBytesToClient(smsg.FromModuleID, smsg.ToGateID,
 		smsg.ToClientID, smsg.MsgID, smsg.Data)
 	if err != nil {
-		this.server.Error("this.doSendBytesToClient Err:%s ServerMsg:%+v",
-			err.Error(), smsg)
+		if err == ErrTargetClientDontExist {
+			this.server.Debug("this.doSendBytesToClient Err:%s ServerMsg:%+v",
+				err.Error(), smsg)
+		} else {
+			this.server.Error("this.doSendBytesToClient Err:%s ServerMsg:%+v",
+				err.Error(), smsg)
+		}
 	}
 }
 
