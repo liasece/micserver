@@ -134,6 +134,9 @@ func (this *TopConfig) InitParse() {
 	if this.globalProp == nil {
 		this.globalProp = make(map[string]string)
 	}
+	if this.AppConfig.BaseConfig == nil {
+		this.AppConfig.BaseConfig = &BaseConfig{}
+	}
 	for k, v := range cmdLineArgv {
 		this.globalProp[k] = v
 	}
