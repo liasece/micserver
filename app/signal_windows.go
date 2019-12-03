@@ -10,14 +10,13 @@ import (
 // 监听系统消息
 func (this *App) SignalListen() {
 	c := make(chan os.Signal, 10)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGQUIT)
 	for {
 		s := <-c
-		this.Debug("[SubNetManager.SignalListen] "+
+		this.Debug("[App] "+
 			"Get signal Signal[%d]", s)
 		// manager.OnSignal(s)
 		switch s {
-		case syscall.SIGTERM:
 		case syscall.SIGINT:
 			// kill -2 || Ctrl+c 触发的信号，中断信号，执行正常退出操作
 			this.isStoped <- struct{}{}
@@ -26,7 +25,7 @@ func (this *App) SignalListen() {
 			// 捕捉到就退不出了
 			buf := make([]byte, 1<<20)
 			stacklen := runtime.Stack(buf, true)
-			this.Debug("[SubNetManager.SignalListen] "+
+			this.Debug("[App] "+
 				"Received SIGQUIT, \n: Stack[%s]", buf[:stacklen])
 		}
 	}
