@@ -82,7 +82,7 @@ func Fatal(fmt string, args ...interface{}) {
 
 func SetDefaultLogger(l *Logger) {
 	if l != default_logger {
-		default_logger.GetLogWriter().Close()
+		// default_logger.GetLogWriter().Close()
 		default_logger = l
 	}
 }

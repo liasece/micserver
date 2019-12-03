@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"runtime/pprof"
+	"sync"
 	"time"
 
 	"github.com/liasece/micserver/conf"
@@ -31,6 +32,8 @@ type App struct {
 	Configer *conf.TopConfig
 	modules  []module.IModule
 
+	initOnce sync.Once
+
 	/**
 	 * App 是否已停止，如果为 true ，App将会在下一个循环周期执行清理工作，
 	 * 退出阻塞循环。
@@ -38,7 +41,7 @@ type App struct {
 	isStoped chan struct{}
 }
 
-func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
+func (this *App) Setup(configer *conf.TopConfig) {
 	process.AddApp(this)
 	this.isStoped = make(chan struct{})
 	this.Configer = configer
@@ -48,10 +51,20 @@ func (this *App) Init(configer *conf.TopConfig, modules []module.IModule) {
 			setting.GetString(conf.LogWholePath))
 		log.SetDefaultLogger(this.Logger)
 		this.Logger.SetLogName("app")
+		this.Info("APP Setup secess")
 	} else {
 		this.Logger = log.GetDefaultLogger()
+		this.Info("APP Setup secess1")
 	}
+}
 
+func (this *App) tryInit(modules []module.IModule) {
+	this.initOnce.Do(func() {
+		this.init(modules)
+	})
+}
+
+func (this *App) init(modules []module.IModule) {
 	this.modules = modules
 	// create all module
 	for _, m := range this.modules {
@@ -104,7 +117,8 @@ func (this *App) startTestCpuProfile() {
 }
 
 // 阻塞运行
-func (this *App) RunAndBlock() {
+func (this *App) RunAndBlock(modules []module.IModule) {
+	this.tryInit(modules)
 	this.Syslog("[App.Run] ----- Main has started ----- ")
 
 	// 监听系统Signal
@@ -133,6 +147,6 @@ func (this *App) RunAndBlock() {
 }
 
 // 默认阻塞运行
-func (this *App) Run() {
-	this.RunAndBlock()
+func (this *App) Run(modules []module.IModule) {
+	this.RunAndBlock(modules)
 }
