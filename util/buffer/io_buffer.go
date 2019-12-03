@@ -183,7 +183,7 @@ func (b *IOBuffer) Write(src []byte) error {
 	size := len(src)
 	if size > b.RemainSize() && !b.banAutoResize {
 		// 缓冲区满，扩容一次，最大容忍超过默认值的16倍
-		targetLength := b.start + size
+		targetLength := b.end + size
 		if targetLength <= b.defaultLength*16 {
 			b.Syslog("缓冲区满，扩容 %d->%d", b.maxLength, targetLength)
 			b.resize(targetLength)
