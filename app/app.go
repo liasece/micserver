@@ -54,6 +54,7 @@ func (this *App) Setup(configer *conf.TopConfig) {
 	} else {
 		this.Logger = log.GetDefaultLogger()
 	}
+	this.Info("APP setup secess!!!")
 }
 
 func (this *App) tryInit(modules []module.IModule) {
