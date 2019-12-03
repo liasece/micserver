@@ -51,10 +51,8 @@ func (this *App) Setup(configer *conf.TopConfig) {
 			setting.GetString(conf.LogWholePath))
 		log.SetDefaultLogger(this.Logger)
 		this.Logger.SetLogName("app")
-		this.Info("APP Setup secess")
 	} else {
 		this.Logger = log.GetDefaultLogger()
-		this.Info("APP Setup secess1")
 	}
 }
 
