@@ -5,13 +5,22 @@ import (
 	"runtime"
 )
 
-func GetPanicInfo(err interface{}) (error, string) {
-	if err != nil {
+func GetPanicInfo(erri interface{}) (error, string) {
+	if erri != nil {
+		var err error
+		switch erri.(type) {
+		case error:
+			err = erri.(error)
+		case string:
+			err = fmt.Errorf(erri.(string))
+		default:
+			err = fmt.Errorf("%+v", erri)
+		}
 		stackInfo := ""
 		buf := make([]byte, 4*1024)
 		n := runtime.Stack(buf, false)
 		stackInfo += fmt.Sprintf("%s", buf[:n])
-		return err.(error), stackInfo
+		return err, stackInfo
 	}
 	return nil, ""
 }
