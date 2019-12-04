@@ -6,6 +6,7 @@ import (
 	"github.com/liasece/micserver/base"
 	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/roc"
 	"github.com/liasece/micserver/server"
 	"github.com/liasece/micserver/util"
 	"github.com/liasece/micserver/util/monitor"
@@ -21,6 +22,8 @@ type IModule interface {
 	KillModule()
 	IsStopped() bool
 	GetConfiger() *conf.ModuleConfig
+	ROCCallNR(callpath *roc.ROCPath, callarg []byte)
+	ROCCallBlock(callpath *roc.ROCPath, callarg []byte) ([]byte, error)
 }
 
 type BaseModule struct {
