@@ -108,3 +108,14 @@ func (this *ModuleConfig) GetInt64(key ConfigKey) int64 {
 	}
 	return conv.MustInterfaceToInt64(v)
 }
+
+func (this *ModuleConfig) GetInt64Slice(key ConfigKey) []int64 {
+	if this == nil {
+		return nil
+	}
+	v := this.get(key)
+	if v == nil {
+		return nil
+	}
+	return conv.MustInterfaceToInt64Slice(v)
+}
