@@ -35,7 +35,7 @@ type BaseConnect struct {
 
 func (this *BaseConnect) Init() {
 	this.createTime = int64(time.Now().Unix())
-	tmpid, err := uid.NewUniqueID(uint16(time.Now().UnixNano()))
+	tmpid, err := uid.GenUniqueID(uint16(time.Now().UnixNano()))
 	if err == nil {
 		this.SetTempID(tmpid)
 	} else {

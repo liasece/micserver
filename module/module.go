@@ -12,6 +12,7 @@ import (
 	"github.com/liasece/micserver/util/hash"
 	"github.com/liasece/micserver/util/monitor"
 	"github.com/liasece/micserver/util/timer"
+	"github.com/liasece/micserver/util/uid"
 )
 
 type IModule interface {
@@ -101,6 +102,10 @@ func (this *BaseModule) GetModuleNum() int {
 
 func (this *BaseModule) GetModuleIDHash() uint32 {
 	return this.moduleIDHash
+}
+
+func (this *BaseModule) GenUniqueID() (string, error) {
+	return uid.GenUniqueID(uint16(this.GetModuleIDHash()))
 }
 
 func (this *BaseModule) KillModule() {

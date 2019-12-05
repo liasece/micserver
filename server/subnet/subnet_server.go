@@ -30,7 +30,7 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 			// 对方连接的优先级比较高，删除我方连接
 			myconn.IsNormalDisconnect = true
 			myconn.Terminate()
-			unuseid, _ := uid.NewUniqueID(0)
+			unuseid, _ := uid.GenUniqueID(0)
 			this.ChangeServerTempid(
 				myconn, myconn.GetTempID()+"unuse"+unuseid)
 		} else {

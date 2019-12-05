@@ -18,7 +18,7 @@ type uniqueIDBuilder struct {
 
 var s_unique uniqueIDBuilder
 
-func (this *uniqueIDBuilder) NewUniqueID(heightlevelID uint16) (string, error) {
+func (this *uniqueIDBuilder) GenUniqueID(heightlevelID uint16) (string, error) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	nowtime := time.Now().Unix() - 1514736000
@@ -54,6 +54,6 @@ func (this *uniqueIDBuilder) NewUniqueID(heightlevelID uint16) (string, error) {
 	return fmt.Sprint(res), nil
 }
 
-func NewUniqueID(heightlevelID uint16) (string, error) {
-	return s_unique.NewUniqueID(heightlevelID)
+func GenUniqueID(heightlevelID uint16) (string, error) {
+	return s_unique.GenUniqueID(heightlevelID)
 }
