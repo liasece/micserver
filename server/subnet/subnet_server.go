@@ -30,9 +30,9 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 			// 对方连接的优先级比较高，删除我方连接
 			myconn.IsNormalDisconnect = true
 			myconn.Terminate()
-			unuseid, _ := uid.NewUniqueID(0xff)
+			unuseid, _ := uid.NewUniqueID(0)
 			this.ChangeServerTempid(
-				myconn, myconn.GetTempID()+"unuse"+fmt.Sprint(unuseid))
+				myconn, myconn.GetTempID()+"unuse"+unuseid)
 		} else {
 			// 我方优先级比较高已经连接成功过了，非法连接
 			this.Syslog("[SubNetManager.OnServerLogin] "+

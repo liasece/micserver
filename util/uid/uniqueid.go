@@ -49,8 +49,8 @@ func (this *uniqueIDBuilder) NewUniqueID(heightlevelID uint16) (string, error) {
 	this.lastMidLowLevelID = subvalue
 
 	res := uint64(0)
-	res |= uint64(heightlevelID) << (16 + 32)
-	res |= uint64(subvalue) << (0)
+	res |= uint64(subvalue) << (16)
+	res |= uint64(heightlevelID) << (0)
 	return fmt.Sprint(res), nil
 }
 

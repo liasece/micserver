@@ -45,6 +45,8 @@ func (this *Client) InitTCP(netconn net.Conn, connHook ConnectHook) {
 		this.Logger.SetTopic(fmt.Sprintf("Client:%s(%s)",
 			this.IConnection.RemoteAddr(), this.GetTempID()))
 	}
+	// 客户端连接的连接ID就是该连接的TmpID
+	this.Session.SetConnectID(this.GetTempID())
 	this.readch = this.GetRecvMessageChannel()
 	this.connHook = connHook
 	go this.recvMsgThread()
@@ -62,13 +64,13 @@ func (this *Client) DialTCP(addr string, connHook ConnectHook) error {
 
 func (this *Client) onRecvMessage(msg *msg.MessageBinary) {
 	if this.connHook != nil {
-		this.connHook.OnRecvMessage(this, msg)
+		this.connHook.OnRecvConnectMessage(this, msg)
 	}
 }
 
 func (this *Client) onClose() {
 	if this.connHook != nil {
-		this.connHook.OnClose(this)
+		this.connHook.OnConnectClose(this)
 	}
 }
 

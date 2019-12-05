@@ -1,7 +1,9 @@
 package msg
 
 import (
+	"encoding/hex"
 	"errors"
+
 	"github.com/liasece/micserver/log"
 	msgbase "github.com/liasece/micserver/msg/base"
 )
@@ -128,4 +130,12 @@ func (this *MessageBinary) WriteBinary() ([]byte, int) {
 	}
 	return this.buffer[:this.MessageBinaryHeadL1.CmdLen],
 		int(this.MessageBinaryHeadL1.CmdLen)
+}
+
+// 获取消息的所有二进制内容的16进制字符串
+func (this *MessageBinary) DataString() string {
+	if this.buffer == nil {
+		return ""
+	}
+	return hex.EncodeToString(this.buffer)
 }

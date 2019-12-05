@@ -68,7 +68,8 @@ func (this *App) init(modules []module.IModule) {
 	// create all module
 	for _, m := range this.modules {
 		process.AddModule(m)
-		this.Syslog("[App.Init] init module: %s", m.GetModuleID())
+		this.Syslog("[App.Init] init module:%s (%s:%d:%d)", m.GetModuleID(),
+			m.GetModuleType(), m.GetModuleNum(), m.GetModuleIDHash())
 		m.InitModule(*this.Configer.AppConfig.GetModuleConfig(m.GetModuleID()))
 		m.AfterInitModule()
 		go m.TopRunner()

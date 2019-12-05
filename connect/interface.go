@@ -20,6 +20,6 @@ type IConnection interface {
 }
 
 type ConnectHook interface {
-	OnRecvMessage(*Client, *msg.MessageBinary)
-	OnClose(*Client)
+	OnRecvConnectMessage(*Client, *msg.MessageBinary)
+	OnConnectClose(*Client)
 }

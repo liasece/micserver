@@ -9,6 +9,7 @@ import (
 	"github.com/liasece/micserver/roc"
 	"github.com/liasece/micserver/server"
 	"github.com/liasece/micserver/util"
+	"github.com/liasece/micserver/util/hash"
 	"github.com/liasece/micserver/util/monitor"
 	"github.com/liasece/micserver/util/timer"
 )
@@ -36,7 +37,11 @@ type BaseModule struct {
 	// 模块的负载
 	load monitor.Load
 
-	moduleID        string
+	moduleID     string
+	moduleIDHash uint32
+	moduleType   string
+	moduleNum    int
+
 	hasKilledModule bool
 	hasStopped      bool
 	lastCheckLoad   int64
@@ -81,6 +86,21 @@ func (this *BaseModule) GetModuleID() string {
 
 func (this *BaseModule) SetModuleID(id string) {
 	this.moduleID = id
+	this.moduleType = util.GetModuleIDType(id)
+	this.moduleNum = util.GetModuleIDNum(id)
+	this.moduleIDHash = hash.GetHash([]byte(id))
+}
+
+func (this *BaseModule) GetModuleType() string {
+	return this.moduleType
+}
+
+func (this *BaseModule) GetModuleNum() int {
+	return this.moduleNum
+}
+
+func (this *BaseModule) GetModuleIDHash() uint32 {
+	return this.moduleIDHash
 }
 
 func (this *BaseModule) KillModule() {
@@ -102,10 +122,6 @@ func (this *BaseModule) TopRunner() {
 		this.Syslog("[BaseModule] Timer 1 Minute...")
 		return true
 	})
-}
-
-func (this *BaseModule) GetModuleType() string {
-	return util.GetModuleIDType(this.moduleID)
 }
 
 func (this *BaseModule) watchLoadToLog(dt time.Duration) bool {
