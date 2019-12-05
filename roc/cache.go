@@ -117,11 +117,17 @@ func (this *Cache) Get(objType ROCObjType, objID string) string {
 // 遍历指定类型的ROC对象
 func (this *Cache) RangeByType(objType ROCObjType,
 	f func(id string, location string) bool) {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+	// 防止 f 中调用其他加锁函数导致死锁，需要备份map
+	back := make(objIDToServerMap)
 
+	this.mutex.Lock()
 	m := this.catchGetTypeMust(objType)
 	for id, v := range m {
+		back[id] = v
+	}
+	this.mutex.Unlock()
+
+	for id, v := range back {
 		if !f(id, v.moduleid) {
 			break
 		}
