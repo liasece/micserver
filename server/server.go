@@ -92,6 +92,14 @@ func (this *Server) GetClient(tmpid string) *connect.Client {
 	return nil
 }
 
+// 获取一个客户端连接
+func (this *Server) RangeClient(
+	f func(tmpid string, client *connect.Client) bool) {
+	if this.gateBase != nil {
+		this.gateBase.Range(f)
+	}
+}
+
 // 发送一个服务器消息到另一个服务器
 func (this *Server) SendModuleMsg(
 	to string, msgstr msg.MsgStruct) {
