@@ -136,21 +136,24 @@ func (this *Cache) RangeByType(objType ROCObjType,
 }
 
 // 随机获取一个目标类型的缓存对象ID
-func (this *Cache) RandomObjIDByType(objType ROCObjType) string {
+func (this *Cache) RandomObjIDByType(objType ROCObjType,
+	limitModuleIDs map[string]bool) string {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
 	m := this.catchGetTypeMust(objType)
-	lenm := len(m)
+	tmplist := make([]string, 0)
+	for id, _ := range m {
+		if limitModuleIDs == nil ||
+			(limitModuleIDs != nil && limitModuleIDs[id] == true) {
+			tmplist = append(tmplist, id)
+		}
+	}
+	lenm := len(tmplist)
 	if lenm > 0 {
 		// 只有目标类型的对象超过一个，才能从中随机一个
 		n := rand.Intn(lenm)
-		for id, _ := range m {
-			if n <= 0 {
-				return id
-			}
-			n--
-		}
+		return tmplist[n]
 	}
 	return ""
 }

@@ -125,9 +125,16 @@ func (this *ROCServer) RangeROCObjCacheByType(objType roc.ROCObjType,
 	roc.GetCache().RangeByType(objType, f)
 }
 
-// 遍历指定类型的ROC缓存
-func (this *ROCServer) RandomROCObjIDByType(objType roc.ROCObjType) string {
-	return roc.GetCache().RandomObjIDByType(objType)
+// 遍历指定类型的ROC缓存，限制目标对象必须本module可以访问
+func (this *ROCServer) RandomMyROCObjIDByType(objType roc.ROCObjType) string {
+	connecedModuleIDs := make(map[string]bool)
+	this.server.subnetManager.RangeServer(func(server *connect.Server) bool {
+		if server.ModuleInfo != nil {
+			connecedModuleIDs[server.ModuleInfo.ModuleID] = true
+		}
+		return true
+	})
+	return roc.GetCache().RandomObjIDByType(objType, connecedModuleIDs)
 }
 
 // 根据ROC请求的序号，生成一个用于阻塞等待ROC返回的chan
