@@ -14,6 +14,17 @@ type Ping struct {
 	req2Time uint64
 }
 
+// 通过发送/接收判断延迟
+func (this *Ping) RecordSend() {
+	this.req1Time = uint64(time.Now().UnixNano()) / 1000000
+}
+
+// 通过发送/接收判断延迟
+func (this *Ping) RecordRecv() {
+	this.req2Time = uint64(time.Now().UnixNano()) / 1000000
+	this.rtt = this.req2Time - this.req1Time
+}
+
 // 当收到ping请求时
 func (this *Ping) OnRecv(syn, ack, seq int32) (int32, int32, int32) {
 	if this.syn == 0 {
