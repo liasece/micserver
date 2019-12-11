@@ -342,7 +342,7 @@ func (this *ROCServer) rocObjNoticeProcess() {
 			case rocObj := <-this.rocDelCacheChan:
 				if tmpDelListI == 0 ||
 					rocObj.GetROCObjType() == tmpDelList[0].GetROCObjType() {
-					tmpDelList[tmpAddListI] = rocObj
+					tmpDelList[tmpDelListI] = rocObj
 					tmpDelListI++
 					if tmpDelListI < lenTmpList {
 						wait = true
