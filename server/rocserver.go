@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
@@ -375,7 +376,20 @@ func (this *ROCServer) OnROCObjAdd(obj roc.IObj) {
 	this.Debug("OnROCObjAdd roc cache set type[%s] "+
 		"id[%s] host[%s]",
 		obj.GetROCObjType(), obj.GetROCObjID(), this.server.moduleid)
-	this.rocAddCacheChan <- obj
+
+	// 由于ROC绑定消息与ROC调用之间存在异步问题，除非经过设置，
+	// 否则使用同步方式同步ROC对象绑定
+	if this.server.moduleConfig.GetBool(conf.AsynchronousSyncRocbind) {
+		this.rocAddCacheChan <- obj
+	} else {
+		sendmsg := &servercomm.SROCBind{
+			HostModuleID: this.server.moduleid,
+			IsDelete:     false,
+			ObjType:      string(obj.GetROCObjType()),
+			ObjIDs:       []string{obj.GetROCObjID()},
+		}
+		this.sendROCBindMsg(sendmsg)
+	}
 	this.recordLocalObj(string(obj.GetROCObjType()), obj.GetROCObjID(),
 		false)
 }
@@ -388,7 +402,20 @@ func (this *ROCServer) OnROCObjDel(obj roc.IObj) {
 	this.Debug("OnROCObjDel roc cache del type[%s] "+
 		"id[%s] host[%s]",
 		obj.GetROCObjType(), obj.GetROCObjID(), this.server.moduleid)
-	this.rocDelCacheChan <- obj
+
+	// 由于ROC绑定消息与ROC调用之间存在异步问题，除非经过设置，
+	// 否则使用同步方式同步ROC对象绑定
+	if this.server.moduleConfig.GetBool(conf.AsynchronousSyncRocbind) {
+		this.rocDelCacheChan <- obj
+	} else {
+		sendmsg := &servercomm.SROCBind{
+			HostModuleID: this.server.moduleid,
+			IsDelete:     true,
+			ObjType:      string(obj.GetROCObjType()),
+			ObjIDs:       []string{obj.GetROCObjID()},
+		}
+		this.sendROCBindMsg(sendmsg)
+	}
 	this.recordLocalObj(string(obj.GetROCObjType()), obj.GetROCObjID(),
 		true)
 }

@@ -19,4 +19,6 @@ var (
 	IsDaemon ConfigKey = "isdaemon"
 	// 消息处理并发协程数量		int
 	MsgThreadNum ConfigKey = "msgthreadnum"
+	// ROC的绑定是否使用异步方式同步到别的module中，会与ROC调用有异步问题 bool
+	AsynchronousSyncRocbind ConfigKey = "asynchronous_sync_rocbind"
 )

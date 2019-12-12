@@ -34,17 +34,25 @@ func (this *SubnetManager) OnRecvTCPMsg(conn *connect.Server,
 }
 
 // 获取TCP消息的消息处理通道
-func (this *SubnetManager) OnGetRecvTCPMsgParseChan(conn *connect.Server,
+func (this *SubnetManager) getRecvTCPMsgParseChan(conn *connect.Server,
 	maxChan int32, msgbinary *msg.MessageBinary) int32 {
-	if msgbinary.CmdID == servercomm.SForwardFromGateID {
-		layerMsg := &servercomm.SForwardFromGate{}
+	chankey := ""
+	if conn.ModuleInfo != nil {
+		chankey = conn.ModuleInfo.ModuleID
+	}
+	switch msgbinary.CmdID {
+	case servercomm.SForwardToClientID:
+		layerMsg := &servercomm.SForwardToClient{}
 		layerMsg.ReadBinary(msgbinary.ProtoData)
 		msgbinary.SetObj(layerMsg)
-		hash := int32(hash.GetStringHash(layerMsg.ClientConnID)) % maxChan
+		chankey = layerMsg.ToClientID
+	}
+	if chankey != "" {
+		hash := int32(hash.GetStringHash(chankey))
 		if hash < 0 {
 			hash = -hash
 		}
-		return hash
+		return hash % maxChan
 	}
 	return 0
 }
@@ -150,7 +158,7 @@ func (this *SubnetManager) MultiQueueControl(
 		this.OnRecvTCPMsg(msgqueues.conn, msgqueues.msg)
 		return
 	}
-	who := this.OnGetRecvTCPMsgParseChan(msgqueues.conn,
+	who := this.getRecvTCPMsgParseChan(msgqueues.conn,
 		this.maxRunningMsgNum, msgqueues.msg)
 	if who >= int32(len(this.runningMsgChan)) || who < 0 {
 		panic(fmt.Sprintf("who[%d] >= len(this.runningMsgChan)[%d]", who,

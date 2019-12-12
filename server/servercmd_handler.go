@@ -119,21 +119,21 @@ func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 		}
 	case servercomm.SForwardFromGateID:
 		// Gateway 转发过来的客户端消息
-		var layerMsg *servercomm.SForwardFromGate
+		layerMsg := &servercomm.SForwardFromGate{}
+		layerMsg.ReadBinary(msgbinary.ProtoData)
+		this.onForwardFromGate(conn, layerMsg)
+	case servercomm.SForwardToClientID:
+		// 其他服务器转发过来的，要发送到客户端的消息
+		var layerMsg *servercomm.SForwardToClient
 		if obj := msgbinary.GetObj(); obj != nil {
-			if m, ok := obj.(*servercomm.SForwardFromGate); ok {
+			if m, ok := obj.(*servercomm.SForwardToClient); ok {
 				layerMsg = m
 			}
 		}
 		if layerMsg == nil {
-			layerMsg = &servercomm.SForwardFromGate{}
+			layerMsg = &servercomm.SForwardToClient{}
 			layerMsg.ReadBinary(msgbinary.ProtoData)
 		}
-		this.onForwardFromGate(conn, layerMsg)
-	case servercomm.SForwardToClientID:
-		// 其他服务器转发过来的，要发送到客户端的消息
-		layerMsg := &servercomm.SForwardToClient{}
-		layerMsg.ReadBinary(msgbinary.ProtoData)
 		this.onForwardToClient(layerMsg)
 	case servercomm.SUpdateSessionID:
 		// 客户端会话更新

@@ -26,9 +26,10 @@ type Server struct {
 	sessionManager     session.SessionManager
 
 	// server info
-	moduleid string
-	isStop   bool
-	stopChan chan bool
+	moduleid     string
+	moduleConfig *conf.ModuleConfig
+	isStop       bool
+	stopChan     chan bool
 }
 
 func (this *Server) Init(moduleid string) {
@@ -38,6 +39,7 @@ func (this *Server) Init(moduleid string) {
 }
 
 func (this *Server) InitSubnet(conf *conf.ModuleConfig) {
+	this.moduleConfig = conf
 	// 初始化服务器网络管理器
 	if this.subnetManager == nil {
 		this.subnetManager = &subnet.SubnetManager{}
