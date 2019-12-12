@@ -7,6 +7,7 @@ import (
 
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/process"
 	"github.com/liasece/micserver/roc"
 	"github.com/liasece/micserver/servercomm"
@@ -32,11 +33,15 @@ type ROCServer struct {
 	*log.Logger
 	server *Server
 
+	// 记录在本地的缓存信息
+	// 第一层键为ROCObj类型，第二层键为ROCObj的ID
+	localObj      map[string]map[string]struct{}
+	localObjMutex sync.Mutex
+
 	// 远程对象调用支持
 	_ROCManager     roc.ROCManager
 	rocAddCacheChan chan roc.IObj
 	rocDelCacheChan chan roc.IObj
-	rocCatchList    sync.Map
 
 	rocRequestChan  chan *requestAgent
 	rocResponseChan chan *responseAgent
@@ -293,6 +298,75 @@ func (this *ROCServer) rocResponseProcess() {
 	}
 }
 
+// 当一个服务器加入了子网时
+func (this *ROCServer) onServerJoinSubnet(server *connect.Server) {
+	if process.HasModule(server.ModuleInfo.ModuleID) {
+		return
+	}
+	this.localObjMutex.Lock()
+	defer this.localObjMutex.Unlock()
+
+	if this.localObj == nil {
+		return
+	}
+	// 遍历所有类型的ROCObj
+	for objtype, typemap := range this.localObj {
+		if typemap == nil || len(typemap) == 0 {
+			continue
+		}
+		leftnum := len(typemap)
+		// 临时变量
+		tmplist := make([]string, 0)
+		tmpsize := 0
+		// 遍历所有对象
+		for objid, _ := range typemap {
+			leftnum--
+			tmplist = append(tmplist, objid)
+			tmpsize += len(objid) + 4
+			// 分包发送
+			if leftnum == 0 ||
+				(tmpsize > (msg.MessageMaxSize/2) && tmpsize > 32*1024) {
+				sendmsg := &servercomm.SROCBind{
+					HostModuleID: this.server.moduleid,
+					IsDelete:     false,
+					ObjType:      objtype,
+					ObjIDs:       tmplist,
+				}
+				server.SendCmd(sendmsg)
+				if leftnum > 0 {
+					tmplist = make([]string, 0)
+					tmpsize = 0
+				}
+			}
+		}
+	}
+}
+
+// 记录本地的ROC对象
+func (this *ROCServer) recordLocalObj(objtype string, objid string,
+	isDelete bool) {
+	this.localObjMutex.Lock()
+	defer this.localObjMutex.Unlock()
+
+	// 初始化内存
+	if this.localObj == nil {
+		this.localObj = make(map[string]map[string]struct{})
+	}
+	if v, ok := this.localObj[objtype]; !ok || v == nil {
+		this.localObj[objtype] = make(map[string]struct{})
+	}
+
+	// 记录
+	if isDelete {
+		// 删除
+		if _, ok := this.localObj[objtype][objid]; ok {
+			delete(this.localObj[objtype], objid)
+		}
+	} else {
+		this.localObj[objtype][objid] = struct{}{}
+	}
+}
+
 // 当ROC对象发生注册行为时
 func (this *ROCServer) OnROCObjAdd(obj roc.IObj) {
 	// 保存本地映射缓存
@@ -302,6 +376,8 @@ func (this *ROCServer) OnROCObjAdd(obj roc.IObj) {
 		"id[%s] host[%s]",
 		obj.GetROCObjType(), obj.GetROCObjID(), this.server.moduleid)
 	this.rocAddCacheChan <- obj
+	this.recordLocalObj(string(obj.GetROCObjType()), obj.GetROCObjID(),
+		false)
 }
 
 // 当ROC对象发生注册行为时
@@ -313,6 +389,8 @@ func (this *ROCServer) OnROCObjDel(obj roc.IObj) {
 		"id[%s] host[%s]",
 		obj.GetROCObjType(), obj.GetROCObjID(), this.server.moduleid)
 	this.rocDelCacheChan <- obj
+	this.recordLocalObj(string(obj.GetROCObjType()), obj.GetROCObjID(),
+		true)
 }
 
 func (this *ROCServer) rocObjNoticeProcess(rocCacheChan chan roc.IObj,
@@ -376,7 +454,6 @@ func (this *ROCServer) rocObjNoticeProcess(rocCacheChan chan roc.IObj,
 
 // 发送ROC对象绑定信息
 func (this *ROCServer) sendROCBindMsg(sendmsg *servercomm.SROCBind) {
-
 	this.server.subnetManager.RangeServer(
 		func(s *connect.Server) bool {
 			if !process.HasModule(s.ModuleInfo.ModuleID) {

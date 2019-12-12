@@ -106,6 +106,7 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 		this.Syslog("[SubnetManager.msgParseTCPConn] "+
 			"连接服务器验证成功,id:%s,ipport:%s",
 			conn.ModuleInfo.ModuleID, conn.ModuleInfo.ModuleAddr)
+		this.subnetHook.OnServerJoinSubnet(conn)
 		return
 	case servercomm.SLoginCommandID:
 		recvmsg := &servercomm.SLoginCommand{}

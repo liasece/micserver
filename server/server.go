@@ -100,6 +100,13 @@ func (this *Server) RangeClient(
 	}
 }
 
+// 当一个服务器成功加入网络时调用
+func (this *Server) onServerJoinSubnet(server *connect.Server) {
+	this.Debug("服务器 ModuleID[%s] 加入子网成功",
+		server.ModuleInfo.ModuleID)
+	this.ROCServer.onServerJoinSubnet(server)
+}
+
 // 发送一个服务器消息到另一个服务器
 func (this *Server) SendModuleMsg(
 	to string, msgstr msg.MsgStruct) {

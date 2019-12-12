@@ -102,6 +102,11 @@ func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 	}
 }
 
+// 当一个服务器成功加入网络时调用
+func (this *serverCmdHandler) OnServerJoinSubnet(server *connect.Server) {
+	this.server.onServerJoinSubnet(server)
+}
+
 func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 	msgbinary *msg.MessageBinary) {
 	switch msgbinary.CmdID {

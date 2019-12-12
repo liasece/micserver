@@ -88,6 +88,7 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	notifymsg := &servercomm.SStartMyNotifyCommand{}
 	notifymsg.ModuleInfo = serverInfo
 	this.BroadcastCmd(notifymsg)
+	this.subnetHook.OnServerJoinSubnet(conn)
 }
 
 func (this *SubnetManager) BindTCPSubnet(settings *conf.ModuleConfig) error {
