@@ -53,7 +53,8 @@ func (this *ROCServer) Init(server *Server) {
 
 	this.rocAddCacheChan = make(chan roc.IObj, 10000)
 	this.rocDelCacheChan = make(chan roc.IObj, 10000)
-	go this.rocObjNoticeProcess()
+	go this.rocObjNoticeProcess(this.rocAddCacheChan, false)
+	go this.rocObjNoticeProcess(this.rocDelCacheChan, true)
 	this._ROCManager.HookObjEvent(this)
 
 	this.rocRequestChan = make(chan *requestAgent, 10000)
@@ -314,25 +315,18 @@ func (this *ROCServer) OnROCObjDel(obj roc.IObj) {
 	this.rocDelCacheChan <- obj
 }
 
-func (this *ROCServer) rocObjNoticeProcess() {
+func (this *ROCServer) rocObjNoticeProcess(rocCacheChan chan roc.IObj,
+	isDelete bool) {
 	tm := time.NewTimer(time.Millisecond * 300)
-	tmpAddList := make([]roc.IObj, 100)
-	tmpDelList := make([]roc.IObj, 100)
-	lenTmpList := len(tmpAddList)
-	tmpAddListI := 0
-	tmpDelListI := 0
-	var leftAddObj roc.IObj
-	var leftDelObj roc.IObj
+	tmpList := make([]roc.IObj, 100)
+	lenTmpList := len(tmpList)
+	tmpListI := 0
+	var leftObj roc.IObj
 	for !this.server.isStop {
-		if tmpAddListI == 0 && leftAddObj != nil {
-			tmpAddList[0] = leftAddObj
-			tmpAddListI++
-			leftAddObj = nil
-		}
-		if tmpDelListI == 0 && leftDelObj != nil {
-			tmpDelList[0] = leftDelObj
-			tmpDelListI++
-			leftDelObj = nil
+		if tmpListI == 0 && leftObj != nil {
+			tmpList[0] = leftObj
+			tmpListI++
+			leftObj = nil
 		}
 		wait := true
 		for wait {
@@ -340,28 +334,16 @@ func (this *ROCServer) rocObjNoticeProcess() {
 			select {
 			case <-this.server.stopChan:
 				break
-			case rocObj := <-this.rocAddCacheChan:
-				if tmpAddListI == 0 ||
-					rocObj.GetROCObjType() == tmpAddList[0].GetROCObjType() {
-					tmpAddList[tmpAddListI] = rocObj
-					tmpAddListI++
-					if tmpAddListI < lenTmpList {
+			case rocObj := <-rocCacheChan:
+				if tmpListI == 0 ||
+					rocObj.GetROCObjType() == tmpList[0].GetROCObjType() {
+					tmpList[tmpListI] = rocObj
+					tmpListI++
+					if tmpListI < lenTmpList {
 						wait = true
 					}
 				} else {
-					leftAddObj = rocObj
-					break
-				}
-			case rocObj := <-this.rocDelCacheChan:
-				if tmpDelListI == 0 ||
-					rocObj.GetROCObjType() == tmpDelList[0].GetROCObjType() {
-					tmpDelList[tmpDelListI] = rocObj
-					tmpDelListI++
-					if tmpDelListI < lenTmpList {
-						wait = true
-					}
-				} else {
-					leftDelObj = rocObj
+					leftObj = rocObj
 					break
 				}
 			case <-tm.C:
@@ -371,39 +353,22 @@ func (this *ROCServer) rocObjNoticeProcess() {
 		}
 
 		if !this.server.isStop {
-			if tmpAddListI > 0 {
+			if tmpListI > 0 {
 				sendmsg := &servercomm.SROCBind{
 					HostModuleID: this.server.moduleid,
-					IsDelete:     false,
-					ObjType:      string(tmpAddList[0].GetROCObjType()),
-					ObjIDs:       make([]string, tmpAddListI),
+					IsDelete:     isDelete,
+					ObjType:      string(tmpList[0].GetROCObjType()),
+					ObjIDs:       make([]string, tmpListI),
 				}
-				for i, obj := range tmpAddList {
-					if i >= tmpAddListI {
+				for i, obj := range tmpList {
+					if i >= tmpListI {
 						break
 					}
 					sendmsg.ObjIDs[i] = string(obj.GetROCObjID())
-					tmpAddList[i] = nil
+					tmpList[i] = nil
 				}
 				this.sendROCBindMsg(sendmsg)
-				tmpAddListI = 0
-			}
-			if tmpDelListI > 0 {
-				sendmsg := &servercomm.SROCBind{
-					HostModuleID: this.server.moduleid,
-					IsDelete:     true,
-					ObjType:      string(tmpDelList[0].GetROCObjType()),
-					ObjIDs:       make([]string, tmpDelListI),
-				}
-				for i, obj := range tmpDelList {
-					if i >= tmpDelListI {
-						break
-					}
-					sendmsg.ObjIDs[i] = string(obj.GetROCObjID())
-					tmpDelList[i] = nil
-				}
-				this.sendROCBindMsg(sendmsg)
-				tmpDelListI = 0
+				tmpListI = 0
 			}
 		}
 	}
