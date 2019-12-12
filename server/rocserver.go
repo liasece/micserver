@@ -120,9 +120,22 @@ func (this *ROCServer) GetROCObjCacheLocation(path *roc.ROCPath) string {
 }
 
 // 遍历指定类型的ROC缓存
-func (this *ROCServer) RangeROCObjCacheByType(objType roc.ROCObjType,
+func (this *ROCServer) RangeROCObjIDByType(objType roc.ROCObjType,
 	f func(id string, location string) bool) {
-	roc.GetCache().RangeByType(objType, f)
+	roc.GetCache().RangeByType(objType, f, nil)
+}
+
+// 遍历指定类型的ROC缓存，限制目标对象必须本module可以访问
+func (this *ROCServer) RangeMyROCObjIDByType(objType roc.ROCObjType,
+	f func(id string, location string) bool) {
+	connecedModuleIDs := make(map[string]bool)
+	this.server.subnetManager.RangeServer(func(server *connect.Server) bool {
+		if server.ModuleInfo != nil {
+			connecedModuleIDs[server.ModuleInfo.ModuleID] = true
+		}
+		return true
+	})
+	roc.GetCache().RangeByType(objType, f, connecedModuleIDs)
 }
 
 // 遍历指定类型的ROC缓存，限制目标对象必须本module可以访问

@@ -116,14 +116,17 @@ func (this *Cache) Get(objType ROCObjType, objID string) string {
 
 // 遍历指定类型的ROC对象
 func (this *Cache) RangeByType(objType ROCObjType,
-	f func(id string, location string) bool) {
+	f func(id string, location string) bool,
+	limitModuleIDs map[string]bool) {
 	// 防止 f 中调用其他加锁函数导致死锁，需要备份map
 	back := make(objIDToServerMap)
 
 	this.mutex.Lock()
 	m := this.catchGetTypeMust(objType)
 	for id, v := range m {
-		back[id] = v
+		if limitModuleIDs == nil || limitModuleIDs[v.moduleid] == true {
+			back[id] = v
+		}
 	}
 	this.mutex.Unlock()
 
@@ -143,9 +146,8 @@ func (this *Cache) RandomObjIDByType(objType ROCObjType,
 
 	m := this.catchGetTypeMust(objType)
 	tmplist := make([]string, 0)
-	for id, _ := range m {
-		if limitModuleIDs == nil ||
-			(limitModuleIDs != nil && limitModuleIDs[id] == true) {
+	for id, v := range m {
+		if limitModuleIDs == nil || limitModuleIDs[v.moduleid] == true {
 			tmplist = append(tmplist, id)
 		}
 	}
