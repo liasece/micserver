@@ -178,7 +178,7 @@ func (this *Server) MustUpdateSessionFromMap(uuid string, data map[string]string
 		this.server.sessionManager.UpdateSessionUUID(uuid, s)
 	}
 	this.server.sessionManager.MustUpdateFromMap(s, data)
-	this.server.Debug("[MustUpdateSessionFromMap] Session Manager Update: %+v",
+	this.server.Syslog("[MustUpdateSessionFromMap] Session Manager Update: %+v",
 		data)
 }
 

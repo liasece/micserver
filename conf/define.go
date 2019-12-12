@@ -9,6 +9,8 @@ var (
 	ProcessID ConfigKey = "processid"
 	// log完整路径		string
 	LogWholePath ConfigKey = "logpath"
+	// log等级		string
+	LogLevel ConfigKey = "loglevel"
 	// 服务器TCP子网ip及端口，如 1.0.0.1:80 		string
 	SubnetTCPAddr ConfigKey = "subnettcpaddr"
 	// 不使用本地chan		bool

@@ -45,6 +45,7 @@ func (this *App) Setup(configer *conf.TopConfig) {
 	process.AddApp(this)
 	this.isStoped = make(chan struct{})
 	this.Configer = configer
+	// 初始化Log
 	if this.Configer.AppConfig.Exist(conf.LogWholePath) {
 		setting := this.Configer.AppConfig
 		this.Logger = log.NewLogger(setting.GetBool(conf.IsDaemon),
@@ -53,6 +54,14 @@ func (this *App) Setup(configer *conf.TopConfig) {
 		this.Logger.SetLogName("app")
 	} else {
 		this.Logger = log.GetDefaultLogger()
+	}
+	// 初始化Log等级
+	if this.Configer.AppConfig.Exist(conf.LogLevel) {
+		err := this.Logger.SetLogLevelByStr(
+			this.Configer.AppConfig.GetString(conf.LogLevel))
+		if err != nil {
+			this.Error("Set log level err: %s", err.Error())
+		}
 	}
 	this.Info("APP setup secess!!!")
 }
@@ -141,7 +150,7 @@ func (this *App) RunAndBlock(modules []module.IModule) {
 	// 当程序即将结束时
 	this.Syslog("[App.RunAndBlock] All server is over add save datas")
 
-	this.Syslog("[App.RunAndBlock] ----- Main has stopped ----- ")
+	this.Debug("[App.RunAndBlock] ----- Main has stopped ----- ")
 	// 等日志打完
 	time.Sleep(500 * time.Millisecond)
 }

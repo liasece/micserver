@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -79,6 +80,30 @@ func (l *Logger) SetLogLevel(lvl int32) {
 		return
 	}
 	l.level = lvl
+}
+
+func (l *Logger) SetLogLevelByStr(lvl string) error {
+	if l == nil && l != default_logger {
+		return default_logger.SetLogLevelByStr(lvl)
+	}
+	lvlUpper := strings.ToUpper(lvl)
+	switch lvlUpper {
+	case "SYS":
+		l.level = SYS
+	case "DEBUG":
+		l.level = DEBUG
+	case "INFO":
+		l.level = INFO
+	case "WARNING":
+		l.level = WARNING
+	case "ERROR":
+		l.level = ERROR
+	case "FATAL":
+		l.level = FATAL
+	default:
+		return fmt.Errorf("unknown log level '%s'", lvl)
+	}
+	return nil
 }
 
 // func (l *Logger) SetLogLayout(layout string) {
