@@ -84,5 +84,5 @@ func (this *ROCManager) Call(callstr string, arg []byte) ([]byte, error) {
 		return nil, ErrUnknowObj
 	}
 	path.Reset()
-	return obj.ROCCall(path, arg)
+	return obj.OnROCCall(path, arg)
 }
