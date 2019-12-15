@@ -24,7 +24,7 @@ type IModule interface {
 	KillModule()
 	IsStopped() bool
 	GetConfiger() *conf.ModuleConfig
-	ROCCallNR(callpath *roc.ROCPath, callarg []byte)
+	ROCCallNR(callpath *roc.ROCPath, callarg []byte) error
 	ROCCallBlock(callpath *roc.ROCPath, callarg []byte) ([]byte, error)
 }
 

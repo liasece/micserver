@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -89,7 +90,7 @@ func (this *ROCServer) NewROC(objtype roc.ROCObjType) *roc.ROC {
 }
 
 // 无返回值的ROC调用
-func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) {
+func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) error {
 	objType := callpath.GetObjType()
 	objID := callpath.GetObjID()
 	moduleid := roc.GetCache().Get(objType, objID)
@@ -113,8 +114,11 @@ func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) {
 		} else {
 			this.Warn("Can't find roc object location %s",
 				callpath.String())
+			return fmt.Errorf("Can't find roc object location %s",
+				callpath.String())
 		}
 	}
+	return nil
 }
 
 // 获取ROC缓存中的位置信息
@@ -145,7 +149,7 @@ func (this *ROCServer) RangeMyROCObjIDByType(objType roc.ROCObjType,
 	roc.GetCache().RangeByType(objType, f, connecedModuleIDs)
 }
 
-// 遍历指定类型的ROC缓存，限制目标对象必须本module可以访问
+// 随机获取本地缓存的ROC对象，返回该对象的ID，限制目标对象必须本module可以访问
 func (this *ROCServer) RandomMyROCObjIDByType(objType roc.ROCObjType) string {
 	connecedModuleIDs := make(map[string]bool)
 	this.server.subnetManager.RangeServer(func(server *connect.Server) bool {
@@ -155,6 +159,11 @@ func (this *ROCServer) RandomMyROCObjIDByType(objType roc.ROCObjType) string {
 		return true
 	})
 	return roc.GetCache().RandomObjIDByType(objType, connecedModuleIDs)
+}
+
+// 随机获取本地缓存的ROC对象，返回该对象的ID
+func (this *ROCServer) RandomROCObjIDByType(objType roc.ROCObjType) string {
+	return roc.GetCache().RandomObjIDByType(objType, nil)
 }
 
 // 根据ROC请求的序号，生成一个用于阻塞等待ROC返回的chan
