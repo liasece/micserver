@@ -5,5 +5,6 @@ import (
 )
 
 var (
-	ErrNilLogger = errors.New("logger is nil")
+	ErrNilLogger       = errors.New("logger is nil")
+	ErrUnknownLogLevel = errors.New("unknown log level")
 )

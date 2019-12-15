@@ -126,7 +126,7 @@ func (l *Logger) SetLogLevelByStr(lvl string) error {
 	case "FATAL":
 		l.level = FATAL
 	default:
-		return fmt.Errorf("unknown log level '%s'", lvl)
+		return ErrUnknownLogLevel
 	}
 	return nil
 }

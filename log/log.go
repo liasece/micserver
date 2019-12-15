@@ -53,6 +53,38 @@ func Fatal(fmt string, args ...interface{}) {
 	default_logger.deliverRecordToWriter(FATAL, fmt, args...)
 }
 
+func IsSyslogEnable() bool {
+	return default_logger.IsSyslogEnable()
+}
+
+func IsDebugEnable() bool {
+	return default_logger.IsDebugEnable()
+}
+
+func IsInfoEnable() bool {
+	return default_logger.IsInfoEnable()
+}
+
+func IsWarnEnable() bool {
+	return default_logger.IsWarnEnable()
+}
+
+func IsErrorEnable() bool {
+	return default_logger.IsErrorEnable()
+}
+
+func IsFatalEnable() bool {
+	return default_logger.IsFatalEnable()
+}
+
+func SetLogLevel(lvl int32) {
+	default_logger.SetLogLevel(lvl)
+}
+
+func SetLogLevelByStr(lvl string) error {
+	return default_logger.SetLogLevelByStr(lvl)
+}
+
 func SetDefaultLogger(l *Logger) {
 	if l != default_logger {
 		// default_logger.GetLogWriter().Close()
