@@ -56,6 +56,10 @@ func (w *ConsoleWriter) Init() error {
 	return nil
 }
 
+func (w *ConsoleWriter) GetType() writerType {
+	return writerTypeConsole
+}
+
 func (w *ConsoleWriter) SetColor(c bool) {
 	w.color = c
 }

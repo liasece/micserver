@@ -30,6 +30,10 @@ func (w *FileWriter) Init() error {
 	return w.Rotate()
 }
 
+func (w *FileWriter) GetType() writerType {
+	return writerTypeFile
+}
+
 func (w *FileWriter) SetPathPattern(filebasename string, pattern string) error {
 	n := 0
 	for _, c := range pattern {

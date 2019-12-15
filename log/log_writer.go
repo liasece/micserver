@@ -2,8 +2,16 @@ package log
 
 import (
 	syslog "log"
-	"reflect"
 	"time"
+)
+
+const tunnel_size_default = 1024
+
+type writerType int
+
+const (
+	writerTypeConsole = 1
+	writerTypeFile    = 2
 )
 
 type LogWriter struct {
@@ -41,7 +49,7 @@ func (this *LogWriter) ChangeLogFile(filename string) {
 	filename += ".%Y%M%D-%H"
 	for i := 0; i < len(this.writers); i++ {
 		w := this.writers[i]
-		if reflect.TypeOf(w).String() == "*log.FileWriter" {
+		if w.GetType() == writerTypeFile {
 			if r, ok := w.(Rotater); ok {
 				err := r.SetPathPattern(filebasename, filename)
 				if err != nil {
@@ -58,8 +66,7 @@ func (this *LogWriter) RemoveConsoleLog() {
 	newlist := make([]Writer, 0, 2)
 	for i := 0; i < len(this.writers); i++ {
 		w := this.writers[i]
-		//		Debug("start RemoveConsoleLog, %s", reflect.TypeOf(w).String())
-		if reflect.TypeOf(w).String() != "*log.ConsoleWriter" {
+		if w.GetType() != writerTypeConsole {
 			newlist = append(newlist, w)
 		}
 	}

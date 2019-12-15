@@ -43,7 +43,8 @@ func NewLogger(isDaemon bool, logFilePath string) *Logger {
 	return l
 }
 
-// 浅拷贝出一个 Logger ，他们具备相同的底层写入接口
+// 浅拷贝出一个 Logger ，他们具备相同的底层写入接口，
+// 需要注意的是，克隆出来的logger对象在写入器中会依旧受到源拷贝对象的影响
 func (l *Logger) Clone() *Logger {
 	if l == nil && l != default_logger {
 		return default_logger.Clone()

@@ -1,14 +1,18 @@
 package log
 
 import (
-	"fmt"
 	"sync"
-	"time"
 )
 
 var (
-	LEVEL_FLAGS = [...]string{"[S]", "[D]", "[I]", "[WARNING]", "[ERROR]", "[FATALERROR]"}
-	recordPool  *sync.Pool
+	LEVEL_FLAGS = []string{
+		"[S]",
+		"[D]",
+		"[I]",
+		"[WARNING]",
+		"[ERROR]",
+		"[FATALERROR]",
+	}
 )
 
 const (
@@ -20,40 +24,9 @@ const (
 	FATAL
 )
 
-const tunnel_size_default = 1024
-
-type Record struct {
-	time     string
-	name     string
-	code     string
-	info     string
-	level    int32
-	timeUnix int64
-}
-
-func (r *Record) String() string {
-	return fmt.Sprintf("%s [%s] %s %s\n", r.time, r.name, LEVEL_FLAGS[r.level], r.info)
-}
-
-type Writer interface {
-	Init() error
-	Write(*Record) error
-}
-
-type Rotater interface {
-	Rotate() error
-	RotateByTime(*time.Time) error
-	SetPathPattern(string, string) error
-}
-
-type Flusher interface {
-	Flush() error
-}
-
 // default
 var (
 	default_logger *Logger
-	takeup         = false
 )
 
 func Syslog(fmt string, args ...interface{}) {
