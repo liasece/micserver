@@ -5,8 +5,8 @@ Created on Fri Nov  2 15:25:00 2018
 
 Version 1.0.0
 
-@author: liaojiansheng
-@email: liaojiansheng@ztgame.com liasece@gmail.com
+@author: Jansen
+@email: liasece@gmail.com
 
 ***** 注意事项 *****
 1   由于JS原生number类型无法表示完整值域的64位整数，最大仅可表示 2^53 次方个整数

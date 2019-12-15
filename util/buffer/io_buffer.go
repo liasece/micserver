@@ -1,7 +1,7 @@
 /**
  * \file IOBuffer.go
  * \version
- * \author liaojiansheng
+ * \author Jansen
  * \date  2019年01月31日 12:22:43
  * \brief 消息收发缓冲区
  *
