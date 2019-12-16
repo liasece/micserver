@@ -123,21 +123,14 @@ func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) error {
 
 // 获取ROC缓存中的位置信息
 // 返回目标ROC对象所在的moduleid
-func (this *ROCServer) GetROCObjCacheLocation(path *roc.ROCPath) string {
-	objType := path.GetObjType()
-	objID := path.GetObjID()
+func (this *ROCServer) GetROCCachedLocation(objType roc.ROCObjType,
+	objID string) string {
 	moduleid := roc.GetCache().Get(objType, objID)
 	return moduleid
 }
 
-// 遍历指定类型的ROC缓存
-func (this *ROCServer) RangeROCObjIDByType(objType roc.ROCObjType,
-	f func(id string, location string) bool) {
-	roc.GetCache().RangeByType(objType, f, nil)
-}
-
 // 遍历指定类型的ROC缓存，限制目标对象必须本module可以访问
-func (this *ROCServer) RangeMyROCObjIDByType(objType roc.ROCObjType,
+func (this *ROCServer) RangeROCCachedByType(objType roc.ROCObjType,
 	f func(id string, location string) bool) {
 	connecedModuleIDs := make(map[string]bool)
 	this.server.subnetManager.RangeServer(func(server *connect.Server) bool {
@@ -150,7 +143,7 @@ func (this *ROCServer) RangeMyROCObjIDByType(objType roc.ROCObjType,
 }
 
 // 随机获取本地缓存的ROC对象，返回该对象的ID，限制目标对象必须本module可以访问
-func (this *ROCServer) RandomMyROCObjIDByType(objType roc.ROCObjType) string {
+func (this *ROCServer) RandomROCCachedByType(objType roc.ROCObjType) string {
 	connecedModuleIDs := make(map[string]bool)
 	this.server.subnetManager.RangeServer(func(server *connect.Server) bool {
 		if server.ModuleInfo != nil {
@@ -159,11 +152,6 @@ func (this *ROCServer) RandomMyROCObjIDByType(objType roc.ROCObjType) string {
 		return true
 	})
 	return roc.GetCache().RandomObjIDByType(objType, connecedModuleIDs)
-}
-
-// 随机获取本地缓存的ROC对象，返回该对象的ID
-func (this *ROCServer) RandomROCObjIDByType(objType roc.ROCObjType) string {
-	return roc.GetCache().RandomObjIDByType(objType, nil)
 }
 
 // 根据ROC请求的序号，生成一个用于阻塞等待ROC返回的chan

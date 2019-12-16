@@ -8,11 +8,4 @@
 
 package rocutil
 
-import (
-	"github.com/liasece/micserver/roc"
-)
-
-type IROCObjBase interface {
-	GetROCObjType() roc.ROCObjType
-	GetROCObjID() string
-}
+import ()

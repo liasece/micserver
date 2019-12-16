@@ -16,9 +16,7 @@ type IROCServer interface {
 	NewROC(ROCObjType) *ROC
 	ROCCallNR(*ROCPath, []byte) error
 	ROCCallBlock(*ROCPath, []byte) ([]byte, error)
-	GetROCObjCacheLocation(*ROCPath) string
-	RangeROCObjIDByType(ROCObjType, func(id string, location string) bool)
-	RangeMyROCObjIDByType(ROCObjType, func(id string, location string) bool)
-	RandomROCObjIDByType(ROCObjType) string
-	RandomMyROCObjIDByType(ROCObjType) string
+	GetROCCachedLocation(ROCObjType, string) string
+	RangeROCCachedByType(ROCObjType, func(id string, location string) bool)
+	RandomROCCachedByType(ROCObjType) string
 }
