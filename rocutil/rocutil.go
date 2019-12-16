@@ -15,20 +15,22 @@ import (
 	"github.com/liasece/micserver/rocutil/options"
 )
 
-func NewROCObj(baseObj IROCObjBase, ops ...*options.Options) (roc.IObj, error) {
+func NewROCObj(obj interface{}, rocObjType roc.ROCObjType,
+	rocObjID string, ops ...*options.Options) (roc.IObj, error) {
 	agent := &ROCObjAgent{}
-	agent.Init(baseObj, ops)
+	agent.Init(obj, rocObjType, rocObjID, ops)
 	return agent, nil
 }
 
-func ServerROCObj(rocserver roc.IROCServer, baseObj IROCObjBase,
+func ServerROCObj(rocserver roc.IROCServer, obj interface{},
+	rocObjType roc.ROCObjType, rocObjID string,
 	opts ...*options.Options) (roc.IObj, error) {
-	agent, err := NewROCObj(baseObj, opts...)
+	agent, err := NewROCObj(obj, rocObjType, rocObjID, opts...)
 	if err != nil {
 		return nil, err
 	}
-	res, _ := rocserver.NewROC(baseObj.GetROCObjType()).
-		GetOrRegObj(baseObj.GetROCObjID(), agent)
+	res, _ := rocserver.NewROC(rocObjType).
+		GetOrRegObj(rocObjID, agent)
 	return res, nil
 }
 

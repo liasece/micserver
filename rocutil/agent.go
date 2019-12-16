@@ -19,13 +19,19 @@ import (
 )
 
 type ROCObjAgent struct {
-	IROCObjBase
+	obj interface{}
+
+	typ roc.ROCObjType
+	id  string
 
 	methodMapping sync.Map
 }
 
-func (this *ROCObjAgent) Init(obj IROCObjBase, ops []*options.Options) error {
-	this.IROCObjBase = obj
+func (this *ROCObjAgent) Init(obj interface{}, rocObjType roc.ROCObjType,
+	rocObjID string, ops []*options.Options) error {
+	this.obj = obj
+	this.typ = rocObjType
+	this.id = rocObjID
 	opt := &options.Options{}
 	for _, optItem := range ops {
 		opt.Merge(optItem)
@@ -60,10 +66,12 @@ func (this *ROCObjAgent) Init(obj IROCObjBase, ops []*options.Options) error {
 	return nil
 }
 
+// 添加一个ROC对象的方法
 func (this *ROCObjAgent) addMethod(m *Method) {
 	this.methodMapping.Store(m.GetName(), m)
 }
 
+// 获取一个指定名称的方法
 func (this *ROCObjAgent) getMethod(name string) *Method {
 	vi, ok := this.methodMapping.Load(name)
 	if !ok {
@@ -72,6 +80,7 @@ func (this *ROCObjAgent) getMethod(name string) *Method {
 	return vi.(*Method)
 }
 
+// 提供给 roc.Server 的接口，受到ROC调用时调用
 func (this *ROCObjAgent) OnROCCall(path *roc.ROCPath, arg []byte) ([]byte, error) {
 	funcName := path.Move()
 	if method := this.getMethod(funcName); method != nil {
@@ -92,4 +101,14 @@ func (this *ROCObjAgent) OnROCCall(path *roc.ROCPath, arg []byte) ([]byte, error
 		return nil, fmt.Errorf("%s:%s", ErrUnknownFunc.Error(), funcName)
 	}
 	return nil, nil
+}
+
+// 提供给 roc.Server 的接口，获取ROC对象的类型
+func (this *ROCObjAgent) GetROCObjType() roc.ROCObjType {
+	return this.typ
+}
+
+// 提供给 roc.Server 的接口，获取ROC对象的ID
+func (this *ROCObjAgent) GetROCObjID() string {
+	return this.id
 }
