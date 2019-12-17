@@ -21,8 +21,9 @@ import (
 type ROCObjAgent struct {
 	obj interface{}
 
-	typ roc.ROCObjType
-	id  string
+	opts *options.Options
+	typ  roc.ROCObjType
+	id   string
 
 	methodMapping sync.Map
 }
@@ -32,9 +33,9 @@ func (this *ROCObjAgent) Init(obj interface{}, rocObjType roc.ROCObjType,
 	this.obj = obj
 	this.typ = rocObjType
 	this.id = rocObjID
-	opt := &options.Options{}
+	this.opts = &options.Options{}
 	for _, optItem := range ops {
-		opt.Merge(optItem)
+		this.opts.Merge(optItem)
 	}
 
 	objType := reflect.TypeOf(obj)
@@ -47,9 +48,9 @@ func (this *ROCObjAgent) Init(obj interface{}, rocObjType roc.ROCObjType,
 		}
 		name := objType.Method(i).Name
 		// check func name
-		if opt != nil && opt.CheckFuncName != nil {
+		if this.opts != nil && this.opts.CheckFuncName != nil {
 			var use bool
-			name, use = opt.CheckFuncName(name)
+			name, use = this.opts.CheckFuncName(name)
 			if !use {
 				continue
 			}
@@ -89,7 +90,18 @@ func (this *ROCObjAgent) OnROCCall(path *roc.ROCPath, arg []byte) ([]byte, error
 		if err != nil {
 			return nil, err
 		}
+
+		// 调用前处理
+		if this.opts != nil && this.opts.OnBeforeROCCall != nil {
+			this.opts.OnBeforeROCCall(this.obj, path, arg)
+		}
+		// 实际调用该函数
 		result, callErr := method.Call(callArg)
+		// 调用后处理
+		if this.opts != nil && this.opts.OnAfterROCCall != nil {
+			this.opts.OnAfterROCCall(this.obj, path, arg)
+		}
+
 		if callErr != nil {
 			return nil, callErr
 		}
