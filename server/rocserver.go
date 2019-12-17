@@ -94,7 +94,7 @@ func (this *ROCServer) ROCCallNR(callpath *roc.ROCPath, callarg []byte) error {
 	objType := callpath.GetObjType()
 	objID := callpath.GetObjID()
 	moduleid := roc.GetCache().Get(objType, objID)
-	this.Info("ROCCallNR {%s:%s(%s:%s):%X}",
+	this.Syslog("ROCCallNR {%s:%s(%s:%s):%X}",
 		moduleid, callpath, objType, objID, callarg)
 	// 构造消息
 	sendmsg := &servercomm.SROCRequest{
@@ -167,7 +167,7 @@ func (this *ROCServer) ROCCallBlock(callpath *roc.ROCPath,
 	objType := callpath.GetObjType()
 	objID := callpath.GetObjID()
 	moduleid := roc.GetCache().Get(objType, objID)
-	this.Info("ROCCallBlock {%s:%s(%s:%s:%d):%X}",
+	this.Syslog("ROCCallBlock {%s:%s(%s:%s:%d):%X}",
 		moduleid, callpath, objType, objID, hash.GetStringHash(string(objID)),
 		callarg)
 	// 构造消息
@@ -230,7 +230,7 @@ func (this *ROCServer) rocRequestProcess() {
 			break
 		case agent := <-this.rocRequestChan:
 			// 处理ROC请求
-			this.Info("ROC Request[%s]", agent.callpath)
+			this.Syslog("ROC Request[%s]", agent.callpath)
 			res, err := this._ROCManager.Call(agent.callpath, agent.callarg)
 			if err != nil {
 				if err != roc.ErrUnknowObj {
@@ -277,7 +277,7 @@ func (this *ROCServer) rocResponseProcess() {
 			break
 		case agent := <-this.rocResponseChan:
 			// 处理ROC相应
-			this.Info("rocResponseProcess %+v", agent)
+			this.Syslog("rocResponseProcess %+v", agent)
 			chi, ok := this.rocBlockChanMap.Load(agent.seq)
 			if ok {
 				if ch, ok := chi.(chan *responseAgent); ok {
@@ -370,7 +370,7 @@ func (this *ROCServer) OnROCObjAdd(obj roc.IObj) {
 	// 保存本地映射缓存
 	roc.GetCache().Set(obj.GetROCObjType(), obj.GetROCObjID(),
 		this.server.moduleid)
-	this.Debug("OnROCObjAdd roc cache set type[%s] "+
+	this.Syslog("OnROCObjAdd roc cache set type[%s] "+
 		"id[%s] host[%s]",
 		obj.GetROCObjType(), obj.GetROCObjID(), this.server.moduleid)
 
@@ -396,7 +396,7 @@ func (this *ROCServer) OnROCObjDel(obj roc.IObj) {
 	// 保存本地映射缓存
 	roc.GetCache().Del(obj.GetROCObjType(), obj.GetROCObjID(),
 		this.server.moduleid)
-	this.Debug("OnROCObjDel roc cache del type[%s] "+
+	this.Syslog("OnROCObjDel roc cache del type[%s] "+
 		"id[%s] host[%s]",
 		obj.GetROCObjType(), obj.GetROCObjID(), this.server.moduleid)
 
@@ -494,7 +494,7 @@ func (this *ROCServer) onMsgROCBind(msg *servercomm.SROCBind) {
 	} else {
 		roc.GetCache().DelM(roc.ROCObjType(msg.ObjType), msg.ObjIDs, msg.HostModuleID)
 	}
-	this.Debug("onMsgROCBind roc cache setm type[%s] "+
+	this.Syslog("onMsgROCBind roc cache setm type[%s] "+
 		"ids%+v host[%s]",
 		msg.ObjType, msg.ObjIDs, msg.HostModuleID)
 }
