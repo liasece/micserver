@@ -86,6 +86,10 @@ func (this *BaseConnect) IsTerminate(curtime int64) bool {
 	return false
 }
 
+func (this *BaseConnect) SetMsgCodec(codec msg.IMsgCodec) {
+	this.IConnection.SetMsgCodec(codec)
+}
+
 func (this *BaseConnect) StartRecv() {
 	this.IConnection.StartRecv()
 }

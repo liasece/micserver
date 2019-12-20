@@ -157,7 +157,7 @@ func (this *ChanConn) SendBytes(
 		this.Warn("[ChanConn.SendBytes] 连接已失效，取消发送")
 		return ErrCloseed
 	}
-	msgbinary := msg.EncodeBytes(cmdid, protodata)
+	msgbinary := msg.DefaultEncodeBytes(cmdid, protodata)
 
 	return this.SendMessageBinary(msgbinary)
 }

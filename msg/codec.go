@@ -14,7 +14,7 @@ const (
 )
 
 // 默认通过结构构造消息体
-func EncodeObj(v MsgStruct) *MessageBinary {
+func DefaultEncodeObj(v MsgStruct) *MessageBinary {
 	// 通过结构对象构造 json binary
 	cmdid := v.GetMsgId()
 	// 获取基础数据
@@ -52,13 +52,13 @@ func EncodeObj(v MsgStruct) *MessageBinary {
 	// MessageBinaryHeadL1
 	msgbinary.SetTotalLength(totalLength)
 	msgbinary.SetMsgID(cmdid)
-	WriteHead(msgbinary.GetBuffer(), totalLength, cmdid)
+	DefaultWriteHead(msgbinary.GetBuffer(), totalLength, cmdid)
 
 	return msgbinary
 }
 
 // 默认通过字节流构造消息体
-func EncodeBytes(cmdid uint16, protodata []byte) *MessageBinary {
+func DefaultEncodeBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	// 获取基础数据
 	datalen := len(protodata)
 	totalLength := DEFAULT_MSG_HEADSIZE + datalen
@@ -92,13 +92,13 @@ func EncodeBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	// 初始化消息信息
 	msgbinary.SetTotalLength(totalLength)
 	msgbinary.SetMsgID(cmdid)
-	WriteHead(msgbinary.GetBuffer(), totalLength, cmdid)
+	DefaultWriteHead(msgbinary.GetBuffer(), totalLength, cmdid)
 
 	return msgbinary
 }
 
 // 默认写头
-func WriteHead(data []byte, totalLen int,
+func DefaultWriteHead(data []byte, totalLen int,
 	msgid uint16) (size int) {
 	binary.LittleEndian.PutUint32(data[size:], uint32(totalLen)) // 4
 	size += 4
@@ -205,10 +205,10 @@ func (this *DefaultCodec) readHead(data []byte) (int, error) {
 }
 
 func (this *DefaultCodec) EncodeObj(v MsgStruct) *MessageBinary {
-	return EncodeObj(v)
+	return DefaultEncodeObj(v)
 }
 
 func (this *DefaultCodec) EncodeBytes(cmdid uint16,
 	protodata []byte) *MessageBinary {
-	return EncodeBytes(cmdid, protodata)
+	return DefaultEncodeBytes(cmdid, protodata)
 }

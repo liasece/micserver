@@ -18,6 +18,7 @@ type IConnection interface {
 	HookProtocal(p baseio.Protocal)
 	SetBanAutoResize(value bool)
 	GetMsgCodec() msg.IMsgCodec
+	SetMsgCodec(msg.IMsgCodec)
 }
 
 type ConnectHook interface {
