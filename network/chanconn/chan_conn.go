@@ -88,7 +88,7 @@ func (this *ChanConn) SetMsgCodec(codec msg.IMsgCodec) {
 }
 
 func (this *ChanConn) GetMsgCodec() msg.IMsgCodec {
-	return nil
+	return this.codec
 }
 
 func (this *ChanConn) SetBanAutoResize(value bool) {
