@@ -109,7 +109,7 @@ func (this *serverCmdHandler) OnServerJoinSubnet(server *connect.Server) {
 
 func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 	msgbinary *msg.MessageBinary) {
-	switch msgbinary.CmdID {
+	switch msgbinary.GetMsgID() {
 	case servercomm.SForwardToModuleID:
 		// 服务器间用户空间消息转发
 		if this.serverHook != nil {
@@ -157,7 +157,7 @@ func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 		layerMsg.ReadBinary(msgbinary.ProtoData)
 		this.server.ROCServer.onMsgROCResponse(layerMsg)
 	default:
-		msgid := msgbinary.CmdID
+		msgid := msgbinary.GetMsgID()
 		msgname := servercomm.MsgIdToString(msgid)
 		this.server.Error("[SubnetManager.OnRecvTCPMsg] 未知消息 %d:%s",
 			msgid, msgname)

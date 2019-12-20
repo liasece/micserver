@@ -131,7 +131,7 @@ func (this *BaseConnect) SendCmd(v msg.MsgStruct) error {
 			v.GetMsgName())
 		return fmt.Errorf("link has been closed")
 	}
-	msg := msg.GetByObj(v)
+	msg := this.IConnection.GetMsgCodec().EncodeObj(v)
 	if msg == nil {
 		this.Error("[BaseConnect.SendCmd] msg==nil")
 		return fmt.Errorf("can't get message binary")
@@ -147,7 +147,7 @@ func (this *BaseConnect) SendCmdWithCallback(v msg.MsgStruct,
 			v.GetMsgName())
 		return fmt.Errorf("link has been closed")
 	}
-	msg := msg.GetByObj(v)
+	msg := this.IConnection.GetMsgCodec().EncodeObj(v)
 	if msg == nil {
 		this.Error("[BaseConnect.SendCmd] msg==nil")
 		return fmt.Errorf("can't get message binary")

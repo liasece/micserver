@@ -47,7 +47,7 @@ func (this *GateBase) OnConnectClose(client *connect.Client) {
 // 由Client调用，当Client收到消息时
 func (this *GateBase) OnRecvConnectMessage(client *connect.Client,
 	msgbin *msg.MessageBinary) {
-	cmdname := servercomm.MsgIdToString(msgbin.CmdID)
+	cmdname := servercomm.MsgIdToString(msgbin.GetMsgID())
 	defer msgbin.Free()
 
 	// 检查链接是否已被断开，如果已断开则不处理
@@ -55,19 +55,21 @@ func (this *GateBase) OnRecvConnectMessage(client *connect.Client,
 		client.Shutdown()
 		client.Debug("[ParseClientJsonMsg] 客户端连接已关闭，丢弃消息 "+
 			"MsgID[%d] MsgName[%s] Data[%s]",
-			msgbin.CmdID, cmdname, msgbin.DataString())
+			msgbin.GetMsgID(), cmdname, msgbin.String())
 		return
 	}
 	// 接收到有效消息，开始处理
 	if this.gateHook != nil {
 		client.Syslog("[ParseClientJsonMsg] 收到客户端消息 "+
-			"MsgID[%d] Msgname[%s] CmdLen[%d] DataLen[%d]",
-			msgbin.CmdID, cmdname, msgbin.CmdLen, msgbin.DataLen)
+			"MsgID[%d] Msgname[%s] MsgLen[%d] DataLen[%d]",
+			msgbin.GetMsgID(), cmdname, msgbin.GetTotalLength(),
+			msgbin.GetProtoLength())
 		this.gateHook.OnRecvClientMsg(client, msgbin)
 	} else {
 		client.Debug("[ParseClientJsonMsg] 收到客户端消息但未处理，缺少GateHook"+
-			"MsgID[%d] Msgname[%s] CmdLen[%d] DataLen[%d]",
-			msgbin.CmdID, cmdname, msgbin.CmdLen, msgbin.DataLen)
+			"MsgID[%d] Msgname[%s] MsgLen[%d] DataLen[%d]",
+			msgbin.GetMsgID(), cmdname, msgbin.GetTotalLength(),
+			msgbin.GetProtoLength())
 	}
 }
 

@@ -65,6 +65,8 @@ type TCPConn struct {
 	recvmsgchan chan *msg.MessageBinary
 	// 接收缓冲区
 	recvBuffer *buffer.IOBuffer
+	// 消息编解码器
+	codec msg.IMsgCodec
 }
 
 // 初始化一个TCPConn对象
@@ -95,11 +97,20 @@ func (this *TCPConn) Init(conn net.Conn,
 	this.recvmsgchan = make(chan *msg.MessageBinary, recvChanSize)
 	this.recvBuffer = buffer.NewIOBuffer(this, recvBufferSize)
 	this.recvBuffer.Logger = this.Logger
+	this.codec = &msg.DefaultCodec{}
 }
 
 func (this *TCPConn) SetBanAutoResize(value bool) {
 	this.sendBuffer.SetBanAutoResize(value)
 	this.recvBuffer.SetBanAutoResize(value)
+}
+
+func (this *TCPConn) SetMsgCodec(codec msg.IMsgCodec) {
+	this.codec = codec
+}
+
+func (this *TCPConn) GetMsgCodec() msg.IMsgCodec {
+	return this.codec
 }
 
 func (this *TCPConn) SetLogger(l *log.Logger) {
@@ -164,7 +175,7 @@ func (this *TCPConn) SendBytes(
 		this.Warn("[TCPConn.SendBytes] 连接已失效，取消发送")
 		return ErrCloseed
 	}
-	msgbinary := msg.GetByBytes(cmdid, protodata)
+	msgbinary := this.codec.EncodeBytes(cmdid, protodata)
 
 	return this.SendMessageBinary(msgbinary)
 }
@@ -210,7 +221,8 @@ func (this *TCPConn) SendMessageBinary(
 		this.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
 		return ErrCloseed
 	case this.sendmsgchan <- msgbinary:
-		atomic.AddInt64(&this.waitingSendBufferLength, int64(msgbinary.CmdLen))
+		atomic.AddInt64(&this.waitingSendBufferLength,
+			int64(msgbinary.GetTotalLength()))
 		// default:
 		// 	this.Warn("[TCPConn.SendMessageBinary] 发送Channel缓冲区满，阻塞超时")
 		// 	return ErrBufferFull
@@ -385,8 +397,8 @@ func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) []*
 			break
 		}
 		// 拼接一个消息
-
-		sendata, sendlen := msg.WriteBinary()
+		sendlen := int(msg.GetTotalLength())
+		sendata := msg.GetBuffer()[:sendlen]
 		err := this.sendBuffer.Write(sendata)
 		if err != nil {
 			this.Error("[TCPConn.joinMsgByFunc] "+
@@ -412,9 +424,6 @@ func (this *TCPConn) recvThread() {
 	if this.recvBuffer.TotalSize() == 0 {
 		return
 	}
-	// 消息缓冲
-	msgReader := msg.NewMessageBinaryReader(this.recvBuffer)
-
 	for true {
 		if this.state != TCPCONNSTATE_LINKED {
 			return
@@ -438,10 +447,11 @@ func (this *TCPConn) recvThread() {
 			}
 		}
 		// 循环读取当前缓冲区中的所有消息
-		err = msgReader.RangeMsgBinary(func(msgbinary *msg.MessageBinary) {
-			// 解析消息
-			this.recvmsgchan <- msgbinary
-		})
+		err = this.codec.RangeMsgBinary(this.recvBuffer,
+			func(msgbinary *msg.MessageBinary) {
+				// 解析消息
+				this.recvmsgchan <- msgbinary
+			})
 		if err != nil {
 			this.Error("[TCPConn.recvThread] "+
 				"RangeMsgBinary读消息失败，断开连接 Err[%s]", err.Error())

@@ -60,6 +60,8 @@ type ChanConn struct {
 
 	// 接收等待通道
 	recvmsgchan chan *msg.MessageBinary
+	// 消息编解码器
+	codec msg.IMsgCodec
 }
 
 // 初始化一个ChanConn对象
@@ -78,6 +80,15 @@ func (this *ChanConn) Init(sendChan chan *msg.MessageBinary,
 
 	// 接收
 	this.recvmsgchan = make(chan *msg.MessageBinary, len(recvChan))
+	this.codec = &msg.DefaultCodec{}
+}
+
+func (this *ChanConn) SetMsgCodec(codec msg.IMsgCodec) {
+	this.Debug("ChanConn can't SetMsgCodec")
+}
+
+func (this *ChanConn) GetMsgCodec() msg.IMsgCodec {
+	return nil
 }
 
 func (this *ChanConn) SetBanAutoResize(value bool) {
@@ -146,7 +157,7 @@ func (this *ChanConn) SendBytes(
 		this.Warn("[ChanConn.SendBytes] 连接已失效，取消发送")
 		return ErrCloseed
 	}
-	msgbinary := msg.GetByBytes(cmdid, protodata)
+	msgbinary := msg.EncodeBytes(cmdid, protodata)
 
 	return this.SendMessageBinary(msgbinary)
 }

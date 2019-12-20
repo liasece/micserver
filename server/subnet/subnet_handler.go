@@ -29,7 +29,7 @@ func (this *SubnetManager) OnRecvTCPMsg(conn *connect.Server,
 		this.subnetHook.OnRecvSubnetMsg(conn, msgbinary)
 	} else {
 		this.Syslog("this.SubnetCallback.fonRecvMsg == nil MsgID[%d]",
-			msgbinary.CmdID)
+			msgbinary.GetMsgID())
 	}
 }
 
@@ -40,7 +40,7 @@ func (this *SubnetManager) getRecvTCPMsgParseChan(conn *connect.Server,
 	if conn.ModuleInfo != nil {
 		chankey = conn.ModuleInfo.ModuleID
 	}
-	switch msgbinary.CmdID {
+	switch msgbinary.GetMsgID() {
 	case servercomm.SForwardToClientID:
 		layerMsg := &servercomm.SForwardToClient{}
 		layerMsg.ReadBinary(msgbinary.ProtoData)
@@ -79,14 +79,14 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 		}
 	}
 	// this.Syslog("[SubnetManager.msgParseTCPConn] 收到消息 %s",
-	// 	servercomm.MsgIdToString(msgbin.CmdID))
-	switch msgbin.CmdID {
+	// 	servercomm.MsgIdToString(msgbin.GetMsgID()))
+	switch msgbin.GetMsgID() {
 	case servercomm.STestCommandID:
 		recvmsg := &servercomm.STestCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		this.Syslog("[SubnetManager.msgParseTCPConn] "+
-			"Server 收到测试消息 CmdLen[%d] No.[%d]",
-			msgbin.CmdLen, recvmsg.Testno)
+			"Server 收到测试消息 MsgLen[%d] No.[%d]",
+			msgbin.GetTotalLength(), recvmsg.Testno)
 		return
 	case servercomm.STimeTickCommandID:
 		recvmsg := &servercomm.STimeTickCommand{}
