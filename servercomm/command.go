@@ -87,6 +87,12 @@ type SUpdateSession struct {
 	Session      map[string]string
 }
 
+type SReqCloseConnect struct {
+	FromModuleID string
+	ToModuleID   string
+	ClientConnID string
+}
+
 type SForwardToModule struct {
 	FromModuleID string
 	ToModuleID   string

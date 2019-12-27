@@ -22,16 +22,14 @@ const (
 	SessionKeyUUID SessionKey = "_s0_uuid"
 )
 
-// 用于提供给 session 向其他模块发送消息的接口
-type ISInner_SendModuleMsg interface {
+// 用于提供给 session 向客户端发送消息或者执行某些操作的接口
+// 一般情况下，提供 base.Module 即可
+type IModuleSessionOptions interface {
 	GetModuleID() string
 	SInner_SendModuleMsg(gate string, msg msg.MsgStruct)
-}
-
-// 用于提供给 session 向客户端发送消息的接口
-type ISInner_SendClientMsg interface {
 	SInner_SendClientMsg(gateid string, connectid string, msgid uint16,
 		data []byte)
+	SInner_CloseSessionConnect(gateid string, connectid string)
 }
 
 // 从一个Map结构中实例化一个session
@@ -194,17 +192,8 @@ func (this *Session) getServerSyncMsg() *servercomm.SUpdateSession {
 	return smsg
 }
 
-// 同步 Session 到 目标模块
-func (this *Session) SyncToModule(mod ISInner_SendModuleMsg,
-	targetServer string) {
-	msg := this.getServerSyncMsg()
-	msg.FromModuleID = mod.GetModuleID()
-	msg.ToModuleID = targetServer
-	mod.SInner_SendModuleMsg(targetServer, msg)
-}
-
 // 同步 Session 到 所有已绑定的模块
-func (this *Session) SyncToBindedModule(mod ISInner_SendModuleMsg) {
+func (this *Session) SyncToBindedModule(mod IModuleSessionOptions) {
 	msg := this.getServerSyncMsg()
 	msg.FromModuleID = mod.GetModuleID()
 	msg.ToModuleID = "*binded*"
@@ -216,10 +205,16 @@ func (this *Session) SyncToBindedModule(mod ISInner_SendModuleMsg) {
 	})
 }
 
-func (this *Session) SendMsg(mod ISInner_SendClientMsg, gatemoduletype string,
+func (this *Session) SendMsg(mod IModuleSessionOptions, gatemoduletype string,
 	msgid uint16, data []byte) {
 	mod.SInner_SendClientMsg(this.GetBind(gatemoduletype),
 		this.GetConnectID(), msgid, data)
+}
+
+func (this *Session) CloseSessionConnect(mod IModuleSessionOptions,
+	gatemoduletype string) {
+	mod.SInner_CloseSessionConnect(this.GetBind(gatemoduletype),
+		this.GetConnectID())
 }
 
 func (this *Session) ToMap() map[string]string {

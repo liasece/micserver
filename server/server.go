@@ -118,6 +118,46 @@ func (this *Server) SendModuleMsg(
 	}
 }
 
+// 断开一个客户端连接,仅框架内使用
+func (this *Server) SInner_CloseSessionConnect(gateid string, connectid string) {
+	this.ReqCloseConnect(gateid, connectid)
+}
+
+func (this *Server) ReqCloseConnect(gateid string, connectid string) {
+	if this.moduleid == gateid {
+		this.doCloseConnect(connectid)
+	} else {
+		// 向gate请求
+		conn := this.subnetManager.GetServer(gateid)
+		if conn != nil {
+			msg := &servercomm.SReqCloseConnect{
+				FromModuleID: this.moduleid,
+				ToModuleID:   gateid,
+				ClientConnID: connectid,
+			}
+			conn.SendCmd(msg)
+		} else {
+			this.Error("Server.ReqCloseConnect "+
+				"target module does not exist GateID[%s]",
+				gateid)
+		}
+	}
+}
+
+func (this *Server) doCloseConnect(connectid string) {
+	if this.gateBase == nil {
+		this.Error("Server.doCloseConnect this module isn't gate")
+		return
+	}
+	client := this.gateBase.GetClient(connectid)
+	if client == nil {
+		this.Error("Server.doCloseConnect client does not exist ConnectID[%s]",
+			connectid)
+		return
+	}
+	client.Terminate()
+}
+
 // 发送一个服务器消息到另一个服务器,仅框架内使用
 func (this *Server) SInner_SendModuleMsg(
 	to string, msgstr msg.MsgStruct) {

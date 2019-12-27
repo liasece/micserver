@@ -19,14 +19,15 @@ const (
 	SNotifyAllInfoID          = 45
 	SNotifySafelyQuitID       = 46
 	SUpdateSessionID          = 47
-	SForwardToModuleID        = 48
-	ModuleMessageID           = 49
-	SForwardToClientID        = 50
-	SForwardFromGateID        = 51
-	ClientMessageID           = 52
-	SROCRequestID             = 53
-	SROCResponseID            = 54
-	SROCBindID                = 55
+	SReqCloseConnectID        = 48
+	SForwardToModuleID        = 49
+	ModuleMessageID           = 50
+	SForwardToClientID        = 51
+	SForwardFromGateID        = 52
+	ClientMessageID           = 53
+	SROCRequestID             = 54
+	SROCResponseID            = 55
+	SROCBindID                = 56
 )
 
 const (
@@ -42,6 +43,7 @@ const (
 	SNotifyAllInfoName          = "servercomm.SNotifyAllInfo"
 	SNotifySafelyQuitName       = "servercomm.SNotifySafelyQuit"
 	SUpdateSessionName          = "servercomm.SUpdateSession"
+	SReqCloseConnectName        = "servercomm.SReqCloseConnect"
 	SForwardToModuleName        = "servercomm.SForwardToModule"
 	ModuleMessageName           = "servercomm.ModuleMessage"
 	SForwardToClientName        = "servercomm.SForwardToClient"
@@ -98,6 +100,10 @@ func (this *SNotifySafelyQuit) WriteBinary(data []byte) int {
 
 func (this *SUpdateSession) WriteBinary(data []byte) int {
 	return WriteMsgSUpdateSessionByObj(data, this)
+}
+
+func (this *SReqCloseConnect) WriteBinary(data []byte) int {
+	return WriteMsgSReqCloseConnectByObj(data, this)
 }
 
 func (this *SForwardToModule) WriteBinary(data []byte) int {
@@ -192,6 +198,11 @@ func (this *SUpdateSession) ReadBinary(data []byte) int {
 	return size
 }
 
+func (this *SReqCloseConnect) ReadBinary(data []byte) int {
+	size, _ := ReadMsgSReqCloseConnectByBytes(data, this)
+	return size
+}
+
 func (this *SForwardToModule) ReadBinary(data []byte) int {
 	size, _ := ReadMsgSForwardToModuleByBytes(data, this)
 	return size
@@ -258,6 +269,8 @@ func MsgIdToString(id uint16) string {
 		return SNotifySafelyQuitName
 	case SUpdateSessionID:
 		return SUpdateSessionName
+	case SReqCloseConnectID:
+		return SReqCloseConnectName
 	case SForwardToModuleID:
 		return SForwardToModuleName
 	case ModuleMessageID:
@@ -305,6 +318,8 @@ func StringToMsgId(msgname string) uint16 {
 		return SNotifySafelyQuitID
 	case SUpdateSessionName:
 		return SUpdateSessionID
+	case SReqCloseConnectName:
+		return SReqCloseConnectID
 	case SForwardToModuleName:
 		return SForwardToModuleID
 	case ModuleMessageName:
@@ -372,6 +387,10 @@ func (this *SNotifySafelyQuit) GetMsgId() uint16 {
 
 func (this *SUpdateSession) GetMsgId() uint16 {
 	return SUpdateSessionID
+}
+
+func (this *SReqCloseConnect) GetMsgId() uint16 {
+	return SReqCloseConnectID
 }
 
 func (this *SForwardToModule) GetMsgId() uint16 {
@@ -454,6 +473,10 @@ func (this *SUpdateSession) GetMsgName() string {
 	return SUpdateSessionName
 }
 
+func (this *SReqCloseConnect) GetMsgName() string {
+	return SReqCloseConnectName
+}
+
 func (this *SForwardToModule) GetMsgName() string {
 	return SForwardToModuleName
 }
@@ -532,6 +555,10 @@ func (this *SNotifySafelyQuit) GetSize() int {
 
 func (this *SUpdateSession) GetSize() int {
 	return GetSizeSUpdateSession(this)
+}
+
+func (this *SReqCloseConnect) GetSize() int {
+	return GetSizeSReqCloseConnect(this)
 }
 
 func (this *SForwardToModule) GetSize() int {
@@ -622,6 +649,11 @@ func (this *SNotifySafelyQuit) GetJson() string {
 }
 
 func (this *SUpdateSession) GetJson() string {
+	json, _ := json.Marshal(this)
+	return string(json)
+}
+
+func (this *SReqCloseConnect) GetJson() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
@@ -1550,6 +1582,72 @@ func GetSizeSUpdateSession(obj *SUpdateSession) int {
 
 	return 4 + 4 + len(obj.FromModuleID) + 4 + len(obj.ToModuleID) + 4 + len(obj.ClientConnID) + 4 + len(obj.SessionUUID) +
 		4 + sizerelystring5
+}
+
+func ReadMsgSReqCloseConnectByBytes(indata []byte, obj *SReqCloseConnect) (int, *SReqCloseConnect) {
+	offset := 0
+	if len(indata) < 4 {
+		return 0, nil
+	}
+	objsize := int(binary.LittleEndian.Uint32(indata))
+	offset += 4
+	if objsize == 0 {
+		return 4, nil
+	}
+	if obj == nil {
+		obj = &SReqCloseConnect{}
+	}
+	if offset+objsize > len(indata) {
+		return offset, obj
+	}
+	endpos := offset + objsize
+	data := indata[offset : offset+objsize]
+	offset = 0
+	data__len := len(data)
+	if offset+4+len(obj.FromModuleID) > data__len {
+		return endpos, obj
+	}
+	obj.FromModuleID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.FromModuleID)
+	if offset+4+len(obj.ToModuleID) > data__len {
+		return endpos, obj
+	}
+	obj.ToModuleID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.ToModuleID)
+	if offset+4+len(obj.ClientConnID) > data__len {
+		return endpos, obj
+	}
+	obj.ClientConnID = readBinaryString(data[offset:])
+	offset += 4 + len(obj.ClientConnID)
+
+	return endpos, obj
+}
+
+func WriteMsgSReqCloseConnectByObj(data []byte, obj *SReqCloseConnect) int {
+	if obj == nil {
+		binary.LittleEndian.PutUint32(data[0:4], 0)
+		return 4
+	}
+	objsize := obj.GetSize() - 4
+	offset := 0
+	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
+	offset += 4
+	writeBinaryString(data[offset:], obj.FromModuleID)
+	offset += 4 + len(obj.FromModuleID)
+	writeBinaryString(data[offset:], obj.ToModuleID)
+	offset += 4 + len(obj.ToModuleID)
+	writeBinaryString(data[offset:], obj.ClientConnID)
+	offset += 4 + len(obj.ClientConnID)
+
+	return offset
+}
+
+func GetSizeSReqCloseConnect(obj *SReqCloseConnect) int {
+	if obj == nil {
+		return 4
+	}
+
+	return 4 + 4 + len(obj.FromModuleID) + 4 + len(obj.ToModuleID) + 4 + len(obj.ClientConnID)
 }
 
 func ReadMsgSForwardToModuleByBytes(indata []byte, obj *SForwardToModule) (int, *SForwardToModule) {

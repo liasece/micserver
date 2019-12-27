@@ -56,10 +56,10 @@ func (this *serverCmdHandler) onForwardToClient(smsg *servercomm.SForwardToClien
 		smsg.ToClientID, smsg.MsgID, smsg.Data)
 	if err != nil {
 		if err == ErrTargetClientDontExist {
-			this.server.Debug("this.doSendBytesToClient Err:%s ServerMsg:%+v",
+			this.server.Debug("serverCmdHandler.onForwardToClient Err:%s ServerMsg:%+v",
 				err.Error(), smsg)
 		} else {
-			this.server.Error("this.doSendBytesToClient Err:%s ServerMsg:%+v",
+			this.server.Error("serverCmdHandler.onForwardToClient Err:%s ServerMsg:%+v",
 				err.Error(), smsg)
 		}
 	}
@@ -102,6 +102,14 @@ func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 	}
 }
 
+// 请求关闭客户端连接
+func (this *serverCmdHandler) onReqCloseConnect(smsg *servercomm.SReqCloseConnect) {
+	this.server.Syslog("serverCmdHandler.onReqCloseConnect "+
+		"request close client connect FromModule[%s] ToModuleID[%s] ClientID[%s]",
+		smsg.FromModuleID, smsg.ToModuleID, smsg.ClientConnID)
+	this.server.ReqCloseConnect(smsg.ToModuleID, smsg.ClientConnID)
+}
+
 // 当一个服务器成功加入网络时调用
 func (this *serverCmdHandler) OnServerJoinSubnet(server *connect.Server) {
 	this.server.onServerJoinSubnet(server)
@@ -140,6 +148,11 @@ func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 		layerMsg := &servercomm.SUpdateSession{}
 		layerMsg.ReadBinary(msgbinary.ProtoData)
 		this.onUpdateSession(layerMsg)
+	case servercomm.SReqCloseConnectID:
+		// 关闭客户端连接
+		layerMsg := &servercomm.SReqCloseConnect{}
+		layerMsg.ReadBinary(msgbinary.ProtoData)
+		this.onReqCloseConnect(layerMsg)
 	case servercomm.SStartMyNotifyCommandID:
 	case servercomm.SROCBindID:
 		// ROC 对象绑定
