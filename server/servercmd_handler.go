@@ -56,11 +56,15 @@ func (this *serverCmdHandler) onForwardToClient(smsg *servercomm.SForwardToClien
 		smsg.ToClientID, smsg.MsgID, smsg.Data)
 	if err != nil {
 		if err == ErrTargetClientDontExist {
-			this.server.Debug("serverCmdHandler.onForwardToClient Err:%s ServerMsg:%+v",
-				err.Error(), smsg)
+			this.server.Debug("serverCmdHandler.onForwardToClient Err[%s] "+
+				"FromModuleID[%s] ToGateID[%s] ToClientID[%s] MsgID[%d] Data[%X]",
+				err.Error(), smsg.FromModuleID, smsg.ToGateID,
+				smsg.ToClientID, smsg.MsgID, smsg.Data)
 		} else {
-			this.server.Error("serverCmdHandler.onForwardToClient Err:%s ServerMsg:%+v",
-				err.Error(), smsg)
+			this.server.Error("serverCmdHandler.onForwardToClient Err[%s] "+
+				"FromModuleID[%s] ToGateID[%s] ToClientID[%s] MsgID[%d] Data[%X]",
+				err.Error(), smsg.FromModuleID, smsg.ToGateID,
+				smsg.ToClientID, smsg.MsgID, smsg.Data)
 		}
 	}
 }
