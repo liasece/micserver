@@ -356,7 +356,7 @@ func (this *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 	} else {
 		secn, err := this.work.Write(bs)
 		if err != nil {
-			this.Warn("[TCPConn.sendMsgList] "+
+			this.Debug("[TCPConn.sendMsgList] "+
 				"缓冲区发送消息异常 Err[%s]",
 				err.Error())
 		} else {
