@@ -7,8 +7,7 @@ import (
 	"net"
 )
 
-const mClientPoolGroupSum = 10
-
+// 客户端连接池
 type ClientPool struct {
 	*log.Logger
 	allSockets pool.MapPool // 所有连接
@@ -20,6 +19,7 @@ func (this *ClientPool) Init() {
 	this.allSockets.Init(mClientPoolGroupSum)
 }
 
+// 设置客户端连接池的Logger
 func (this *ClientPool) SetLogger(l *log.Logger) {
 	this.Logger = l
 }
@@ -34,7 +34,7 @@ func (this *ClientPool) NewTCPClient(conn net.Conn,
 	return client, nil
 }
 
-// 加载或存储
+// 加载或存储一个客户端连接
 func (this *ClientPool) LoadOrStore(k string,
 	v *Client) (*Client, bool) {
 	vi, isLoad := this.allSockets.LoadOrStore(k, v)
@@ -42,7 +42,7 @@ func (this *ClientPool) LoadOrStore(k string,
 	return res, isLoad
 }
 
-// 根据连接的 TmpID 获取一个连接
+// 根据连接的 TmpID 获取连接
 func (this *ClientPool) Get(tempid string) *Client {
 	if vi, ok := this.allSockets.Load(tempid); ok {
 		return vi.(*Client)
@@ -50,7 +50,7 @@ func (this *ClientPool) Get(tempid string) *Client {
 	return nil
 }
 
-// 获取当前连接数量
+// 当前连接池中的连接数量
 func (this *ClientPool) Len() uint32 {
 	if this.linkSum < 0 {
 		return 0
@@ -58,7 +58,7 @@ func (this *ClientPool) Len() uint32 {
 	return uint32(this.linkSum)
 }
 
-// 删除一个连接
+// 根据连接的 TmpID 从连接池移除一个连接
 func (this *ClientPool) remove(tmpid string) {
 	if _, ok := this.allSockets.Load(tmpid); !ok {
 		return
@@ -68,7 +68,7 @@ func (this *ClientPool) remove(tmpid string) {
 	this.linkSum--
 }
 
-// 增加一个连接
+// 增加一个连接到连接池中
 func (this *ClientPool) Add(client *Client) {
 	tmpid := client.GetTempID()
 	_, isLoad := this.allSockets.LoadOrStore(tmpid, client)
@@ -79,20 +79,21 @@ func (this *ClientPool) Add(client *Client) {
 	}
 }
 
-// 遍历连接池中的所有连接
+// 遍历连接池中的所有连接，如果 cb() 返回 false 则中止遍历
 func (this *ClientPool) Range(
-	callback func(*Client) bool) {
+	cb func(*Client) bool) {
 	this.allSockets.Range(func(tk, tv interface{}) bool {
 		if tk == nil || tv == nil {
 			return true
 		}
-		if !callback(tv.(*Client)) {
+		if !cb(tv.(*Client)) {
 			return false
 		}
 		return true
 	})
 }
 
+// 根据连接的 TmpID 从连接池移除一个连接
 func (this *ClientPool) Remove(tempid string) {
 	if vi, ok := this.allSockets.Load(tempid); ok {
 		client := vi.(*Client)
@@ -107,7 +108,7 @@ func (this *ClientPool) Remove(tempid string) {
 	}
 }
 
-// 随机获取指定类型的一个连接
+// 随机获取连接池中的一个连接
 func (this *ClientPool) GetRandom() *Client {
 	tasklist := make([]string, 0)
 	this.Range(func(client *Client) bool {

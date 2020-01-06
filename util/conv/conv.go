@@ -97,12 +97,24 @@ func MustInterfaceSliceToInt64Slice(vsi []interface{}) []int64 {
 	return res
 }
 
+// []interface{} -->> []string
+func MustInterfaceSliceToStringSlice(vsi []interface{}) []string {
+	if vsi == nil {
+		return nil
+	}
+	res := make([]string, len(vsi))
+	for i, vi := range vsi {
+		res[i] = MustInterfaceToString(vi)
+	}
+	return res
+}
+
 // interface{} -->> []int64
 func MustInterfaceToInt64Slice(vi interface{}) []int64 {
 	switch vi.(type) {
 	case []interface{}:
 		return MustInterfaceSliceToInt64Slice(vi.([]interface{}))
-	case int64:
+	case []int64:
 		return vi.([]int64)
 	case []int32:
 		slice := vi.([]int32)
@@ -153,6 +165,66 @@ func MustInterfaceToInt64Slice(vi interface{}) []int64 {
 			res[i] = MustInterfaceToInt64(v)
 		}
 		return res
+	}
+	return nil
+}
+
+// interface{} -->> []string
+func MustInterfaceToStringSlice(vi interface{}) []string {
+	switch vi.(type) {
+	case []interface{}:
+		return MustInterfaceSliceToStringSlice(vi.([]interface{}))
+	case []int64:
+		slice := vi.([]int64)
+		res := make([]string, len(slice))
+		for i, v := range slice {
+			res[i] = MustInterfaceToString(v)
+		}
+		return res
+	case []int32:
+		slice := vi.([]int32)
+		res := make([]string, len(slice))
+		for i, v := range slice {
+			res[i] = MustInterfaceToString(v)
+		}
+		return res
+	case []uint64:
+		slice := vi.([]uint64)
+		res := make([]string, len(slice))
+		for i, v := range slice {
+			res[i] = MustInterfaceToString(v)
+		}
+		return res
+	case []uint32:
+		slice := vi.([]uint32)
+		res := make([]string, len(slice))
+		for i, v := range slice {
+			res[i] = MustInterfaceToString(v)
+		}
+		return res
+	case []int:
+		slice := vi.([]int)
+		res := make([]string, len(slice))
+		for i, v := range slice {
+			res[i] = MustInterfaceToString(v)
+		}
+		return res
+	case []float32:
+		slice := vi.([]float32)
+		res := make([]string, len(slice))
+		for i, v := range slice {
+			res[i] = MustInterfaceToString(v)
+		}
+		return res
+	case []float64:
+		slice := vi.([]float64)
+		res := make([]string, len(slice))
+		for i, v := range slice {
+			res[i] = MustInterfaceToString(v)
+		}
+		return res
+	case []string:
+		return vi.([]string)
 	}
 	return nil
 }

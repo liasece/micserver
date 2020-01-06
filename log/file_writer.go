@@ -12,6 +12,7 @@ import (
 
 var pathVariableTable map[byte]func(*time.Time) int
 
+// 文件输出器，将日志记录输出到文件中
 type FileWriter struct {
 	filebasename  string
 	pathFmt       string
@@ -22,18 +23,22 @@ type FileWriter struct {
 	Redirecterr   bool // 是否重定向错误信息到日志文件
 }
 
+// 构造一个文件输出器
 func NewFileWriter() *FileWriter {
 	return &FileWriter{}
 }
 
+// 初始化文件输出器
 func (w *FileWriter) Init() error {
 	return w.Rotate()
 }
 
+// 获取输出器类型，返回文件输出器类型 writerTypeFile
 func (w *FileWriter) GetType() writerType {
 	return writerTypeFile
 }
 
+// 设置文件路径
 func (w *FileWriter) SetPathPattern(filebasename string, pattern string) error {
 	n := 0
 	for _, c := range pattern {
@@ -74,6 +79,7 @@ func (w *FileWriter) SetPathPattern(filebasename string, pattern string) error {
 	return nil
 }
 
+// 写入一条日志记录
 func (w *FileWriter) Write(r *Record) error {
 	if w.fileBufWriter == nil {
 		return errors.New("no opened file")
@@ -84,15 +90,18 @@ func (w *FileWriter) Write(r *Record) error {
 	return nil
 }
 
+// 尝试转储文件
 func (w *FileWriter) Rotate() error {
 	now := time.Now()
 	return w.doRotate(&now)
 }
 
+// 尝试小时转储
 func (w *FileWriter) RotateByTime(t *time.Time) error {
 	return w.doRotate(t)
 }
 
+// 尝试转储文件，如果不需要进行转储，返回 nil
 func (w *FileWriter) doRotate(t *time.Time) error {
 	v := 0
 	rotate := false
@@ -162,6 +171,7 @@ func (w *FileWriter) doRotate(t *time.Time) error {
 	return nil
 }
 
+// 将文件缓冲区中的内容 Flush
 func (w *FileWriter) Flush() error {
 	if w.fileBufWriter != nil {
 		return w.fileBufWriter.Flush()
@@ -198,6 +208,7 @@ func convertPatternToFmt(pattern []byte) string {
 	return string(pattern)
 }
 
+// 初始化获取指定时间元素的函数列表等
 func init() {
 	pathVariableTable = make(map[byte]func(*time.Time) int, 5)
 	pathVariableTable['Y'] = getYear

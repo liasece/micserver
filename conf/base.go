@@ -4,8 +4,11 @@ import (
 	"github.com/liasece/micserver/util/conv"
 )
 
+// 配置由 encoding/json 读入为 map[string]interface{} 类型的结构。
+// 不可写，所以不对外提供写接口
 type BaseConfig map[string]interface{}
 
+// 获取一个空的 BaseConfig 结构
 func NewBaseConfig() *BaseConfig {
 	res := make(BaseConfig)
 	return &res
@@ -27,15 +30,7 @@ func (this *BaseConfig) exist(key ConfigKey) bool {
 	return ok
 }
 
-func (this *BaseConfig) CopyFrom(src *BaseConfig) {
-	if this == nil {
-		return
-	}
-	for k, v := range *src {
-		this.set(ConfigKey(k), v)
-	}
-}
-
+// 判断键是否存在
 func (this *BaseConfig) Exist(key ConfigKey) bool {
 	if this == nil {
 		return false
@@ -43,6 +38,7 @@ func (this *BaseConfig) Exist(key ConfigKey) bool {
 	return this.exist(key)
 }
 
+// 获取指定键的值
 func (this *BaseConfig) Get(key ConfigKey) interface{} {
 	if this == nil {
 		return nil
@@ -50,13 +46,7 @@ func (this *BaseConfig) Get(key ConfigKey) interface{} {
 	return this.get(key)
 }
 
-func (this *BaseConfig) Set(key ConfigKey, v interface{}) {
-	if this == nil {
-		return
-	}
-	this.set(key, v)
-}
-
+// 获取指定键的bool类型值
 func (this *BaseConfig) GetBool(key ConfigKey) bool {
 	if this == nil {
 		return false
@@ -68,6 +58,7 @@ func (this *BaseConfig) GetBool(key ConfigKey) bool {
 	return conv.MustInterfaceToBool(v)
 }
 
+// 获取指定键的 string 类型值
 func (this *BaseConfig) GetString(key ConfigKey) string {
 	if this == nil {
 		return ""
@@ -79,6 +70,7 @@ func (this *BaseConfig) GetString(key ConfigKey) string {
 	return conv.MustInterfaceToString(v)
 }
 
+// 获取指定键的 int64 类型值
 func (this *BaseConfig) GetInt64(key ConfigKey) int64 {
 	if this == nil {
 		return 0
@@ -90,6 +82,7 @@ func (this *BaseConfig) GetInt64(key ConfigKey) int64 {
 	return conv.MustInterfaceToInt64(v)
 }
 
+// 获取指定键的 []int64 类型值
 func (this *BaseConfig) GetInt64Slice(key ConfigKey) []int64 {
 	if this == nil {
 		return nil
@@ -99,4 +92,16 @@ func (this *BaseConfig) GetInt64Slice(key ConfigKey) []int64 {
 		return nil
 	}
 	return conv.MustInterfaceToInt64Slice(v)
+}
+
+// 获取指定键的 []string 类型值
+func (this *BaseConfig) GetStringSlice(key ConfigKey) []string {
+	if this == nil {
+		return nil
+	}
+	v := this.get(key)
+	if v == nil {
+		return nil
+	}
+	return conv.MustInterfaceToStringSlice(v)
 }

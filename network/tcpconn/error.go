@@ -1,13 +1,12 @@
 package tcpconn
 
-type TCPConnError string
+import (
+	"errors"
+)
 
-func (this TCPConnError) Error() string {
-	return string(this)
-}
-
-const (
-	ErrSendNilData TCPConnError = "send nil data"
-	ErrCloseed     TCPConnError = "conn has been closed"
-	ErrBufferFull  TCPConnError = "buffer full"
+// tcp 连接的错误
+var (
+	ErrSendNilData = errors.New("send nil data")
+	ErrCloseed     = errors.New("conn has been closed")
+	ErrBufferFull  = errors.New("buffer full")
 )

@@ -13,6 +13,7 @@ type MsgStruct interface {
 	GetJson() string
 }
 
+// 消息编解码器
 type IMsgCodec interface {
 	RangeMsgBinary(buf *buffer.IOBuffer, cb func(*MessageBinary)) error
 	EncodeBytes(cmdid uint16, protodata []byte) *MessageBinary

@@ -1,3 +1,6 @@
+/*
+每个 micserver 进程会持有一份 ROC 缓存单例，维护了所有已知的ROC对象所处的位置
+*/
 package roc
 
 import (
@@ -5,6 +8,7 @@ import (
 	"sync"
 )
 
+// ROC缓存分组数量
 const (
 	CACHE_POOL_GROUP_SUM = 8
 )
@@ -16,6 +20,7 @@ type catchServerInfo struct {
 type serverInfoMap map[string]*catchServerInfo
 type objIDToServerMap map[string]*catchServerInfo
 
+// ROC缓存管理器
 type Cache struct {
 	catchServer serverInfoMap
 	catchType   map[ROCObjType]objIDToServerMap
@@ -24,6 +29,7 @@ type Cache struct {
 
 var _gCache Cache
 
+// 获取ROC缓存
 func GetCache() *Cache {
 	return &_gCache
 }

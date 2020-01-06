@@ -7,7 +7,7 @@ import (
 	"syscall"
 )
 
-// 监听系统消息
+// 监听系统信号，对 Ctrl+c 等命令做出反应，通知App阻塞处执行退出逻辑
 func (this *App) SignalListen() {
 	c := make(chan os.Signal, 10)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGQUIT)

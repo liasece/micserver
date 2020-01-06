@@ -5,6 +5,7 @@ import (
 	"github.com/liasece/micserver/network/baseio"
 )
 
+// 模块间/客户端 连接都实现了该接口
 type IConnection interface {
 	IsAlive() bool
 	Shutdown() error
@@ -21,6 +22,7 @@ type IConnection interface {
 	SetMsgCodec(msg.IMsgCodec)
 }
 
+// 连接事件钩子需要满足的接口
 type ConnectHook interface {
 	OnRecvConnectMessage(*Client, *msg.MessageBinary)
 	OnConnectClose(*Client)

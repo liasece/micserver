@@ -7,9 +7,14 @@
  *
  */
 
+/*
+micserver 中的管道连接，底层默认将其应用于在同一个 App 下的模块间的连接，
+可以减少消息编解码CPU占用，提高同一APP下的Module交换消息的效率。
+*/
 package chanconn
 
 import (
+	"errors"
 	"fmt"
 	"sync/atomic"
 
@@ -36,18 +41,14 @@ const (
 	TCPCONNSTATE_CLOSED = 3
 )
 
-type ChanConnError string
-
-func (this ChanConnError) Error() string {
-	return string(this)
-}
-
-const (
-	ErrSendNilData ChanConnError = "send nil data"
-	ErrCloseed     ChanConnError = "conn has been closed"
-	ErrBufferFull  ChanConnError = "buffer full"
+// chan 连接的错误类型
+var (
+	ErrSendNilData = errors.New("send nil data")
+	ErrCloseed     = errors.New("conn has been closed")
+	ErrBufferFull  = errors.New("buffer full")
 )
 
+// chan 连接
 type ChanConn struct {
 	*log.Logger
 
@@ -83,30 +84,43 @@ func (this *ChanConn) Init(sendChan chan *msg.MessageBinary,
 	this.codec = &msg.DefaultCodec{}
 }
 
+// chan 中使用的是默认消息编解码器。
+// 在 chan 连接中，无法设置消息编解码器，因为其实根本不需要进行消息编解码，
+// 为了让 chan 连接实现 IConnect 接口而存在该方法。
 func (this *ChanConn) SetMsgCodec(codec msg.IMsgCodec) {
 	this.Debug("ChanConn can't SetMsgCodec")
 }
 
+// 该方法将会返回默认消息编解码器。
+// 在 chan 连接中，无法设置消息编解码器，因为其实根本不需要进行消息编解码，
+// 为了让 chan 连接实现 IConnect 接口而存在该方法。
 func (this *ChanConn) GetMsgCodec() msg.IMsgCodec {
 	return this.codec
 }
 
+// 在 chan 连接中，无法设置禁止缓冲区自动扩容。
+// 在 chan 连接中，无法设置消息编解码器，因为其实根本不需要进行消息编解码，
+// 为了让 chan 连接实现 IConnect 接口而存在该方法。
 func (this *ChanConn) SetBanAutoResize(value bool) {
 	this.Debug("ChanConn can't SetBanAutoResize")
 }
 
+// 设置连接的 Logger
 func (this *ChanConn) SetLogger(l *log.Logger) {
 	this.Logger = l
 }
 
+// 开始接收消息
 func (this *ChanConn) StartRecv() {
 	go this.recvThread()
 }
 
+// 获取消息接收 chan
 func (this *ChanConn) GetRecvMessageChannel() chan *msg.MessageBinary {
 	return this.recvmsgchan
 }
 
+// 连接是否存活
 func (this *ChanConn) IsAlive() bool {
 	if atomic.LoadInt32(&this.state) == TCPCONNSTATE_LINKED {
 		return true
@@ -114,10 +128,14 @@ func (this *ChanConn) IsAlive() bool {
 	return false
 }
 
+// 获取该连接的远程连接地址
 func (this *ChanConn) RemoteAddr() string {
-	return ""
+	return "(chan)"
 }
 
+// chan 中使用的是默认网络协议（chan通信）。
+// 在 chan 连接中，无法设置消息编解码器，因为其实根本不需要进行消息编解码，
+// 为了让 chan 连接实现 IConnect 接口而存在该方法。
 func (this *ChanConn) HookProtocal(p baseio.Protocal) {
 	this.Error("ChanConn not support HookProtocal")
 }
@@ -142,15 +160,21 @@ func (this *ChanConn) Shutdown() error {
 	return nil
 }
 
+// chan 中使用的是默认网络协议（chan通信），该消息返回空。
+// 在 chan 连接中，无法设置消息编解码器，因为其实根本不需要进行消息编解码，
+// 为了让 chan 连接实现 IConnect 接口而存在该方法。
 func (this *ChanConn) Read(toData []byte) (int, error) {
 	return 0, nil
 }
 
+// chan 中使用的是默认网络协议（chan通信），该消息返回空。
+// 在 chan 连接中，无法设置消息编解码器，因为其实根本不需要进行消息编解码，
+// 为了让 chan 连接实现 IConnect 接口而存在该方法。
 func (this *ChanConn) Write(data []byte) (int, error) {
 	return 0, nil
 }
 
-// 发送 Bytes
+// 发送消息 ID 及 Bytes 构成的消息
 func (this *ChanConn) SendBytes(
 	cmdid uint16, protodata []byte) error {
 	if this.state >= TCPCONNSTATE_HOLD {
@@ -162,7 +186,7 @@ func (this *ChanConn) SendBytes(
 	return this.SendMessageBinary(msgbinary)
 }
 
-// 发送 MsgBinary
+// 发送 MsgBinary 消息
 func (this *ChanConn) SendMessageBinary(
 	msgbinary *msg.MessageBinary) error {
 	defer func() {

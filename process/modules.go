@@ -1,3 +1,6 @@
+/*
+所有注册于本进程的 Module 都会维护在本单例中。
+*/
 package process
 
 import (
@@ -10,19 +13,13 @@ var (
 	_gModules sync.Map
 )
 
+// 增加一个本进程的 Module
 func AddModule(module base.IModule) {
 	_gModules.Store(module.GetModuleID(), module)
 }
 
+// 判断目标 Module 是否在本进程中
 func HasModule(moduleID string) bool {
-	res := false
-	_gModules.Range(func(ki, vi interface{}) bool {
-		k := ki.(string)
-		if k == moduleID {
-			res = true
-			return false
-		}
-		return true
-	})
-	return res
+	_, ok := _gModules.Load(moduleID)
+	return ok
 }

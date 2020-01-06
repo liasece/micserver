@@ -5,8 +5,10 @@ import (
 	"os"
 )
 
+// 一条日志记录
 type colorRecord Record
 
+// 获取该记录在控制台中携带颜色的格式化字符串
 func (r *colorRecord) String() string {
 	switch r.level {
 	case SYS:
@@ -35,14 +37,17 @@ func (r *colorRecord) String() string {
 	return ""
 }
 
+// 控制台输出器
 type ConsoleWriter struct {
 	color bool
 }
 
+// 构造一个控制台输出器
 func NewConsoleWriter() *ConsoleWriter {
 	return &ConsoleWriter{}
 }
 
+// 写入一条日志记录到控制台
 func (w *ConsoleWriter) Write(r *Record) error {
 	if w.color {
 		fmt.Fprint(os.Stdout, ((*colorRecord)(r)).String())
@@ -52,14 +57,17 @@ func (w *ConsoleWriter) Write(r *Record) error {
 	return nil
 }
 
+// 初始化控制台输出器
 func (w *ConsoleWriter) Init() error {
 	return nil
 }
 
+// 获取输出器的类型 返回控制台类型
 func (w *ConsoleWriter) GetType() writerType {
 	return writerTypeConsole
 }
 
+// 设置该输出器在控制台中是否携带颜色
 func (w *ConsoleWriter) SetColor(c bool) {
 	w.color = c
 }

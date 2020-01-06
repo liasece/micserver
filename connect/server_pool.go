@@ -12,18 +12,21 @@ import (
 	"github.com/liasece/micserver/util"
 )
 
+// 服务器连接池
 type ServerPool struct {
 	*log.Logger
 
 	allSockets sync.Map // 所有连接
-	linkSum    int32
+	linkSum    int
 	groupID    uint16
 }
 
+// 初始化服务器连接池
 func (this *ServerPool) Init(groupID uint16) {
 	this.groupID = groupID
 }
 
+// 使用 TCP 创建一个服务器连接
 func (this *ServerPool) NewTCPServer(sctype TServerSCType,
 	conn net.Conn, moduleid string,
 	onRecv func(*Server, *msg.MessageBinary),
@@ -40,6 +43,7 @@ func (this *ServerPool) NewTCPServer(sctype TServerSCType,
 	return tcptask
 }
 
+// 使用 chan 创建一个服务器连接
 func (this *ServerPool) NewChanServer(sctype TServerSCType,
 	sendChan chan *msg.MessageBinary, recvChan chan *msg.MessageBinary,
 	moduleid string, onRecv func(*Server, *msg.MessageBinary),
@@ -78,7 +82,7 @@ func (this *ServerPool) BroadcastByType(servertype string,
 	})
 }
 
-// 广播消息
+// 广播消息到本连接池中的所有连接
 func (this *ServerPool) BroadcastCmd(v msg.MsgStruct) {
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
@@ -88,7 +92,7 @@ func (this *ServerPool) BroadcastCmd(v msg.MsgStruct) {
 }
 
 // 获取指定类型负载最小的一个连接
-func (this *ServerPool) GetMinServer(servertype string) *Server {
+func (this *ServerPool) GetMinLoadServer(servertype string) *Server {
 	var jobnum uint32 = 0xFFFFFFFF
 	var res *Server
 	this.allSockets.Range(func(tkey interface{},
@@ -120,8 +124,8 @@ func (this *ServerPool) GetLatestVersionByType(servertype string) uint64 {
 	return latestVersion
 }
 
-// 获取指定类型负载最小的一个连接
-func (this *ServerPool) GetMinServerLatestVersion(
+// 获取指定类型服务器的最新版本负载最小的一个连接
+func (this *ServerPool) GetMinLoadServerLatestVersion(
 	servertype string) *Server {
 	var jobnum uint32 = 0xFFFFFFFF
 	var moduleid uint64 = 0
@@ -151,8 +155,7 @@ func (this *ServerPool) GetMinServerLatestVersion(
 }
 
 // 随机获取指定类型的一个连接
-func (this *ServerPool) GetRandomServer(
-	servertype string) *Server {
+func (this *ServerPool) GetRandomServer(servertype string) *Server {
 	tasklist := make([]string, 0)
 	this.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
@@ -178,69 +181,74 @@ func (this *ServerPool) GetRandomServer(
 }
 
 // 根据连接的 TmpID 获取一个连接
-func (this *ServerPool) GetServer(tempid string) *Server {
-	if tcptask, found := this.allSockets.Load(tempid); found {
+func (this *ServerPool) GetServer(tmpid string) *Server {
+	if tcptask, found := this.allSockets.Load(tmpid); found {
 		return tcptask.(*Server)
 	}
 	return nil
 }
 
-func (this *ServerPool) RemoveServer(tempid string) {
-	if tvalue, found := this.allSockets.Load(tempid); found {
+// 通过连接的 TmpID 从该连接池移除一个服务器连接
+func (this *ServerPool) RemoveServer(tmpid string) {
+	if tvalue, found := this.allSockets.Load(tmpid); found {
 		value := tvalue.(*Server)
 		// 关闭连接
 		value.Shutdown()
 		// 删除连接
-		this.remove(tempid)
+		this.remove(tmpid)
 		this.Syslog("[ServerPool] 断开连接 TmpID[%s] 当前连接数量"+
 			" LinkSum[%d] ModuleID[%s]",
-			tempid, this.ServerSum(), value.ModuleInfo.ModuleID)
+			tmpid, this.Len(), value.ModuleInfo.ModuleID)
 		return
 	}
 }
 
+// 在本连接池中新增一个服务器连接，并且指定该连接的 TmpID
 func (this *ServerPool) AddServer(connct *Server, tmpid string) {
-	connct.SetTempID(tmpid)
+	connct.setTempID(tmpid)
 	this.add(tmpid, connct)
 	this.Syslog("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
 		" LinkSum[%d] ModuleID[%s]",
-		connct.GetTempID(), this.ServerSum(), connct.ModuleInfo.ModuleID)
+		connct.GetTempID(), this.Len(), connct.ModuleInfo.ModuleID)
 }
 
+// 在本连接池中新增一个服务器连接
 func (this *ServerPool) AddServerAuto(connct *Server) {
 	this.add(connct.GetTempID(), connct)
 	this.Syslog("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
 		" LinkSum[%d] ModuleID[%s]",
-		connct.GetTempID(), this.ServerSum(), connct.ModuleInfo.ModuleID)
+		connct.GetTempID(), this.Len(), connct.ModuleInfo.ModuleID)
 }
 
-// 修改链接的 tempip
+// 修改链接的 TmpID ，目标 TmpID 不可已存在于该连接池，否则返回 error
 func (this *ServerPool) ChangeServerTempid(tcptask *Server,
-	newTempID string) error {
-	afterI, isLoad := this.allSockets.LoadOrStore(newTempID, tcptask)
+	newTmpID string) error {
+	afterI, isLoad := this.allSockets.LoadOrStore(newTmpID, tcptask)
 	if isLoad {
-		return fmt.Errorf("目标连接已存在:%s", newTempID)
+		return fmt.Errorf("目标连接已存在:%s", newTmpID)
 	} else {
 		after := afterI.(*Server)
 		oldTmpID := after.GetTempID()
 		// 修改连接内的唯一ID标识
-		after.SetTempID(newTempID)
+		after.setTempID(newTmpID)
 		// 删除旧ID的索引，注意，如果你的ID生成规则不是唯一的，这里会有并发问题
 		this.remove(oldTmpID)
 		this.linkSum++
-		this.Syslog("[ServerPool]修改连接tempid Old[%s] -->> New[%s]",
-			oldTmpID, newTempID)
+		this.Syslog("[ServerPool]修改连接tmpid Old[%s] -->> New[%s]",
+			oldTmpID, newTmpID)
 	}
 	return nil
 }
 
-func (this *ServerPool) ServerSum() uint32 {
+// 当前连接池的连接数量
+func (this *ServerPool) Len() int {
 	if this.linkSum < 0 {
 		return 0
 	}
-	return uint32(this.linkSum)
+	return this.linkSum
 }
 
+// 移除一个指定 TmpID 的连接
 func (this *ServerPool) remove(tmpid string) {
 	if _, ok := this.allSockets.Load(tmpid); !ok {
 		return
@@ -250,6 +258,7 @@ func (this *ServerPool) remove(tmpid string) {
 	this.linkSum--
 }
 
+// 增加一个服务器连接
 func (this *ServerPool) add(tmpid string, value *Server) {
 	_, isLoad := this.allSockets.LoadOrStore(tmpid, value)
 	if !isLoad {

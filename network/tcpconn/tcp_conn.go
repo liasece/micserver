@@ -7,6 +7,10 @@
  *
  */
 
+/*
+micserver 中的 TCP 连接管理，默认情况下，跨 App 的 Module 使用的便是 TCP 进行消息
+通信，常用的客户端连接的协议也是 TCP 协议。
+*/
 package tcpconn
 
 import (
@@ -40,6 +44,7 @@ const (
 	TCPCONNSTATE_CLOSED = 3
 )
 
+// TCP 连接
 type TCPConn struct {
 	*log.Logger
 	conn net.Conn
@@ -100,31 +105,38 @@ func (this *TCPConn) Init(conn net.Conn,
 	this.codec = &msg.DefaultCodec{}
 }
 
+// 设置禁止缓冲区自动扩容
 func (this *TCPConn) SetBanAutoResize(value bool) {
 	this.sendBuffer.SetBanAutoResize(value)
 	this.recvBuffer.SetBanAutoResize(value)
 }
 
+// 设置消息编解码器
 func (this *TCPConn) SetMsgCodec(codec msg.IMsgCodec) {
 	this.codec = codec
 }
 
+// 获取消息编解码器
 func (this *TCPConn) GetMsgCodec() msg.IMsgCodec {
 	return this.codec
 }
 
+// 设置 Logger
 func (this *TCPConn) SetLogger(l *log.Logger) {
 	this.Logger = l
 }
 
+// 开始接收消息
 func (this *TCPConn) StartRecv() {
 	go this.recvThread()
 }
 
+// 获取接收消息 chan
 func (this *TCPConn) GetRecvMessageChannel() chan *msg.MessageBinary {
 	return this.recvmsgchan
 }
 
+// 判断连接是否存活
 func (this *TCPConn) IsAlive() bool {
 	if atomic.LoadInt32(&this.state) == TCPCONNSTATE_LINKED {
 		return true
@@ -132,10 +144,12 @@ func (this *TCPConn) IsAlive() bool {
 	return false
 }
 
+// 获取连接的远程地址
 func (this *TCPConn) RemoteAddr() string {
 	return this.conn.RemoteAddr().String()
 }
 
+// 设置网络层协议
 func (this *TCPConn) HookProtocal(p baseio.Protocal) {
 	this.work.HookProtocal(p)
 }
@@ -160,15 +174,17 @@ func (this *TCPConn) Shutdown() error {
 	return nil
 }
 
+// 读数据
 func (this *TCPConn) Read(toData []byte) (int, error) {
 	return this.work.Read(toData)
 }
 
+// 写数据
 func (this *TCPConn) Write(data []byte) (int, error) {
 	return this.work.Write(data)
 }
 
-// 发送 Bytes
+// 发送由消息 ID 及 Bytes 构成的消息
 func (this *TCPConn) SendBytes(
 	cmdid uint16, protodata []byte) error {
 	if this.state >= TCPCONNSTATE_HOLD {
@@ -180,7 +196,7 @@ func (this *TCPConn) SendBytes(
 	return this.SendMessageBinary(msgbinary)
 }
 
-// 发送 MsgBinary
+// 发送 MsgBinary 消息
 func (this *TCPConn) SendMessageBinary(
 	msgbinary *msg.MessageBinary) error {
 	defer func() {
@@ -412,6 +428,7 @@ func (this *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) []*
 	return this.sendJoinedMessageBinaryBuffer[:nowpkgsum]
 }
 
+// 消息接收线程
 func (this *TCPConn) recvThread() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常

@@ -9,6 +9,7 @@ import (
 	"github.com/liasece/micserver/util/sysutil"
 )
 
+// 默认的消息头大小
 const (
 	DEFAULT_MSG_HEADSIZE = (4 + 2)
 )
@@ -108,6 +109,7 @@ func DefaultWriteHead(data []byte, totalLen int,
 	return
 }
 
+// micserver 默认的消息编解码器
 type DefaultCodec struct {
 	inMsg bool
 
@@ -116,6 +118,7 @@ type DefaultCodec struct {
 	msgID    uint16
 }
 
+// 遍历目标缓冲区中的消息
 func (this *DefaultCodec) RangeMsgBinary(
 	buf *buffer.IOBuffer, cb func(*MessageBinary)) (reerr error) {
 	defer func() {
@@ -204,10 +207,12 @@ func (this *DefaultCodec) readHead(data []byte) (int, error) {
 	return DEFAULT_MSG_HEADSIZE, nil
 }
 
+// 编码一个消息对象
 func (this *DefaultCodec) EncodeObj(v MsgStruct) *MessageBinary {
 	return DefaultEncodeObj(v)
 }
 
+// 编码一个由消息号及二进制内容构成的消息
 func (this *DefaultCodec) EncodeBytes(cmdid uint16,
 	protodata []byte) *MessageBinary {
 	return DefaultEncodeBytes(cmdid, protodata)

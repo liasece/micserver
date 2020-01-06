@@ -4,7 +4,8 @@ import (
 	"errors"
 )
 
+// ROC错误定义
 var (
-	ErrUnregisterRoc = errors.New("unregistered roc")
+	ErrUnregisterROC = errors.New("unregistered roc")
 	ErrUnknowObj     = errors.New("unknow roc obj")
 )

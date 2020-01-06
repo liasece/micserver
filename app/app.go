@@ -1,3 +1,12 @@
+/*
+micserver 最基础的运行单位，app中包含了多个module，app在启动时会初始化所有module，
+并且根据配置初始化module之间的连接。
+App 是 MicServer 中在 "Module" 上一层的概念，使用 MicServer 的
+第一步就是实例化出一个 App 对象，并且向其中插入你的 Modules 。
+建议一个代码上下文中仅存在一个 App 对象，如果你的需求让你觉得你有
+必要实例化多个 App 在同一个可执行文件中，那么你应该考虑增加一个
+Module 而不是 App 。
+*/
 package app
 
 import (
@@ -13,34 +22,25 @@ import (
 	"github.com/liasece/micserver/util/sysutil"
 )
 
-/**
- * App 是 MicServer 中在 "Module" 上一层的概念，使用 MicServer 的
- * 第一步就是实例化出一个 App 对象，并且向其中插入你的 Modules 。
- * 建议一个代码上下文中仅存在一个 App 对象，如果你的需求让你觉得你有
- * 必要实例化多个 App 在同一个可执行文件中，那么你应该考虑增加一个
- * Module 而不是 App 。
- */
 type App struct {
-	/*
-	 * 匿名成员 Logger 帮助你在此 App 中通过 App.Debug 等方式输出你的
-	 * 日志信息到指定的输出上。
-	 * 你可以在任何模块代码中新增 Logger 引用，并且从该 Logger 中 Clone()
-	 * 出来，定制化 log 的名字/主题 等，Logger 的底层实现已经帮你处理好了
-	 * Clone() 出来的 Logger 指向同一个输出。
-	 */
+
+	// 匿名成员 Logger 帮助你在此 App 中通过 App.Debug 等方式输出你的
+	// 日志信息到指定的输出上。
+	// 你可以在任何模块代码中新增 Logger 引用，并且从该 Logger 中 Clone()
+	// 出来，定制化 log 的名字/主题 等，Logger 的底层实现已经帮你处理好了
+	// Clone() 出来的 Logger 指向同一个输出。
 	*log.Logger
 	Configer *conf.TopConfig
 	modules  []module.IModule
 
 	initOnce sync.Once
 
-	/**
-	 * App 是否已停止，如果为 true ，App将会在下一个循环周期执行清理工作，
-	 * 退出阻塞循环。
-	 */
+	// App 是否已停止，如果为 true ，App将会在下一个循环周期执行清理工作，
+	// 退出阻塞循环。
 	isStoped chan struct{}
 }
 
+// 初始化App的设置
 func (this *App) Setup(configer *conf.TopConfig) {
 	process.AddApp(this)
 	this.isStoped = make(chan struct{})
@@ -105,7 +105,7 @@ func (this *App) startTestCpuProfile() {
 	this.Debug("[SubNetManager.startTestCpuProfile] " +
 		"[性能分析] StartTestCpuProfile start")
 	filename := this.Configer.GetProp("profile_filename")
-	testtime := this.Configer.GetPropInt("profile_time")
+	testtime := this.Configer.GetPropInt64("profile_time")
 	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return
@@ -125,7 +125,7 @@ func (this *App) startTestCpuProfile() {
 		"[性能分析] StartTestCpuProfile end")
 }
 
-// 阻塞运行
+// 运行并阻塞本App，直到程序主动退出
 func (this *App) RunAndBlock(modules []module.IModule) {
 	this.tryInit(modules)
 	this.Syslog("[App.Run] ----- Main has started ----- ")
@@ -155,7 +155,7 @@ func (this *App) RunAndBlock(modules []module.IModule) {
 	time.Sleep(500 * time.Millisecond)
 }
 
-// 默认阻塞运行
+// 运行，默认执行 RunAndBlock ，阻塞
 func (this *App) Run(modules []module.IModule) {
 	this.RunAndBlock(modules)
 }

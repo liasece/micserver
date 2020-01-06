@@ -8,26 +8,8 @@ import (
 	"github.com/liasece/micserver/servercomm"
 )
 
-type TServerSCType uint32
-
-const (
-	ServerSCTypeNone   TServerSCType = 1
-	ServerSCTypeTask   TServerSCType = 2
-	ServerSCTypeClient TServerSCType = 3
-)
-
-// 服务器连接发送消息缓冲要考虑到服务器处理消息的能力
-const ServerSendChanSize = 100000
-
-// 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
-const ServerSendBufferSize = msg.MessageMaxSize * 10
-
-// 服务器连接发送消息缓冲要考虑到服务器处理消息的能力
-const ServerRecvChanSize = 100000
-
-// 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
-const ServerRecvBufferSize = msg.MessageMaxSize * 10
-
+// 服务器连接，在一个模块的 SubnetManager 中，连接至该模块的任何模块都在该模块中
+// 存在一个 Server 连接。
 type Server struct {
 	BaseConnect
 
@@ -99,10 +81,12 @@ func (this *Server) recvMsgThread(c chan *msg.MessageBinary,
 	}
 }
 
+// 设置该服务器连接是连接方还是受连接方
 func (this *Server) SetSC(sctype TServerSCType) {
 	this.serverSCType = sctype
 }
 
+// 获取该服务器连接是连接方还是受连接方
 func (this *Server) GetSCType() TServerSCType {
 	return this.serverSCType
 }

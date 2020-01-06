@@ -14,6 +14,7 @@ const (
 	writerTypeFile    = 2
 )
 
+// log写入器
 type LogWriter struct {
 	writers  []Writer
 	tunnel   chan *Record
@@ -21,6 +22,7 @@ type LogWriter struct {
 	stopchan chan struct{}
 }
 
+// 初始化log写入器
 func (this *LogWriter) Init() {
 	this.writers = make([]Writer, 0, 2)
 	this.tunnel = make(chan *Record, tunnel_size_default)
@@ -30,6 +32,7 @@ func (this *LogWriter) Init() {
 	go this.boostrapLogWriter()
 }
 
+// 增加一个文件输出器
 func (this *LogWriter) AddLogFile(filename string, redirecterr bool) {
 	//	fmt.Printf("log filename,%s \n", filename)
 	filebasename := filename
@@ -44,6 +47,7 @@ func (this *LogWriter) AddLogFile(filename string, redirecterr bool) {
 	this.registerLogWriter(w)
 }
 
+// 修改所有的文件输出器的目标文件
 func (this *LogWriter) ChangeLogFile(filename string) {
 	filebasename := filename
 	filename += ".%Y%M%D-%H"
@@ -62,6 +66,7 @@ func (this *LogWriter) ChangeLogFile(filename string) {
 	}
 }
 
+// 移除控制台输出器
 func (this *LogWriter) RemoveConsoleLog() {
 	newlist := make([]Writer, 0, 2)
 	for i := 0; i < len(this.writers); i++ {
@@ -73,6 +78,7 @@ func (this *LogWriter) RemoveConsoleLog() {
 	this.writers = newlist
 }
 
+// 注册一个文件输出器到该 log 写入器中
 func (this *LogWriter) registerLogWriter(w Writer) {
 	if err := w.Init(); err != nil {
 		panic(err)
@@ -80,6 +86,7 @@ func (this *LogWriter) registerLogWriter(w Writer) {
 	this.writers = append(this.writers, w)
 }
 
+// 关闭当前写入器的所有输出器
 func (this *LogWriter) Close() {
 	select {
 	case <-this.stopchan:
@@ -103,6 +110,7 @@ func (this *LogWriter) Close() {
 	}
 }
 
+// 写入一条日志记录，等待后续异步处理
 func (this *LogWriter) write(r *Record) {
 	select {
 	case <-this.stopchan:
@@ -117,6 +125,7 @@ func (this *LogWriter) write(r *Record) {
 	}
 }
 
+// 日志写入线程
 func (this *LogWriter) boostrapLogWriter() {
 	var (
 		r  *Record
@@ -190,6 +199,7 @@ func (this *LogWriter) boostrapLogWriter() {
 	}
 }
 
+// 尝试将文件输出器转储
 func (this *LogWriter) tryRotate() {
 	for _, w := range this.writers {
 		if r, ok := w.(Rotater); ok {

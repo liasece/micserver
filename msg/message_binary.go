@@ -1,3 +1,6 @@
+/*
+micserver 中消息传递的基本单位
+*/
 package msg
 
 import (
@@ -14,6 +17,7 @@ const (
 	MessageMaxSize = 8 * 1024 * 1024
 )
 
+// micserver 中消息传递的基本单位
 type MessageBinary struct {
 	msgbase.MessageBase
 
@@ -48,26 +52,32 @@ func (this *MessageBinary) Reset() {
 	// 为了减轻GC压力，不应重置buffer字段
 }
 
+// 获取消息包二进制总长度
 func (this *MessageBinary) GetTotalLength() int {
 	return this.totalLength
 }
 
+// 设置消息包二进制总长度
 func (this *MessageBinary) SetTotalLength(v int) {
 	this.totalLength = v
 }
 
+// 获取消息包数据段总长度
 func (this *MessageBinary) GetProtoLength() int {
 	return this.protoLength
 }
 
+// 设置消息包数据段总长度
 func (this *MessageBinary) SetProtoLength(v int) {
 	this.protoLength = v
 }
 
+// 获取消息ID
 func (this *MessageBinary) GetMsgID() uint16 {
 	return this.msgID
 }
 
+// 设置消息ID
 func (this *MessageBinary) SetMsgID(v uint16) {
 	this.msgID = v
 }

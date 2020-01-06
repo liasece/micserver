@@ -2,20 +2,19 @@ package httpconn
 
 import (
 	"bytes"
-	"sync"
-	//	"compress/gzip"
 	"encoding/base64"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/util"
 	"io/ioutil"
 	"math"
 	"net/http"
-	// "net/rpc"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
+// HTTP 连接消息编解码器
 func HttpDecode(writer http.ResponseWriter, request *http.Request) {
 	if request.Header.Get("Use-Encrypt") != "Yes" {
 		return
@@ -103,6 +102,7 @@ func init() {
 	httptaskmanager_s.starttempid = 1000000000
 }
 
+// 增加一个 HTTP 客户端连接
 func (this *ClientPool) AddHttpTask(
 	writer http.ResponseWriter) *HttpConn {
 	this.mutex.Lock()
@@ -129,6 +129,7 @@ func (this *ClientPool) AddHttpTask(
 	return wstask
 }
 
+// 移除一个 HTTP 客户端连接
 func (this *ClientPool) RemoveHttpTask(tempid uint64) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -139,6 +140,7 @@ func (this *ClientPool) RemoveHttpTask(tempid uint64) {
 	}
 }
 
+// 获取一个 HTTP 客户端连接
 func (this *ClientPool) GetHttpTask(tempid uint64) *HttpConn {
 	if value, found := this.alllink[tempid]; found {
 		return value

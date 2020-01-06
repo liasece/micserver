@@ -1,7 +1,9 @@
 package conf
 
+// micserver中配置的键类型
 type ConfigKey string
 
+// micserver框架内置的配置选项
 var (
 	// 版本号		string
 	Version ConfigKey = "version"

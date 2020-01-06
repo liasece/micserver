@@ -9,6 +9,7 @@ import (
 	"github.com/liasece/micserver/session"
 )
 
+// 一个客户端连接，一般由 Gateway 创建
 type Client struct {
 	BaseConnect
 
@@ -20,18 +21,6 @@ type Client struct {
 	// 回调
 	connHook ConnectHook
 }
-
-// 客户端连接发送消息缓冲不宜过大， 10*64KiB*100000连接=64GiB
-const ClientConnSendChanSize = 256
-
-// 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
-const ClientConnSendBufferSize = 16 * 1024
-
-// 客户端连接发送消息缓冲不宜过大， 10*64KiB*100000连接=64GiB
-const ClientConnRecvChanSize = 256
-
-// 发送缓冲大小，用于将多个小消息拼接发送的缓冲大小
-const ClientConnRecvBufferSize = 256 * 1024
 
 // Initial a new client
 // netconn: 连接的net.Conn对象
@@ -52,6 +41,7 @@ func (this *Client) InitTCP(netconn net.Conn, connHook ConnectHook) {
 	go this.recvMsgThread()
 }
 
+// 为该客户端建立一个 TCP 连接
 func (this *Client) DialTCP(addr string, connHook ConnectHook) error {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
@@ -62,18 +52,21 @@ func (this *Client) DialTCP(addr string, connHook ConnectHook) error {
 	return nil
 }
 
+// 当收到一个消息时调用
 func (this *Client) onRecvMessage(msg *msg.MessageBinary) {
 	if this.connHook != nil {
 		this.connHook.OnRecvConnectMessage(this, msg)
 	}
 }
 
+// 当客户端连接关闭时调用
 func (this *Client) onClose() {
 	if this.connHook != nil {
 		this.connHook.OnConnectClose(this)
 	}
 }
 
+// 接收消息线程
 func (this *Client) recvMsgThread() {
 	defer func() {
 		this.onClose()
