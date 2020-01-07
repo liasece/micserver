@@ -1,3 +1,6 @@
+/*
+定时器实现
+*/
 package timer
 
 import (
@@ -8,6 +11,7 @@ import (
 // 返回是否还将定时
 type TimerCallback func(time.Duration) bool
 
+// 定时器
 type Timer struct {
 	cb              TimerCallback
 	timeDuration    time.Duration
@@ -18,6 +22,7 @@ type Timer struct {
 	mutex           sync.Mutex
 }
 
+// 判断定时器是否已经停止
 func (this *Timer) IsStop() bool {
 	if this.hasKilled {
 		return true
@@ -28,6 +33,7 @@ func (this *Timer) IsStop() bool {
 	return false
 }
 
+// 开始监听定时器
 func (this *Timer) Select(exChan chan *Timer) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -54,12 +60,14 @@ func (this *Timer) Select(exChan chan *Timer) {
 	}
 }
 
+// 关闭定时器
 func (this *Timer) KillTimer() {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	this.killTimer()
 }
 
+// 关闭定时器
 func (this *Timer) killTimer() {
 	if this.hasKilled || this.killChan == nil {
 		return
@@ -68,6 +76,7 @@ func (this *Timer) killTimer() {
 	this.killChan <- struct{}{}
 }
 
+// 定时器管理器
 type TimerManager struct {
 	timerList            sync.Map
 	timeTriggerChan      chan *Timer
@@ -110,6 +119,7 @@ func (this *TimerManager) RegTimer(duration time.Duration, limitTimes int64,
 	return timer
 }
 
+// 关闭所有当前管理器中的定时器
 func (this *TimerManager) KillRegister() {
 	this.timerList.Range(func(ki, listi interface{}) bool {
 		if list, ok := listi.([]*Timer); ok {

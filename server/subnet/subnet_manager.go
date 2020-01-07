@@ -1,3 +1,6 @@
+/*
+micserver中的子网信息，管理了所有模块间的连接
+*/
 package subnet
 
 import (
@@ -12,14 +15,7 @@ import (
 	"github.com/liasece/micserver/util"
 )
 
-func CheckServerType(servertype uint32) bool {
-	if servertype <= 0 || servertype > 10 {
-		return false
-	}
-	return true
-}
-
-// websocket连接管理器
+// 服务器子网连接管理器
 type SubnetManager struct {
 	*log.Logger
 	// 服务器连接池
@@ -39,6 +35,7 @@ type SubnetManager struct {
 	subnetHook base.SubnetHook
 }
 
+// 根据模块配置初始化子网连接管理器
 func (this *SubnetManager) Init(moudleConf *conf.ModuleConfig) {
 	this.myServerInfo = &servercomm.ModuleInfo{}
 	this.moudleConf = moudleConf
@@ -53,6 +50,7 @@ func (this *SubnetManager) Init(moudleConf *conf.ModuleConfig) {
 	this.BindChanSubnet(this.moudleConf)
 }
 
+// 设置子网事件监听者
 func (this *SubnetManager) HookSubnet(subnetHook base.SubnetHook) {
 	this.subnetHook = subnetHook
 }
@@ -60,30 +58,27 @@ func (this *SubnetManager) HookSubnet(subnetHook base.SubnetHook) {
 // 指定类型的获取最新版本的服务器版本号
 func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uint64 {
 	latestVersion := uint64(0)
-	this.connInfos.RangeConnInfo(
-		func(value *servercomm.ModuleInfo) bool {
-			if util.GetModuleIDType(value.ModuleID) == servertype &&
-				value.Version > latestVersion {
-				latestVersion = value.Version
-			}
-			return true
-		})
+	this.connInfos.Range(func(value *servercomm.ModuleInfo) bool {
+		if util.GetModuleIDType(value.ModuleID) == servertype &&
+			value.Version > latestVersion {
+			latestVersion = value.Version
+		}
+		return true
+	})
 	return latestVersion
 }
 
-//通知所有服务器列表信息
-func (this *SubnetManager) NotifyAllServerInfo(
-	tcptask *connect.Server) {
+// 发送当前已连接的所有服务器信息到目标连接
+func (this *SubnetManager) NotifyAllServerInfo(server *connect.Server) {
 	retmsg := &servercomm.SNotifyAllInfo{}
 	retmsg.ServerInfos = make([]*servercomm.ModuleInfo, 0)
-	this.connInfos.RangeConnInfo(func(
-		value *servercomm.ModuleInfo) bool {
+	this.connInfos.Range(func(value *servercomm.ModuleInfo) bool {
 		retmsg.ServerInfos = append(retmsg.ServerInfos, value)
 		return true
 	})
 	if len(retmsg.ServerInfos) > 0 {
 		this.Debug("[NotifyAllServerInfo] 发送所有服务器列表信息 Msg[%s]",
 			retmsg.GetJson())
-		tcptask.SendCmd(retmsg)
+		server.SendCmd(retmsg)
 	}
 }

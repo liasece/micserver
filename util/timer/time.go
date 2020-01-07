@@ -1,3 +1,6 @@
+/*
+系统时间
+*/
 package timer
 
 import (

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 )
 
+// 读取一个json文件到指定对象中
 func LoadJsonFromFile(filename string, v interface{}) error {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {

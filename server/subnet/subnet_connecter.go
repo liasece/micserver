@@ -23,6 +23,7 @@ import (
 	"github.com/liasece/micserver/util/sysutil"
 )
 
+// 保持与目标服务器的连接
 func (this *SubnetManager) tryConnectServerThread(id string, addr string) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
@@ -83,9 +84,6 @@ func (this *SubnetManager) ConnectServer(id string,
 			"ModuleID[%s] 重复的连接", id)
 		return errors.New("重复连接")
 	}
-	// this.Syslog("[SubnetManager.ConnectServer] "+
-	// 	"服务器连接创建地址开始 ModuleID[%s] ServerIPPort[%s]",
-	// 	id, addr)
 	if chanServer := process.GetServerChan(id); chanServer != nil {
 		newMsgChan := make(chan *msg.MessageBinary, 1000)
 		chanServer <- &process.ChanServerHandshake{
@@ -142,6 +140,7 @@ func (this *SubnetManager) doConnectChanServer(
 	this.onClientConnected(conn)
 }
 
+// 当连接到本服务器时
 func (this *SubnetManager) onClientConnected(conn *connect.Server) {
 	// 开始请求登陆
 	// 构造登陆消息
@@ -154,6 +153,7 @@ func (this *SubnetManager) onClientConnected(conn *connect.Server) {
 	this.Syslog("请求登陆 Server:%s", conn.GetTempID())
 }
 
+// 当与本服务器的连接断开时
 func (this *SubnetManager) onClientDisconnected(conn *connect.Server) {
 	this.onConnectClose(conn)
 	this.RemoveServer(conn.GetTempID())

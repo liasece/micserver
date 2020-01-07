@@ -1,9 +1,13 @@
+/*
+管理当前Module所拥有的Session
+*/
 package session
 
 import (
 	"sync"
 )
 
+// 当前Module的Session管理器
 type SessionManager struct {
 	sessions sync.Map
 }
@@ -26,6 +30,7 @@ func (this *SessionManager) store(session *Session) {
 	this.sessions.Store(uuid, session)
 }
 
+// 保存一个Session
 func (this *SessionManager) Store(session *Session) {
 	this.store(session)
 }
@@ -44,11 +49,13 @@ func (this *SessionManager) delete(uuid string) {
 	this.sessions.Delete(uuid)
 }
 
+// 加载或保存一个Session，返回操作成功的Session以及是否时加载行为
 func (this *SessionManager) LoadOrStore(uuid string,
 	session *Session) (*Session, bool) {
 	return this.loadOrStore(uuid, session)
 }
 
+// 根据Session的UUID获取一个Session
 func (this *SessionManager) GetSession(uuid string) *Session {
 	return this.get(uuid)
 }

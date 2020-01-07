@@ -1,3 +1,6 @@
+/*
+micserver中的ROC调用发生时，处理调用以及返回值。
+*/
 package server
 
 import (
@@ -16,6 +19,7 @@ import (
 	"github.com/liasece/micserver/util/hash"
 )
 
+// ROC请求信息
 type requestAgent struct {
 	fromModuleID string
 	callpath     string
@@ -24,6 +28,7 @@ type requestAgent struct {
 	needReturn   bool
 }
 
+// ROC响应信息
 type responseAgent struct {
 	fromModuleID string
 	seq          int64
@@ -31,6 +36,7 @@ type responseAgent struct {
 	err          string
 }
 
+// ROC服务
 type ROCServer struct {
 	*log.Logger
 	server *Server
@@ -53,6 +59,7 @@ type ROCServer struct {
 	lastSeq  int64
 }
 
+// 初始化ROC服务
 func (this *ROCServer) Init(server *Server) {
 	this.server = server
 	this.Logger = server.Logger.Clone()
@@ -222,6 +229,7 @@ func (this *ROCServer) onMsgROCResponse(msg *servercomm.SROCResponse) {
 	this.rocResponseChan <- agent
 }
 
+// 处理带返回值的ROC调用返回的线程
 func (this *ROCServer) rocRequestProcess() {
 	tm := time.NewTimer(time.Millisecond * 300)
 	for !this.server.isStop {
@@ -269,6 +277,7 @@ func (this *ROCServer) rocRequestProcess() {
 	}
 }
 
+// 处理ROC带返回值电泳调用的线程
 func (this *ROCServer) rocResponseProcess() {
 	tm := time.NewTimer(time.Millisecond * 300)
 	for !this.server.isStop {
@@ -417,6 +426,7 @@ func (this *ROCServer) OnROCObjDel(obj roc.IObj) {
 		true)
 }
 
+// 向其他模块通知ROC注册信息的线程
 func (this *ROCServer) rocObjNoticeProcess(rocCacheChan chan roc.IObj,
 	isDelete bool) {
 	tm := time.NewTimer(time.Millisecond * 300)

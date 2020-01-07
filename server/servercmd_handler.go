@@ -8,16 +8,19 @@ import (
 	"github.com/liasece/micserver/session"
 )
 
+// 服务消息处理
 type serverCmdHandler struct {
 	server *Server
 
 	serverHook base.ServerHook
 }
 
+// 设置服务器消息事件的监听者
 func (this *serverCmdHandler) HookServer(serverHook base.ServerHook) {
 	this.serverHook = serverHook
 }
 
+// 当需要将一个消息转发到其他服务器中时调用
 func (this *serverCmdHandler) onForwardToModule(conn *connect.Server,
 	smsg *servercomm.SForwardToModule) {
 	if this.serverHook != nil {
@@ -30,6 +33,7 @@ func (this *serverCmdHandler) onForwardToModule(conn *connect.Server,
 	}
 }
 
+// 当收到一个从网关转发过来的消息时调用
 func (this *serverCmdHandler) onForwardFromGate(conn *connect.Server,
 	smsg *servercomm.SForwardFromGate) {
 	if this.serverHook != nil {
@@ -51,6 +55,7 @@ func (this *serverCmdHandler) onForwardFromGate(conn *connect.Server,
 	}
 }
 
+// 当收到转发一个消息到客户端时调用
 func (this *serverCmdHandler) onForwardToClient(smsg *servercomm.SForwardToClient) {
 	err := this.server.DoSendBytesToClient(smsg.FromModuleID, smsg.ToGateID,
 		smsg.ToClientID, smsg.MsgID, smsg.Data)
@@ -69,6 +74,7 @@ func (this *serverCmdHandler) onForwardToClient(smsg *servercomm.SForwardToClien
 	}
 }
 
+// 当收到Session更新消息时调用
 func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 	var connectedSession *session.Session
 	if this.server.gateBase != nil {
@@ -106,7 +112,7 @@ func (this *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession) {
 	}
 }
 
-// 请求关闭客户端连接
+// 当收到一个关闭客户端连接的请求时调用
 func (this *serverCmdHandler) onReqCloseConnect(smsg *servercomm.SReqCloseConnect) {
 	this.server.Syslog("serverCmdHandler.onReqCloseConnect "+
 		"request close client connect FromModule[%s] ToModuleID[%s] ClientID[%s]",
@@ -119,6 +125,7 @@ func (this *serverCmdHandler) OnServerJoinSubnet(server *connect.Server) {
 	this.server.onServerJoinSubnet(server)
 }
 
+// 当收到一个其他服务发过来的消息时调用
 func (this *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 	msgbinary *msg.MessageBinary) {
 	switch msgbinary.GetMsgID() {

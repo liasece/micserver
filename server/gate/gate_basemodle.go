@@ -1,3 +1,6 @@
+/*
+gateway基础模块
+*/
 package gate
 
 import (
@@ -12,6 +15,7 @@ import (
 	"github.com/liasece/micserver/servercomm"
 )
 
+// Gateway基础模块
 type GateBase struct {
 	*log.Logger
 
@@ -22,14 +26,39 @@ type GateBase struct {
 	connPool connect.ClientPool
 }
 
+// 初始化模块
 func (this *GateBase) Init(moduleID string) {
 	this.connPool.SetLogger(this.Logger)
 	this.connPool.Init()
 }
 
+// 绑定外部TCP地址
 func (this *GateBase) BindOuterTCP(addr string) {
 	// 绑定 TCPSocket 服务
-	this.StartAddClientTcpSocketHandle(addr)
+	// 由于部分 NAT 主机没有网卡概念，需要自己配置IP
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		this.Error("[GateBase.StartAddClientTcpSocketHandle] %s",
+			err.Error())
+		return
+	}
+	this.Syslog("[GateBase.StartAddClientTcpSocketHandle] "+
+		"Gateway Client TCP服务启动成功 IPPort[%s]", addr)
+	go func() {
+		for {
+			// 接受连接
+			netConn, err := ln.Accept()
+			if err != nil {
+				// handle error
+				this.Error("[GateBase.StartAddClientTcpSocketHandle] "+
+					"Accept() ERR:%q",
+					err.Error())
+				continue
+			}
+			this.OnAcceptClientConnect(netConn)
+			this.addTCPClient(netConn)
+		}
+	}()
 }
 
 // 由Client调用，当Client关闭时触发
@@ -114,7 +143,7 @@ func (this *GateBase) remove(connectid string) {
 	this.connPool.Remove(connectid)
 }
 
-// 遍历所有的连接
+// 遍历所有连接到本模块的客户端
 func (this *GateBase) Range(
 	callback func(string, *connect.Client) bool) {
 	this.connPool.Range(func(value *connect.Client) bool {
@@ -142,33 +171,6 @@ func (this *GateBase) RangeRemove(
 	this.Syslog("[GateBase.RangeRemove] "+
 		"遍历删除连接数 RemoveSum[%d] NowLinkSum[%d]",
 		len(removelist), this.GetClientCount())
-}
-
-func (this *GateBase) StartAddClientTcpSocketHandle(addr string) {
-	// 由于部分 NAT 主机没有网卡概念，需要自己配置IP
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		this.Error("[GateBase.StartAddClientTcpSocketHandle] %s",
-			err.Error())
-		return
-	}
-	this.Syslog("[GateBase.StartAddClientTcpSocketHandle] "+
-		"Gateway Client TCP服务启动成功 IPPort[%s]", addr)
-	go func() {
-		for {
-			// 接受连接
-			netConn, err := ln.Accept()
-			if err != nil {
-				// handle error
-				this.Error("[GateBase.StartAddClientTcpSocketHandle] "+
-					"Accept() ERR:%q",
-					err.Error())
-				continue
-			}
-			this.OnAcceptClientConnect(netConn)
-			this.addTCPClient(netConn)
-		}
-	}()
 }
 
 func (this *GateBase) addTCPClient(

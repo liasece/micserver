@@ -1,3 +1,7 @@
+/*
+客户端在连接到服务器网络后，除了Gate能取到客户端的实际连接Client外，
+其他模块只能通过客户端的Session操作客户端。
+*/
 package session
 
 import (
@@ -10,6 +14,7 @@ import (
 	"github.com/liasece/micserver/util/conv"
 )
 
+// Session中字段的键的类型
 type SessionKey string
 
 // 系统中默认的一些 Session 的键
@@ -63,6 +68,7 @@ func GetConnectIDFromMap(session map[string]string) string {
 	return getFromMap(session, SessionKeyConnectID)
 }
 
+// 客户端连接会话
 type Session struct {
 	m sync.Map
 }
@@ -118,23 +124,27 @@ func (this *Session) setUUID(value string) {
 	this.set(SessionKeyUUID, value)
 }
 
-// 获取 session 数据的接口
+// 获取指定键的值
 func (this *Session) Get(key SessionKey) string {
 	return this.get(key)
 }
 
+// 获取指定键的 bool 值
 func (this *Session) GetBool(key SessionKey) bool {
 	return conv.MustInterfaceToBool(this.get(key))
 }
 
+// 获取指定键的 int64 值
 func (this *Session) GetInt64(key SessionKey) int64 {
 	return conv.MustInterfaceToInt64(this.get(key))
 }
 
+// 设置指定键的值
 func (this *Session) Set(key SessionKey, value string) {
 	this.set(key, value)
 }
 
+// 设置指定键的 bool 值
 func (this *Session) SetBool(key SessionKey, value bool) {
 	if value {
 		this.set(key, "true")
@@ -143,35 +153,44 @@ func (this *Session) SetBool(key SessionKey, value bool) {
 	}
 }
 
+// 设置指定键的 int64 值
 func (this *Session) SetInt64(key SessionKey, value int64) {
 	this.set(key, fmt.Sprint(value))
 }
 
+// 获取Session的客户端连接ID
 func (this *Session) GetConnectID() string {
 	return this.get(SessionKeyConnectID)
 }
 
+// 设置Session的客户端连接ID
 func (this *Session) SetConnectID(value string) {
 	this.set(SessionKeyConnectID, value)
 }
 
+// 获取当前绑定的指定类型模块的ID
 func (this *Session) GetBind(moduleType string) string {
 	return this.get(SessionKeyBindHead + SessionKey(moduleType))
 }
 
+// 设置当前绑定的指定类型模块的ID
 func (this *Session) SetBind(moduleType string, value string) {
 	this.set(SessionKeyBindHead+SessionKey(moduleType), value)
 }
 
+// 判断当前是否已经绑定指定类型的模块
 func (this *Session) HasBind(moduleType string) bool {
 	return this.HasKey(SessionKeyBindHead + SessionKey(moduleType))
 }
 
+// 判断当前是否存在指定键的值
 func (this *Session) HasKey(key SessionKey) bool {
 	_, ok := this.m.Load(string(key))
 	return ok
 }
 
+// 判断当前Session是否已经经过验证，如果一个客户端连接经过了验证，则一定会存在一个
+// 用户UUID绑定到此Session上。
 func (this *Session) IsVertify() bool {
 	if !this.HasKey(SessionKeyUUID) {
 		return false
@@ -205,18 +224,21 @@ func (this *Session) SyncToBindedModule(mod IModuleSessionOptions) {
 	})
 }
 
+// 向该Session指定的客户端发送一个消息
 func (this *Session) SendMsg(mod IModuleSessionOptions, gatemoduletype string,
 	msgid uint16, data []byte) {
 	mod.SInner_SendClientMsg(this.GetBind(gatemoduletype),
 		this.GetConnectID(), msgid, data)
 }
 
+// 请求管理该Session的网关关闭该Session的连接
 func (this *Session) CloseSessionConnect(mod IModuleSessionOptions,
 	gatemoduletype string) {
 	mod.SInner_CloseSessionConnect(this.GetBind(gatemoduletype),
 		this.GetConnectID())
 }
 
+// 将当前Session的键值到处成为 map[string]string 的类型
 func (this *Session) ToMap() map[string]string {
 	res := make(map[string]string)
 	this.m.Range(func(ki, vi interface{}) bool {

@@ -1,5 +1,9 @@
+/*
+micserver中模块间发送的消息的定义，由 *_binary.go 实现二进制协议。
+*/
 package servercomm
 
+// 一个模块的信息
 type ModuleInfo struct {
 	ModuleID   string
 	ModuleAddr string
@@ -11,15 +15,18 @@ type ModuleInfo struct {
 	Version uint64
 }
 
+// 心跳包请求
 type STimeTickCommand struct {
 	Testno uint32
 }
 
+// 测试消息请求
 type STestCommand struct {
 	Testno     uint32
 	Testttring string // IP
 }
 
+// 模块登陆请求
 type SLoginCommand struct {
 	ModuleID   string
 	ModuleAddr string // IP
@@ -79,6 +86,7 @@ type SNotifySafelyQuit struct {
 	TargetServerInfo *ModuleInfo
 }
 
+// 更新Session的请求
 type SUpdateSession struct {
 	FromModuleID string
 	ToModuleID   string
@@ -87,12 +95,14 @@ type SUpdateSession struct {
 	Session      map[string]string
 }
 
+// 关闭客户端连接的请求
 type SReqCloseConnect struct {
 	FromModuleID string
 	ToModuleID   string
 	ClientConnID string
 }
 
+// 模块间消息转发请求
 type SForwardToModule struct {
 	FromModuleID string
 	ToModuleID   string
@@ -100,12 +110,14 @@ type SForwardToModule struct {
 	Data         []byte
 }
 
+// 模块间传递的消息
 type ModuleMessage struct {
 	FromModule *ModuleInfo
 	MsgID      uint16
 	Data       []byte
 }
 
+// 请求转发一个客户端消息
 type SForwardToClient struct {
 	FromModuleID string
 	ToGateID     string
@@ -114,6 +126,7 @@ type SForwardToClient struct {
 	Data         []byte
 }
 
+// 网关分发的客户端消息
 type SForwardFromGate struct {
 	FromModuleID string
 	ToModuleID   string
@@ -123,6 +136,7 @@ type SForwardFromGate struct {
 	Data         []byte
 }
 
+// 客户端消息
 type ClientMessage struct {
 	FromModule   *ModuleInfo
 	ClientConnID string

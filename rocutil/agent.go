@@ -18,6 +18,8 @@ import (
 	"github.com/liasece/micserver/rocutil/options"
 )
 
+// ROC对象代理，由 rocutil 创建的ROC对象均由代理来实现roc对象需要的接口，
+// 同时实现通过代理对象具有的函数，自动编解码参数列表，实现更为简单的ROC调用。
 type ROCObjAgent struct {
 	obj interface{}
 
@@ -28,6 +30,8 @@ type ROCObjAgent struct {
 	methodMapping sync.Map
 }
 
+// 初始化该代理，目标对象不需要实现任何接口，但是需要告知目标对象的类型和ID，以便
+// 代理提供ROC对象的接口给ROC系统。
 func (this *ROCObjAgent) Init(obj interface{}, rocObjType roc.ROCObjType,
 	rocObjID string, ops []*options.Options) error {
 	this.obj = obj

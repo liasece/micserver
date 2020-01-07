@@ -1,3 +1,6 @@
+/*
+网关的基本接口
+*/
 package base
 
 import (
@@ -6,6 +9,7 @@ import (
 	"net"
 )
 
+// 上层网关服务需要实现的处理网关事件的接口
 type GateHook interface {
 	// 接受到客户端tcp连接
 	OnAcceptClientConnect(conn net.Conn)

@@ -13,16 +13,20 @@ import (
 	"reflect"
 )
 
+// ROC调用的参数列表
 type CallArg [][]byte
 
+// 增加一个调用参数
 func (this *CallArg) Add(data []byte) {
 	(*this) = append(*this, data)
 }
 
+// 调用参数的数量
 func (this *CallArg) Len() int {
 	return len((*this))
 }
 
+// 代理对象的方法
 type Method struct {
 	name  string
 	args  []reflect.Type
@@ -30,6 +34,7 @@ type Method struct {
 	typ   reflect.Type
 }
 
+// 初始化一个方法
 func (this *Method) Init(name string, f reflect.Value) error {
 	if f.Kind() != reflect.Func {
 		return ErrIsNotFunc
@@ -48,7 +53,7 @@ func (this *Method) Init(name string, f reflect.Value) error {
 	return nil
 }
 
-// get call args use of Call()
+// 根据远程调用发来的参数，将信息解码为当前方法的参数列表，提供给外层反射调用。
 func (this *Method) GetArgValues(data *CallArg) ([]reflect.Value, error) {
 	if data.Len() != len(this.args) {
 		return nil, ErrArgNumMismatch
@@ -68,7 +73,7 @@ func (this *Method) GetArgValues(data *CallArg) ([]reflect.Value, error) {
 	return res, nil
 }
 
-// do call this method
+// 提供编码好的参数二进制流，调用该方法
 func (this *Method) Call(data *CallArg) ([]reflect.Value, error) {
 	args, err := this.GetArgValues(data)
 	if err != nil {
@@ -78,7 +83,7 @@ func (this *Method) Call(data *CallArg) ([]reflect.Value, error) {
 	return result, nil
 }
 
-// get this method name in rocutil register
+// 获取当前方法的名字。
 func (this *Method) GetName() string {
 	return this.name
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/liasece/micserver/util/sysutil"
 )
 
+// 服务器消息处理封包
 type ConnectMsgQueueStruct struct {
 	conn *connect.Server
 	msg  *msg.MessageBinary
@@ -57,9 +58,11 @@ func (this *SubnetManager) getRecvTCPMsgParseChan(conn *connect.Server,
 	return 0
 }
 
+// 当新增一个服务器连接时调用
 func (this *SubnetManager) OnCreateNewServer(conn *connect.Server) {
 }
 
+// 当收到了一个服务器消息时调用
 func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 	msgbin *msg.MessageBinary) {
 	if conn.GetSCType() == connect.ServerSCTypeTask {
@@ -78,8 +81,6 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 			return
 		}
 	}
-	// this.Syslog("[SubnetManager.msgParseTCPConn] 收到消息 %s",
-	// 	servercomm.MsgIdToString(msgbin.GetMsgID()))
 	switch msgbin.GetMsgID() {
 	case servercomm.STestCommandID:
 		recvmsg := &servercomm.STestCommand{}
@@ -126,7 +127,7 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 		conn.IsNormalDisconnect = true
 		this.connectMutex.Lock()
 		defer this.connectMutex.Unlock()
-		this.connInfos.RemoveConnInfo(conn.ModuleInfo.ModuleID)
+		this.connInfos.Delete(conn.ModuleInfo.ModuleID)
 		this.Syslog("[msgParseTCPConn] 服务器已主动关闭，不再尝试连接它了 "+
 			"ModuleInfo[%s]", conn.ModuleInfo.GetJson())
 		return
@@ -141,7 +142,7 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 		// 所有服务器信息列表
 		for i := 0; i < len(recvmsg.ServerInfos); i++ {
 			serverinfo := recvmsg.ServerInfos[i]
-			this.connInfos.AddConnInfo(serverinfo)
+			this.connInfos.Add(serverinfo)
 		}
 		return
 	}
@@ -167,6 +168,7 @@ func (this *SubnetManager) MultiQueueControl(
 	this.runningMsgChan[who] <- msgqueues
 }
 
+// 初始化消息处理队列
 func (this *SubnetManager) InitMsgQueue(sum int32) {
 	// 最大同时处理的消息数量
 	this.maxRunningMsgNum = sum // 消息队列线程数
@@ -214,6 +216,7 @@ func (this *SubnetManager) MultiRecvmsgQueue(
 	return true
 }
 
+// 保持服务器消息处理线程
 func (this *SubnetManager) RecvmsgProcess(index int32) {
 	for {
 		if this.MultiRecvmsgQueue(index) {

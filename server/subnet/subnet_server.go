@@ -13,6 +13,7 @@ import (
 	"github.com/liasece/micserver/util/uid"
 )
 
+// 目标服务器尝试登陆到本服务器
 func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	tarinfo *servercomm.SLoginCommand) {
 	this.connectMutex.Lock()
@@ -91,6 +92,7 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	this.subnetHook.OnServerJoinSubnet(conn)
 }
 
+// 绑定本服务器对子网开放的端口
 func (this *SubnetManager) BindTCPSubnet(settings *conf.ModuleConfig) error {
 	if !settings.Exist(conf.SubnetTCPAddr) {
 		return fmt.Errorf("subnettcpaddr hasn't set.")
@@ -111,6 +113,7 @@ func (this *SubnetManager) BindTCPSubnet(settings *conf.ModuleConfig) error {
 	return nil
 }
 
+// 监听本服务器的子网端口线程
 func (this *SubnetManager) TCPServerListenerProcess(listener net.Listener) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
@@ -125,6 +128,7 @@ func (this *SubnetManager) TCPServerListenerProcess(listener net.Listener) {
 	}
 }
 
+// 保持监听本地服务器对子网端口
 func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
@@ -157,6 +161,7 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 
 // Local chan server init
 
+// 绑定本地 chan 连接类型
 func (this *SubnetManager) BindChanSubnet(settings *conf.ModuleConfig) error {
 	nochan := settings.GetBool(conf.SubnetNoChan)
 	if nochan {
@@ -169,6 +174,7 @@ func (this *SubnetManager) BindChanSubnet(settings *conf.ModuleConfig) error {
 	return nil
 }
 
+// 监听本地 chan 连接的消息
 func (this *SubnetManager) ChanServerListenerProcess(
 	serverChan chan *process.ChanServerHandshake) {
 	defer func() {
@@ -187,6 +193,7 @@ func (this *SubnetManager) ChanServerListenerProcess(
 	}
 }
 
+// 监听本地 chan 连接握手请求
 func (this *SubnetManager) mChanServerListener(
 	serverChan chan *process.ChanServerHandshake) {
 	defer func() {
@@ -209,6 +216,7 @@ func (this *SubnetManager) mChanServerListener(
 	}
 }
 
+// 处理 chan 握手请求的返回信息
 func (this *SubnetManager) processChanServerRequest(
 	newinfo *process.ChanServerHandshake) {
 	remoteChan := process.GetServerChan(newinfo.ModuleInfo.ModuleID)

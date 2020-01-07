@@ -12,6 +12,7 @@ import (
 	"errors"
 )
 
+// 错误定义
 var (
 	ErrIsNotFunc      = errors.New("target funcname isn't func")
 	ErrUnknownFunc    = errors.New("unknown function name")

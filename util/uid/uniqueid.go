@@ -1,3 +1,6 @@
+/*
+UUID生成器
+*/
 package uid
 
 import (
@@ -18,6 +21,7 @@ type uniqueIDBuilder struct {
 
 var s_unique uniqueIDBuilder
 
+// 生成一个至少保证当前模块唯一的ID
 func (this *uniqueIDBuilder) GenUniqueID(heightlevelID uint16) (string, error) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -54,6 +58,7 @@ func (this *uniqueIDBuilder) GenUniqueID(heightlevelID uint16) (string, error) {
 	return fmt.Sprint(res), nil
 }
 
+// 生成一个至少保证当前模块唯一的ID
 func GenUniqueID(heightlevelID uint16) (string, error) {
 	return s_unique.GenUniqueID(heightlevelID)
 }

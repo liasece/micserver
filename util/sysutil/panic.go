@@ -1,3 +1,6 @@
+/*
+系统panic恢复
+*/
 package sysutil
 
 import (
@@ -5,6 +8,7 @@ import (
 	"runtime"
 )
 
+// 获取系统的panic信息
 func GetPanicInfo(erri interface{}) (error, string) {
 	if erri != nil {
 		var err error

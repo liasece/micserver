@@ -7,6 +7,9 @@
  *
  */
 
+/*
+无拷贝IO缓冲区实现
+*/
 package buffer
 
 import (
@@ -36,6 +39,7 @@ type IOBuffer struct {
 	banAutoResize bool
 }
 
+// 构造一个缓冲区
 func NewIOBuffer(reader io.Reader, length int) *IOBuffer {
 	buf := make([]byte, length)
 	return &IOBuffer{
@@ -48,10 +52,12 @@ func NewIOBuffer(reader io.Reader, length int) *IOBuffer {
 	}
 }
 
+// 设置缓冲区是否可以根据需求自动调整大小
 func (b *IOBuffer) SetBanAutoResize(value bool) {
 	b.banAutoResize = value
 }
 
+// 当前缓冲区内容的长度
 func (b *IOBuffer) Len() int {
 	return b.end - b.start
 }
@@ -203,6 +209,7 @@ func (b *IOBuffer) Write(src []byte) error {
 	return nil
 }
 
+// 修改缓冲区内容起始指针
 func (b *IOBuffer) MoveStart(n int) error {
 	tmpn := b.start + n
 	if tmpn < 0 {

@@ -1,3 +1,6 @@
+/*
+micserver中管理与其他服务器连接的管理器
+*/
 package server
 
 import (
@@ -14,6 +17,7 @@ import (
 	"github.com/liasece/micserver/util"
 )
 
+// 一个Module就是一个Server
 type Server struct {
 	*log.Logger
 	// event libs
@@ -32,12 +36,14 @@ type Server struct {
 	stopChan     chan bool
 }
 
+// 初始化本服务
 func (this *Server) Init(moduleid string) {
 	this.moduleid = moduleid
 	this.stopChan = make(chan bool)
 	this.ROCServer.Init(this)
 }
 
+// 初始化本服务的子网管理器
 func (this *Server) InitSubnet(conf *conf.ModuleConfig) {
 	this.moduleConfig = conf
 	// 初始化服务器网络管理器
@@ -50,14 +56,17 @@ func (this *Server) InitSubnet(conf *conf.ModuleConfig) {
 	this.subnetManager.HookSubnet(&this.serverCmdHandler)
 }
 
+// 设置本服务的服务事件监听者
 func (this *Server) HookServer(serverHook serverbase.ServerHook) {
 	this.serverCmdHandler.HookServer(serverHook)
 }
 
+// 设置本服务的网关事件监听者，如果本服务没有启用网关，将不会收到任何事件
 func (this *Server) HookGate(gateHook gatebase.GateHook) {
 	this.clientEventHandler.HookGate(gateHook)
 }
 
+// 尝试连接本服务子网中的其他服务器
 func (this *Server) BindSubnet(subnetAddrMap map[string]string) {
 	for k, addr := range subnetAddrMap {
 		if k != this.moduleid {
@@ -66,6 +75,7 @@ func (this *Server) BindSubnet(subnetAddrMap map[string]string) {
 	}
 }
 
+// 初始化本服务的网关部分
 func (this *Server) InitGate(gateaddr string) {
 	this.gateBase = &gate.GateBase{
 		Logger: this.Logger,
@@ -78,6 +88,7 @@ func (this *Server) InitGate(gateaddr string) {
 	this.gateBase.HookGate(&this.clientEventHandler)
 }
 
+// 设置本服务的Logger
 func (this *Server) SetLogger(source *log.Logger) {
 	if source == nil {
 		this.Logger = nil
@@ -123,6 +134,7 @@ func (this *Server) SInner_CloseSessionConnect(gateid string, connectid string) 
 	this.ReqCloseConnect(gateid, connectid)
 }
 
+// 请求关闭远程瞪的目标客户端连接
 func (this *Server) ReqCloseConnect(gateid string, connectid string) {
 	if this.moduleid == gateid {
 		this.doCloseConnect(connectid)
@@ -144,6 +156,7 @@ func (this *Server) ReqCloseConnect(gateid string, connectid string) {
 	}
 }
 
+// 关闭本地的目标客户端连接
 func (this *Server) doCloseConnect(connectid string) {
 	if this.gateBase == nil {
 		this.Error("Server.doCloseConnect this module isn't gate")
@@ -211,6 +224,7 @@ func (this *Server) GetSession(uuid string) *session.Session {
 	return this.sessionManager.GetSession(uuid)
 }
 
+// 更新本地的Session，如果没有的话注册它
 func (this *Server) MustUpdateSessionFromMap(uuid string, data map[string]string) {
 	s := this.server.sessionManager.GetSession(uuid)
 	if s == nil {
@@ -222,6 +236,7 @@ func (this *Server) MustUpdateSessionFromMap(uuid string, data map[string]string
 		data)
 }
 
+// 更新目标Session的UUID
 func (this *Server) UpdateSessionUUID(uuid string, session *session.Session) {
 	this.server.sessionManager.UpdateSessionUUID(uuid, session)
 }

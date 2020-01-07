@@ -1,3 +1,6 @@
+/*
+系统当前的网络信息
+*/
 package sysutil
 
 import (
