@@ -7,6 +7,13 @@ micserver是一个为分布式系统设计的服务器框架，以模块为服�
 
 你可以在[示例程序](https://github.com/liasece/micchaos)中了解micserver的基本使用方法。
 
+目前micserver不需要任何第三方包。
+
 安装
 --------------
     go get github.com/liasece/micserver
+
+官方文档
+--------------
+
+[GoDoc](https://godoc.org/github.com/liasece/micserver)
