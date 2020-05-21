@@ -69,8 +69,7 @@ func (manager *Manager) onConnectRecv(conn *connect.Server,
 		curtime := time.Now().Unix()
 		if conn.IsTerminateTimeout(curtime) {
 			manager.onClientDisconnected(conn)
-			manager.Error("[Manager.handleConnection] "+
-				"长时间未通过验证，断开连接 TmpID[%d]",
+			manager.Error("[Manager.handleConnection] 长时间未通过验证，断开连接 TmpID[%s]",
 				conn.GetTempID())
 			return
 		}
