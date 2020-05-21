@@ -28,8 +28,7 @@ func (manager *Manager) tryConnectServerThread(id string, addr string) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			manager.Error("[tryConnectServerThread] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+			manager.Error("[tryConnectServerThread] Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
 
@@ -39,8 +38,7 @@ func (manager *Manager) tryConnectServerThread(id string, addr string) {
 		manager.connectMutex.Unlock()
 		select {
 		case <-c:
-			manager.Syslog("[Manager.tryConnectServerThread] "+
-				"正在连接 ModuleID[%s] IPPort[%s]",
+			manager.Syslog("[Manager.tryConnectServerThread] 正在连接 ModuleID[%s] IPPort[%s]",
 				id, addr)
 			err := manager.ConnectServer(id, addr)
 			if err != nil && err.Error() != "重复连接" {
@@ -63,8 +61,7 @@ func (manager *Manager) TryConnectServer(id string, addr string) {
 	if _, finded := manager.serverexitchan[id]; !finded {
 		manager.serverexitchan[id] = make(chan bool, 100)
 	} else {
-		manager.Syslog("[Manager.TryConnectServer] "+
-			"ModuleID[%s] 守护线程已启动，不再重复启动",
+		manager.Syslog("[Manager.TryConnectServer] ModuleID[%s] 守护线程已启动，不再重复启动",
 			id)
 		return
 	}
@@ -80,8 +77,7 @@ func (manager *Manager) ConnectServer(id string,
 	oldconn := manager.GetServer(id)
 	// 重复连接
 	if oldconn != nil {
-		manager.Syslog("[Manager.ConnectServer] "+
-			"ModuleID[%s] 重复的连接", id)
+		manager.Syslog("[Manager.ConnectServer] ModuleID[%s] 重复的连接", id)
 		return errors.New("重复连接")
 	}
 	if chanServer := process.GetServerChan(id); chanServer != nil {
@@ -95,15 +91,13 @@ func (manager *Manager) ConnectServer(id string,
 	} else {
 		tcpaddr, err := net.ResolveTCPAddr("tcp4", addr)
 		if err != nil {
-			manager.Syslog("[Manager.ConnectServer] "+
-				"服务器连接创建地址失败 ServerIPPort[%s] Err[%s]",
+			manager.Syslog("[Manager.ConnectServer] 服务器连接创建地址失败 ServerIPPort[%s] Err[%s]",
 				addr, err.Error())
 			return err
 		}
 		netconn, err := net.DialTCP("tcp", nil, tcpaddr)
 		if err != nil {
-			manager.Error("[Manager.ConnectServer] "+
-				"服务器连接失败 ServerIPPort[%s] Err[%s]",
+			manager.Error("[Manager.ConnectServer] 服务器连接失败 ServerIPPort[%s] Err[%s]",
 				addr, err.Error())
 			return err
 		}
@@ -164,12 +158,10 @@ func (manager *Manager) onClientDisconnected(conn *connect.Server) {
 		defer manager.connectMutex.Unlock()
 		if manager.serverexitchan[fmt.Sprint(conn.ModuleInfo.ModuleID)] != nil {
 			manager.serverexitchan[fmt.Sprint(conn.ModuleInfo.ModuleID)] <- true
-			manager.Warn("[onClientDisconnected] "+
-				"服务服务器断开连接,准备重新连接 ModuleID[%s]",
+			manager.Warn("[onClientDisconnected] 服务服务器断开连接,准备重新连接 ModuleID[%s]",
 				conn.ModuleInfo.ModuleID)
 		} else {
-			manager.Syslog("[onClientDisconnected] "+
-				"服务器重连管道已关闭,取消重连 ModuleID[%s]",
+			manager.Syslog("[onClientDisconnected] 服务器重连管道已关闭,取消重连 ModuleID[%s]",
 				fmt.Sprint(conn.ModuleInfo.ModuleID))
 		}
 	}

@@ -28,12 +28,10 @@ func (connInfosManager *ConnInfosManager) Get(moduleid string) *servercomm.Modul
 // Add 增加一个连接的配置信息
 func (connInfosManager *ConnInfosManager) Add(newinfo *servercomm.ModuleInfo) {
 	if newinfo.ModuleID == "" {
-		log.Error("[ConnInfosManager.AddConnInfo] "+
-			"尝试添加一个ID为空的服务器 拒绝 Info[%s]", newinfo.GetJSON())
+		log.Error("[ConnInfosManager.AddConnInfo] 尝试添加一个ID为空的服务器 拒绝 Info[%s]", newinfo.GetJSON())
 		return
 	}
-	log.Debug("[ConnInfosManager.AddConnInfo] "+
-		"添加服务器信息 Info[%s]", newinfo.GetJSON())
+	log.Debug("[ConnInfosManager.AddConnInfo] 添加服务器信息 Info[%s]", newinfo.GetJSON())
 	if _, finded := connInfosManager.ConnInfos.Load(newinfo.ModuleID); !finded {
 		connInfosManager.ConnInfoSum++
 	}
