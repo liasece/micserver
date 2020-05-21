@@ -24,9 +24,7 @@ func (manager *Manager) OnServerLogin(conn *connect.Server,
 	// 来源服务器请求登陆本服务器
 	myconn := manager.GetServer(fmt.Sprint(tarinfo.ModuleID))
 	if myconn != nil {
-		manager.Syslog("[Manager.OnServerLogin] 重复连接 %s 优先级：%d:%d",
-			tarinfo.ModuleID,
-			myconn.ConnectPriority, tarinfo.ConnectPriority)
+		manager.Syslog("[Manager.OnServerLogin] 重复连接 %s 优先级：%d:%d", tarinfo.ModuleID, myconn.ConnectPriority, tarinfo.ConnectPriority)
 		if myconn.ConnectPriority < tarinfo.ConnectPriority {
 			// 对方连接的优先级比较高，删除我方连接
 			myconn.IsNormalDisconnect = true
@@ -36,9 +34,7 @@ func (manager *Manager) OnServerLogin(conn *connect.Server,
 				myconn, myconn.GetTempID()+"unuse"+unuseid)
 		} else {
 			// 我方优先级比较高已经连接成功过了，非法连接
-			manager.Syslog("[SubNetManager.OnServerLogin] "+
-				"收到了重复的Server连接请求 Msg[%s]",
-				tarinfo.GetJSON())
+			manager.Syslog("[SubNetManager.OnServerLogin] 收到了重复的Server连接请求 Msg[%s]", tarinfo.GetJSON())
 			return
 		}
 	}
@@ -52,20 +48,14 @@ func (manager *Manager) OnServerLogin(conn *connect.Server,
 	// 检查是否获取信息成功
 	if serverInfo.ModuleID == "" {
 		// 如果获取信息不成功
-		manager.Error("[SubNetManager.OnServerLogin] "+
-			"连接分配异常 未知服务器连接 "+
-			"Addr[%s] Msg[%s]",
-			remoteaddr, tarinfo.GetJSON())
+		manager.Error("[SubNetManager.OnServerLogin] 连接分配异常 未知服务器连接 Addr[%s] Msg[%s]", remoteaddr, tarinfo.GetJSON())
 		retmsg := &servercomm.SLoginRetCommand{}
 		retmsg.Loginfailed = servercomm.LOGINRETCODE_IDENTITY
 		conn.SendCmd(retmsg)
 		conn.Terminate()
 		return
 	}
-	manager.Syslog("[SubNetManager.OnServerLogin] "+
-		"客户端连接验证成功 "+
-		" SerID[%s] IP[%s]",
-		serverInfo.ModuleID, serverInfo.ModuleAddr)
+	manager.Syslog("[SubNetManager.OnServerLogin] 客户端连接验证成功 SerID[%s] IP[%s]", serverInfo.ModuleID, serverInfo.ModuleAddr)
 
 	serverInfo.Version = tarinfo.Version
 
@@ -101,13 +91,10 @@ func (manager *Manager) BindTCPSubnet(settings *conf.ModuleConfig) error {
 	// init tcp subnet port
 	netlisten, err := net.Listen("tcp", addr)
 	if err != nil {
-		manager.Error("[SubNetManager.BindTCPSubnet] "+
-			"服务器绑定失败 IPPort[%s] Err[%s]",
-			addr, err.Error())
+		manager.Error("[SubNetManager.BindTCPSubnet] 服务器绑定失败 IPPort[%s] Err[%s]", addr, err.Error())
 		return err
 	}
-	manager.Syslog("[SubNetManager.BindTCPSubnet] "+
-		"服务器绑定成功 IPPort[%s]", addr)
+	manager.Syslog("[SubNetManager.BindTCPSubnet] 服务器绑定成功 IPPort[%s]", addr)
 	manager.myServerInfo.ModuleAddr = addr
 	go manager.TCPServerListenerProcess(netlisten)
 	return nil
@@ -118,8 +105,7 @@ func (manager *Manager) TCPServerListenerProcess(listener net.Listener) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			manager.Error("[SubNetManager.TCPServerListenerProcess] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+			manager.Error("[SubNetManager.TCPServerListenerProcess] Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
 	defer listener.Close()
@@ -134,22 +120,17 @@ func (manager *Manager) mTCPServerListener(listener net.Listener) {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
-			manager.Error("[SubNetManager.mTCPServerListener] "+
-				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
+			manager.Error("[SubNetManager.mTCPServerListener] Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
 
 	for true {
 		newconn, err := listener.Accept()
 		if err != nil {
-			manager.Error("[SubNetManager.mTCPServerListener] "+
-				"服务器端口监听异常 Err[%s]",
-				err.Error())
+			manager.Error("[SubNetManager.mTCPServerListener] 服务器端口监听异常 Err[%s]", err.Error())
 			continue
 		}
-		manager.Syslog("[SubNetManager.mTCPServerListener] "+
-			"收到新的TCP连接 Addr[%s]",
-			newconn.RemoteAddr().String())
+		manager.Syslog("[SubNetManager.mTCPServerListener] 收到新的TCP连接 Addr[%s]", newconn.RemoteAddr().String())
 		conn := manager.NewTCPServer(connect.ServerSCTypeTask, newconn, "",
 			manager.onConnectRecv, manager.onConnectClose)
 		if conn != nil {
@@ -180,8 +161,7 @@ func (manager *Manager) ChanServerListenerProcess(
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			manager.Error("[ChanServerListenerProcess] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+			manager.Error("[ChanServerListenerProcess] Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
 	defer func() {
@@ -200,8 +180,7 @@ func (manager *Manager) mChanServerListener(
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
-			manager.Error("[SubNetManager.mChanServerListener] "+
-				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
+			manager.Error("[SubNetManager.mChanServerListener] Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
 
@@ -226,8 +205,7 @@ func (manager *Manager) processChanServerRequest(
 			oldconn := manager.GetServer(newinfo.ModuleInfo.ModuleID)
 			// 重复连接
 			if oldconn != nil {
-				manager.Syslog("[Manager.mChanServerListener] "+
-					"ModuleID[%s] 重复的连接", newinfo.ModuleInfo.ModuleID)
+				manager.Syslog("[Manager.mChanServerListener] ModuleID[%s] 重复的连接", newinfo.ModuleInfo.ModuleID)
 			} else {
 				// 请求开始
 				newMsgChan := make(chan *msg.MessageBinary, 1000)
@@ -237,8 +215,7 @@ func (manager *Manager) processChanServerRequest(
 					ClientMsgChan: newinfo.ClientMsgChan,
 					Seq:           newinfo.Seq + 1,
 				}
-				manager.Syslog("[SubNetManager.mChanServerListener] "+
-					"收到新的 ServerChan 连接 ModuleID[%s]",
+				manager.Syslog("[SubNetManager.mChanServerListener] 收到新的 ServerChan 连接 ModuleID[%s]",
 					newinfo.ModuleInfo.ModuleID)
 				// 建立本地通信Server对象
 				conn := manager.NewChanServer(connect.ServerSCTypeTask,
@@ -253,13 +230,10 @@ func (manager *Manager) processChanServerRequest(
 			oldconn := manager.GetServer(newinfo.ModuleInfo.ModuleID)
 			// 重复连接
 			if oldconn != nil {
-				manager.Syslog("[Manager.mChanServerListener] "+
-					"ModuleID[%s] 重复的连接", newinfo.ModuleInfo.ModuleID)
+				manager.Syslog("[Manager.mChanServerListener] ModuleID[%s] 重复的连接", newinfo.ModuleInfo.ModuleID)
 			} else {
 				// 请求回复
-				manager.Syslog("[SubNetManager.mChanServerListener] "+
-					"收到 ServerChan 连接请求回复 ModuleID[%s]",
-					newinfo.ModuleInfo.ModuleID)
+				manager.Syslog("[SubNetManager.mChanServerListener] 收到 ServerChan 连接请求回复 ModuleID[%s]", newinfo.ModuleInfo.ModuleID)
 				// 建立本地通信Server对象
 				manager.doConnectChanServer(
 					newinfo.ServerMsgChan, newinfo.ClientMsgChan,
