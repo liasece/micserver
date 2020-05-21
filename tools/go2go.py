@@ -60,9 +60,9 @@ def backupstr(content):
         res = "\'>>>>ja"+str(len(backstr))+"ja<<<<\'"
         backstr.append(matched.group(0))
         return res
-    reg = re.compile("\'(.*?)\'")
+    reg = re.compile(r"\'(.*?)\'")
     content = re.sub(reg, _addtag, content)
-    reg = re.compile("\"(.*?)\"")
+    reg = re.compile(r"\"(.*?)\"")
     content = re.sub(reg, _addtag, content)
     return content
     
@@ -97,7 +97,7 @@ def save_to_file(file_name, contents):
     
 # 移除注释代码
 def removenotuse(content):
-    reg = re.compile("(/\*(\n|.)*?\*/)")
+    reg = re.compile(r"(/\*(\n|.)*?\*/)")
     # 移除行注释时，需要保留行
     def _saveline(matched):
         res = ""
@@ -110,7 +110,7 @@ def removenotuse(content):
 
 # 移除注释代码
 def removenotuseline(content):
-    reg = re.compile("(//.*)")
+    reg = re.compile(r"(//.*)")
     # 移除行注释时，需要保留行
     def _saveline(matched):
         res = ""
@@ -123,46 +123,46 @@ def removenotuseline(content):
 
 # 格式化代码，去除行首不可见字符
 def fmtcode(content) :
-    reg = re.compile("\n[\t ]+")
+    reg = re.compile(r"\n[\t ]+")
     content = re.sub(reg, "\n", content)
     return content
 
 # 格式化代码，孤立注释（上下皆空行）
 def fmtcodesub(content) :
-    reg = re.compile("\n[\t ]*\n[\t ]*([\t ]*//.*\n)+[\t ]*\n[\t ]*")
+    reg = re.compile(r"\n[\t ]*\n[\t ]*([\t ]*//.*\n)+[\t ]*\n[\t ]*")
     content = re.sub(reg, "\n", content)
 
-    reg = re.compile("^([\t ]*//.*\n)+[\t ]*\n[\t ]*")
+    reg = re.compile(r"^([\t ]*//.*\n)+[\t ]*\n[\t ]*")
     content = re.sub(reg, "\n", content)
 
-    reg = re.compile("\n[\t ]*\n[\t ]*([\t ]*//.*\n)*([\t ]*//.*\n?)[\t ]*$")
+    reg = re.compile(r"\n[\t ]*\n[\t ]*([\t ]*//.*\n)*([\t ]*//.*\n?)[\t ]*$")
     content = re.sub(reg, "\n", content)
     return content
 
 # 格式化输出代码
 def fmtcodeout(content) :
-    # reg = re.compile(";\s+")
+    # reg = re.compile(r";\s+")
     # content = re.sub(reg, ";\n", content)
 
-    reg = re.compile("{\s+")
+    reg = re.compile(r"{\s+")
     content = re.sub(reg, "{\n", content)
 
-    reg = re.compile("}\s*^(else)")
+    reg = re.compile(r"}\s*^(else)")
     content = re.sub(reg, "}\n", content)
 
-    reg = re.compile("\s+=\s+")
+    reg = re.compile(r"\s+=\s+")
     content = re.sub(reg, " = ", content)
 
-    reg = re.compile("\)\s*{")
+    reg = re.compile(r"\)\s*{")
     content = re.sub(reg, " ) { ", content)
 
-    reg = re.compile("\s+{^}")
+    reg = re.compile(r"\s+{^}")
     content = re.sub(reg, " {", content)
 
-    reg = re.compile("{[ \t\r]+\n")
+    reg = re.compile(r"{[ \t\r]+\n")
     content = re.sub(reg, "{\n", content)
 
-    reg = re.compile("\n\n\s+")
+    reg = re.compile(r"\n\n\s+")
     content = re.sub(reg, "\n\n", content)
     
     res = ""
@@ -189,7 +189,7 @@ def fmtcodeout(content) :
 
 # 从tag中获取实际json值
 def getjsonname(field,remark):
-    reg = re.compile("""['`"]json\s*:\s*['`"]\s*(\w+)\s*['`"]['`"]""")
+    reg = re.compile(r"""['`"]json\s*:\s*['`"]\s*(\w+)\s*['`"]['`"]""")
     ms = re.finditer(reg, remark)
     for i in ms:
         return i.group(1)
@@ -197,14 +197,14 @@ def getjsonname(field,remark):
 
 # 判断一个结构代码是否是一个消息,消息内容需要带上消息的前注释
 def isMsg(msgcontent):
-    reg = re.compile("""//[\t ]*jsonbinary:struct\n[\t ]*""")
+    reg = re.compile(r"""//[\t ]*jsonbinary:struct\n[\t ]*""")
     ms = re.finditer(reg, msgcontent)
     for i in ms:
         return False
     return True
 
 def getMsgType(name,msgcontent):
-    reg = re.compile("""//[\t ]*jsontype:(\w)\n[\t ]*""")
+    reg = re.compile(r"""//[\t ]*jsontype:(\w)\n[\t ]*""")
     ms = re.finditer(reg, msgcontent)
     for i in ms:
         return i.group(1)
@@ -314,7 +314,6 @@ def getgostringfunc():
     return read,send
 
 def getgobasefunc():
-    jsonname = "strfunc"
     code = 'func bool2int(value bool) int {\
     if value {\n\
         return 1\n\
@@ -446,7 +445,7 @@ def getgobybasetype(typestr,jsonname,ispoint,fieldnum):
         ret,se,size =  getgodouble(jsonname)
         return 'obj.'+ret,se,size
     else :
-        reg = re.compile("""[a-zA-Z0-9_]+""")
+        reg = re.compile(r"""[a-zA-Z0-9_]+""")
         ty = re.fullmatch(reg, typestr)
         if ty :
             # print(typestr)
@@ -468,7 +467,7 @@ def getgobybasetype(typestr,jsonname,ispoint,fieldnum):
             size = 'obj.'+jsonname+'.GetSize()'
             return read,send,size
         else :
-            reg = re.compile("""([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)""")
+            reg = re.compile(r"""([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)""")
             ty = re.fullmatch(reg, typestr)
             if ty :
                 needpack = '"'+ty.group(1)+'"'
@@ -547,13 +546,13 @@ def getgobybasetypesub(typestr):
     elif typestr == 'float64':
         return 'readBinaryFloat64(data[offset:offset+8])','writeBinaryFloat64',8
     else :
-        reg = re.compile("""[a-zA-Z0-9_]+""")
+        reg = re.compile(r"""[a-zA-Z0-9_]+""")
         ty = re.fullmatch(reg, typestr)
         if ty :
             # print(typestr)
             return "ReadMsg"+typestr+"ByBytes","WriteMsg"+typestr+"ByObj",0
         else :
-            reg = re.compile("""([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)""")
+            reg = re.compile(r"""([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)""")
             ty = re.fullmatch(reg, typestr)
             if ty :
                 needpack = '"'+ty.group(1)+'"'
@@ -564,7 +563,7 @@ def getgobybasetypesub(typestr):
 
 # 数组转换代码
 def getgoslice(typestr,jsonname,fieldnum):
-    reg = re.compile("""\[\]([\w*]+)""")
+    reg = re.compile(r"""\[\]([\w*]+)""")
     ty = re.fullmatch(reg, typestr)
     if ty:
         subtype = ty.group(1)
@@ -581,7 +580,7 @@ def getgoslice(typestr,jsonname,fieldnum):
         subtypecode,subtypecodesend,subleng = getgobybasetypesub(subtype)
         size='4'
         if subtypecode == "":
-            reg = re.compile("""\[\]([\w*_]+)""")
+            reg = re.compile(r"""\[\]([\w*_]+)""")
             ty = re.fullmatch(reg, typestr)
             if ty :
                 subtypecode,subtypecodesend,size,sizerely = getgoslice(subtype,ty.group(1),fieldnum+100000)
@@ -703,7 +702,7 @@ def getgoslice(typestr,jsonname,fieldnum):
     return "","","",""
 
 def getgomap(typestr,jsonname,fieldnum):
-    reg = re.compile("""map\s*\[(\s*[a-zA-Z0-9_]+\s*)\]\s*([a-zA-Z0-9*_]+)\s*""")
+    reg = re.compile(r"""map\s*\[(\s*[a-zA-Z0-9_]+\s*)\]\s*([a-zA-Z0-9*_]+)\s*""")
     ty = re.fullmatch(reg, typestr)
     if ty:
         keytype = ty.group(1)
@@ -909,7 +908,7 @@ def getgomsgcode(content):
     ressend = ""
     size = ''
     sizerely = ''
-    reg = re.compile("""[\t ]*(\w+)[\t ]+([^\s]+)[\t ]*([\w'`\": \t]+)?((\s*//.*\n?)*)""")
+    reg = re.compile(r"""[\t ]*(\w+)[\t ]+([^\s]+)[\t ]*([\w'`\": \t]+)?((\s*//.*\n?)*)""")
     gomsgs = re.finditer(reg, content)
     fieldnum = 0 
     for i in gomsgs:
@@ -1040,7 +1039,7 @@ def getgoheadfunc(names,types,packname,proto,onlynames):
         resinterfacegetname += 'func (this *'+i+') GetMsgName() string {\n\
                 return '+i+'Name\n\
             }\n\n'
-        resinterfacegetjsonstring += 'func (this *'+i+') GetJson() string {\n\
+        resinterfacegetjsonstring += 'func (this *'+i+') GetJSON() string {\n\
                 json,_ := json.Marshal(this)\n\
                 return string(json)\n\
             }\n\n'

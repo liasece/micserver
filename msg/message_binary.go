@@ -1,6 +1,4 @@
-/*
-micserver 中消息传递的基本单位
-*/
+// Package msg micserver 中消息传递的基本单位
 package msg
 
 import (
@@ -12,12 +10,12 @@ import (
 )
 
 const (
-	// 允许的最大消息大小（包括头部大小）
+	// MessageMaxSize 允许的最大消息大小（包括头部大小）
 	// 普通代码中间应留出至少 32 字节提供给消息头部使用
 	MessageMaxSize = 8 * 1024 * 1024
 )
 
-// micserver 中消息传递的基本单位
+// MessageBinary micserver 中消息传递的基本单位
 type MessageBinary struct {
 	msgbase.MessageBase
 
@@ -29,65 +27,65 @@ type MessageBinary struct {
 	buffer    []byte
 }
 
-// 将消息对象释放到对象池中
-func (this *MessageBinary) Free() {
+// Free 将消息对象释放到对象池中
+func (mb *MessageBinary) Free() {
 	// 重置本消息各个属性
-	this.Reset()
+	mb.Reset()
 	// 根据缓冲区容量归类
-	size := len(this.buffer)
-	err := pools.Put(this, size)
+	size := len(mb.buffer)
+	err := pools.Put(mb, size)
 	if err != nil {
 		log.Error("[MessageBinary.Free] pools.Put Err[%s]",
 			err.Error())
 	}
 }
 
-// 重置 Message 数据
-func (this *MessageBinary) Reset() {
-	this.MessageBase.Reset()
+// Reset 重置 Message 数据
+func (mb *MessageBinary) Reset() {
+	mb.MessageBase.Reset()
 
-	this.totalLength = 0
-	this.msgID = 0
-	this.ProtoData = nil
+	mb.totalLength = 0
+	mb.msgID = 0
+	mb.ProtoData = nil
 	// 为了减轻GC压力，不应重置buffer字段
 }
 
-// 获取消息包二进制总长度
-func (this *MessageBinary) GetTotalLength() int {
-	return this.totalLength
+// GetTotalLength 获取消息包二进制总长度
+func (mb *MessageBinary) GetTotalLength() int {
+	return mb.totalLength
 }
 
-// 设置消息包二进制总长度
-func (this *MessageBinary) SetTotalLength(v int) {
-	this.totalLength = v
+// SetTotalLength 设置消息包二进制总长度
+func (mb *MessageBinary) SetTotalLength(v int) {
+	mb.totalLength = v
 }
 
-// 获取消息包数据段总长度
-func (this *MessageBinary) GetProtoLength() int {
-	return this.protoLength
+// GetProtoLength 获取消息包数据段总长度
+func (mb *MessageBinary) GetProtoLength() int {
+	return mb.protoLength
 }
 
-// 设置消息包数据段总长度
-func (this *MessageBinary) SetProtoLength(v int) {
-	this.protoLength = v
+// SetProtoLength 设置消息包数据段总长度
+func (mb *MessageBinary) SetProtoLength(v int) {
+	mb.protoLength = v
 }
 
-// 获取消息ID
-func (this *MessageBinary) GetMsgID() uint16 {
-	return this.msgID
+// GetMsgID 获取消息ID
+func (mb *MessageBinary) GetMsgID() uint16 {
+	return mb.msgID
 }
 
-// 设置消息ID
-func (this *MessageBinary) SetMsgID(v uint16) {
-	this.msgID = v
+// SetMsgID 设置消息ID
+func (mb *MessageBinary) SetMsgID(v uint16) {
+	mb.msgID = v
 }
 
 // 从二进制流中读取数据
 // soffset 从本地偏移复制
 // data 数据源
 // doffset 数据源偏移
-// bytenum 要读取的字节数
-func (this *MessageBinary) Read(soffset int,
+// Read bytenum 要读取的字节数
+func (mb *MessageBinary) Read(soffset int,
 	data []byte, doffset int, bytenum int) error {
 	dataLen := len(data)
 	// 消息结构错误
@@ -97,8 +95,8 @@ func (this *MessageBinary) Read(soffset int,
 		return errors.New("源数据越界")
 	}
 	// 检查 buffer
-	if this.buffer == nil ||
-		len(this.buffer) < soffset+bytenum {
+	if mb.buffer == nil ||
+		len(mb.buffer) < soffset+bytenum {
 		tmpmsg := GetMessageBinary(soffset + bytenum)
 		if tmpmsg == nil {
 			log.Error("[Read] 无法分配MsgBinary的内存！！！ Size[%d]",
@@ -106,35 +104,35 @@ func (this *MessageBinary) Read(soffset int,
 			return errors.New("分配内存失败")
 		}
 		// 重新构建合理的 buffer
-		this.buffer = tmpmsg.buffer
+		mb.buffer = tmpmsg.buffer
 	}
 	// 复制 MessageBinaryHeadL2+protodata 数据域
-	copy(this.buffer[soffset:soffset+bytenum], data[doffset:doffset+bytenum])
+	copy(mb.buffer[soffset:soffset+bytenum], data[doffset:doffset+bytenum])
 	// 将数据指针字段指向buffer数据域
 	return nil
 }
 
-// 获取消息的二进制流数据
-func (this *MessageBinary) GetBuffer() []byte {
-	return this.buffer
+// GetBuffer 获取消息的二进制流数据
+func (mb *MessageBinary) GetBuffer() []byte {
+	return mb.buffer
 }
 
-// 设置消息内容数据域
-func (this *MessageBinary) SetProtoDataBound(offset int, bytenum int) error {
-	if len(this.buffer) < offset+bytenum || offset+bytenum < 0 {
+// SetProtoDataBound 设置消息内容数据域
+func (mb *MessageBinary) SetProtoDataBound(offset int, bytenum int) error {
+	if len(mb.buffer) < offset+bytenum || offset+bytenum < 0 {
 		log.Error("[MessageBinary.SetProtoDataBound] 缓冲区越界 Len[%d] Need[%d]",
-			len(this.buffer), offset+bytenum)
+			len(mb.buffer), offset+bytenum)
 		return errors.New("缓冲区越界")
 	}
-	this.ProtoData = this.buffer[offset : offset+bytenum]
-	this.SetProtoLength(bytenum)
+	mb.ProtoData = mb.buffer[offset : offset+bytenum]
+	mb.SetProtoLength(bytenum)
 	return nil
 }
 
-// 获取消息的所有二进制内容的16进制字符串
-func (this *MessageBinary) String() string {
-	if this.buffer == nil {
+// String 获取消息的所有二进制内容的16进制字符串
+func (mb *MessageBinary) String() string {
+	if mb.buffer == nil {
 		return ""
 	}
-	return hex.EncodeToString(this.buffer)
+	return hex.EncodeToString(mb.buffer)
 }

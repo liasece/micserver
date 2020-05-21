@@ -7,80 +7,89 @@ import (
 	"github.com/liasece/micserver/util/strings"
 )
 
-type subPool struct {
+// SubPool sub pool
+type SubPool struct {
 	sync.Map
 }
 
-func (this *subPool) Len() int {
+// Len func
+func (p *SubPool) Len() int {
 	res := 0
-	this.Map.Range(func(k, v interface{}) bool {
+	p.Map.Range(func(k, v interface{}) bool {
 		res++
 		return true
 	})
 	return res
 }
 
+// MapPool map pool
 type MapPool struct {
-	pool         subPool
+	pool         SubPool
 	groupPool    sync.Map
 	groupSum     int
 	getGroupFunc func(k interface{}) int
 }
 
-func (this *MapPool) Init(groupSum int) {
-	if groupSum == 0 || groupSum == 1 || this.getGroupFunc == nil {
+// Init func
+func (p *MapPool) Init(groupSum int) {
+	if groupSum == 0 || groupSum == 1 || p.getGroupFunc == nil {
 		// 不分组
-		this.groupSum = 1
+		p.groupSum = 1
 	} else {
 		// 分组
-		this.groupSum = groupSum
-		for i := 0; i < this.groupSum; i++ {
-			this.groupPool.Store(i, &subPool{})
+		p.groupSum = groupSum
+		for i := 0; i < p.groupSum; i++ {
+			p.groupPool.Store(i, &SubPool{})
 		}
 	}
-	this.getGroupFunc = this.getGroupIndexFunc
+	p.getGroupFunc = p.getGroupIndexFunc
 }
 
-func (this *MapPool) getGroupIndexFunc(k interface{}) int {
+func (p *MapPool) getGroupIndexFunc(k interface{}) int {
 	str := strings.MustInterfaceToString(k)
 	hash := hash.GetStringHash(str)
-	return int(hash) % this.groupSum
+	return int(hash) % p.groupSum
 }
 
-func (this *MapPool) GetPool(k interface{}) *subPool {
-	if this.groupSum > 1 && this.getGroupFunc != nil {
-		index := this.getGroupFunc(k)
-		vi, ok := this.groupPool.Load(index)
+// GetPool func
+func (p *MapPool) GetPool(k interface{}) *SubPool {
+	if p.groupSum > 1 && p.getGroupFunc != nil {
+		index := p.getGroupFunc(k)
+		vi, ok := p.groupPool.Load(index)
 		if !ok {
 			return nil
 		}
-		return vi.(*subPool)
-	} else {
-		return &this.pool
+		return vi.(*SubPool)
 	}
+	return &p.pool
 }
 
-func (this *MapPool) Load(k interface{}) (interface{}, bool) {
-	return this.GetPool(k).Load(k)
+// Load func
+func (p *MapPool) Load(k interface{}) (interface{}, bool) {
+	return p.GetPool(k).Load(k)
 }
 
-func (this *MapPool) Store(k, v interface{}) {
-	this.GetPool(k).Store(k, v)
+// Store func
+func (p *MapPool) Store(k, v interface{}) {
+	p.GetPool(k).Store(k, v)
 }
 
-func (this *MapPool) LoadOrStore(k, v interface{}) (interface{}, bool) {
-	return this.GetPool(k).LoadOrStore(k, v)
+// LoadOrStore func
+func (p *MapPool) LoadOrStore(k, v interface{}) (interface{}, bool) {
+	return p.GetPool(k).LoadOrStore(k, v)
 }
 
-func (this *MapPool) Delete(k interface{}) {
-	this.GetPool(k).Delete(k)
+// Delete func
+func (p *MapPool) Delete(k interface{}) {
+	p.GetPool(k).Delete(k)
 }
 
-func (this *MapPool) Range(cb func(k, v interface{}) bool) {
-	if this.groupSum > 1 && this.getGroupFunc != nil {
+// Range func
+func (p *MapPool) Range(cb func(k, v interface{}) bool) {
+	if p.groupSum > 1 && p.getGroupFunc != nil {
 		goon := true
-		this.groupPool.Range(func(_, pooli interface{}) bool {
-			pool := pooli.(*subPool)
+		p.groupPool.Range(func(_, pooli interface{}) bool {
+			pool := pooli.(*SubPool)
 			pool.Range(func(k, v interface{}) bool {
 				res := cb(k, v)
 				if !res {
@@ -91,20 +100,21 @@ func (this *MapPool) Range(cb func(k, v interface{}) bool) {
 			return goon
 		})
 	} else {
-		this.pool.Range(cb)
+		p.pool.Range(cb)
 	}
 }
 
-func (this *MapPool) LenTotal() int {
+// LenTotal func
+func (p *MapPool) LenTotal() int {
 	res := 0
-	if this.groupSum > 1 && this.getGroupFunc != nil {
-		this.groupPool.Range(func(_, pooli interface{}) bool {
-			pool := pooli.(*subPool)
+	if p.groupSum > 1 && p.getGroupFunc != nil {
+		p.groupPool.Range(func(_, pooli interface{}) bool {
+			pool := pooli.(*SubPool)
 			res += pool.Len()
 			return true
 		})
 	} else {
-		res += this.pool.Len()
+		res += p.pool.Len()
 	}
 	return res
 }

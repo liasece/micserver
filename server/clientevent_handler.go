@@ -16,39 +16,39 @@ type clientEventHandler struct {
 	gateHook base.GateHook
 }
 
-// 设置网关事件监听者，如果本服务没有启用网关，将不会收到任何事件
-func (this *clientEventHandler) HookGate(gateHook base.GateHook) {
-	this.gateHook = gateHook
+// HookGate 设置网关事件监听者，如果本服务没有启用网关，将不会收到任何事件
+func (handler *clientEventHandler) HookGate(gateHook base.GateHook) {
+	handler.gateHook = gateHook
 }
 
-// 当接收一个客户端的TCP连接时调用
-func (this *clientEventHandler) OnAcceptClientConnect(conn net.Conn) {
-	if this.gateHook != nil {
-		this.gateHook.OnAcceptClientConnect(conn)
+// OnAcceptClientConnect 当接收一个客户端的TCP连接时调用
+func (handler *clientEventHandler) OnAcceptClientConnect(conn net.Conn) {
+	if handler.gateHook != nil {
+		handler.gateHook.OnAcceptClientConnect(conn)
 	}
 }
 
-// 当新增了一个客户端连接时调用
-func (this *clientEventHandler) OnNewClient(client *connect.Client) {
-	moduleType := util.GetModuleIDType(this.server.moduleid)
-	client.SetBind(moduleType, this.server.moduleid)
+// OnNewClient 当新增了一个客户端连接时调用
+func (handler *clientEventHandler) OnNewClient(client *connect.Client) {
+	moduleType := util.GetModuleIDType(handler.server.moduleid)
+	client.SetBind(moduleType, handler.server.moduleid)
 
-	if this.gateHook != nil {
-		this.gateHook.OnNewClient(client)
+	if handler.gateHook != nil {
+		handler.gateHook.OnNewClient(client)
 	}
 }
 
-// 当关闭了一个客户端连接时调用
-func (this *clientEventHandler) OnCloseClient(client *connect.Client) {
-	if this.gateHook != nil {
-		this.gateHook.OnCloseClient(client)
+// OnCloseClient 当关闭了一个客户端连接时调用
+func (handler *clientEventHandler) OnCloseClient(client *connect.Client) {
+	if handler.gateHook != nil {
+		handler.gateHook.OnCloseClient(client)
 	}
 }
 
-// 当收到了一个客户端消息时调用
-func (this *clientEventHandler) OnRecvClientMsg(
+// OnRecvClientMsg 当收到了一个客户端消息时调用
+func (handler *clientEventHandler) OnRecvClientMsg(
 	client *connect.Client, msgbin *msg.MessageBinary) {
-	if this.gateHook != nil {
-		this.gateHook.OnRecvClientMsg(client, msgbin)
+	if handler.gateHook != nil {
+		handler.gateHook.OnRecvClientMsg(client, msgbin)
 	}
 }

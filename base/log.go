@@ -1,6 +1,6 @@
 package base
 
-// micserver的log系统提供给外部的接口
+// ILog micserver的log系统提供给外部的接口
 type ILog interface {
 	Debug(fmt string, args ...interface{})
 	Warn(fmt string, args ...interface{})

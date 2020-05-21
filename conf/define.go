@@ -1,6 +1,6 @@
 package conf
 
-// micserver中配置的键类型
+// ConfigKey micserver中配置的键类型
 type ConfigKey string
 
 // micserver框架内置的配置选项

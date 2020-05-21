@@ -2,24 +2,25 @@ package httpconn
 
 import (
 	"encoding/base64"
-	"github.com/liasece/micserver/log"
-	"github.com/liasece/micserver/util"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/liasece/micserver/log"
+	"github.com/liasece/micserver/util"
 )
 
-// 返回 HTTP 消息
-func WriterReturnHttpStrs(writer http.ResponseWriter, strs []string) {
+// WriterReturnHTTPStrs 返回 HTTP 消息
+func WriterReturnHTTPStrs(writer http.ResponseWriter, strs []string) {
 	str := ""
 	for _, v := range strs {
 		str += v
 	}
-	WriterReturnHttpStr(writer, str)
+	WriterReturnHTTPStr(writer, str)
 }
 
-// 返回 HTTP 消息
-func WriterReturnHttpStr(writer http.ResponseWriter, str string) {
+// WriterReturnHTTPStr 返回 HTTP 消息
+func WriterReturnHTTPStr(writer http.ResponseWriter, str string) {
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
 	writer.Header().Set("content-type", "application/json")
 	writer.Header().Add("cache-control", "no-cache")
@@ -34,20 +35,20 @@ func WriterReturnHttpStr(writer http.ResponseWriter, str string) {
 		encodeString := base64.StdEncoding.EncodeToString(aesstr)
 		n, err := io.WriteString(writer, encodeString)
 		if err != nil {
-			log.Error("[WriterReturnHttpStr] io.WriteString Err[%s] N[%d]",
+			log.Error("[WriterReturnHTTPStr] io.WriteString Err[%s] N[%d]",
 				err.Error(), n)
 		}
 	} else {
 		n, err := io.WriteString(writer, str)
 		if err != nil {
-			log.Error("[WriterReturnHttpStr] io.WriteString Err[%s] N[%d]",
+			log.Error("[WriterReturnHTTPStr] io.WriteString Err[%s] N[%d]",
 				err.Error(), n)
 		}
 	}
 }
 
-// HTTP 连接对象
-type HttpConn struct {
+// HTTPConn HTTP 连接对象
+type HTTPConn struct {
 	writer http.ResponseWriter
 	Tempid uint64 // 唯一编号
 	Openid string
@@ -55,50 +56,50 @@ type HttpConn struct {
 	Holder chan int
 }
 
-// 设置 HTTP 返回
-func (this *HttpConn) SetWriter(w http.ResponseWriter) {
-	this.writer = w
+// SetWriter 设置 HTTP 返回
+func (httpConn *HTTPConn) SetWriter(w http.ResponseWriter) {
+	httpConn.writer = w
 }
 
-// 增加一个 HTTP 返回值到缓冲区中
-func (this *HttpConn) AppendBufStr(str string) {
-	if this.BufStr == nil {
-		this.BufStr = make([]string, 0)
+// AppendBufStr 增加一个 HTTP 返回值到缓冲区中
+func (httpConn *HTTPConn) AppendBufStr(str string) {
+	if httpConn.BufStr == nil {
+		httpConn.BufStr = make([]string, 0)
 	}
-	this.BufStr = append(this.BufStr, str)
+	httpConn.BufStr = append(httpConn.BufStr, str)
 }
 
-// 直接返回一个 HTTP 请求返回值
-func (this *HttpConn) ReturnHttpStr(str string) {
-	WriterReturnHttpStr(this.writer, str)
+// ReturnHTTPStr 直接返回一个 HTTP 请求返回值
+func (httpConn *HTTPConn) ReturnHTTPStr(str string) {
+	WriterReturnHTTPStr(httpConn.writer, str)
 }
 
-// 保持住一个 HTTP 请求
-func (this *HttpConn) Hold() {
-	if this.Holder == nil {
-		this.Holder = make(chan int)
+// Hold 保持住一个 HTTP 请求
+func (httpConn *HTTPConn) Hold() {
+	if httpConn.Holder == nil {
+		httpConn.Holder = make(chan int)
 	}
 }
 
-// 等待一个 HTTP 请求返回完成
-func (this *HttpConn) Wait() int {
-	if this.Holder == nil {
+// Wait 等待一个 HTTP 请求返回完成
+func (httpConn *HTTPConn) Wait() int {
+	if httpConn.Holder == nil {
 		return -1
 	}
 
 	// 超时时间为3秒
 	select {
-	case <-this.Holder:
+	case <-httpConn.Holder:
 		return 0
 	case <-time.After(time.Second * 3):
 		return 1
 	}
 }
 
-// HTTP 请求返回完成，释放该HTTP请求的保持
-func (this *HttpConn) Release() {
-	if this.Holder == nil {
+// Release HTTP 请求返回完成，释放该HTTP请求的保持
+func (httpConn *HTTPConn) Release() {
+	if httpConn.Holder == nil {
 		return
 	}
-	this.Holder <- 1
+	httpConn.Holder <- 1
 }

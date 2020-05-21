@@ -11,16 +11,16 @@ import (
 
 // 默认的消息头大小
 const (
-	DEFAULT_MSG_HEADSIZE = (4 + 2)
+	DEFAULTMSGHEADSIZE = (4 + 2)
 )
 
-// 默认通过结构构造消息体
-func DefaultEncodeObj(v MsgStruct) *MessageBinary {
+// DefaultEncodeObj 默认通过结构构造消息体
+func DefaultEncodeObj(v IMsgStruct) *MessageBinary {
 	// 通过结构对象构造 json binary
 	cmdid := v.GetMsgId()
 	// 获取基础数据
 	datalen := v.GetSize()
-	totalLength := DEFAULT_MSG_HEADSIZE + datalen
+	totalLength := DEFAULTMSGHEADSIZE + datalen
 	// 判断数据合法性
 	if totalLength >= MessageMaxSize {
 		log.Error("[EncodeObj] "+
@@ -42,12 +42,12 @@ func DefaultEncodeObj(v MsgStruct) *MessageBinary {
 
 	// MessageBinaryBody
 	// 将 protodata 拷贝至 buffer 的数据域
-	v.WriteBinary(msgbinary.GetBuffer()[DEFAULT_MSG_HEADSIZE:totalLength])
+	v.WriteBinary(msgbinary.GetBuffer()[DEFAULTMSGHEADSIZE:totalLength])
 
 	// 初始化消息信息
 
 	// 消息数据字段指针指向 buffer 数据域
-	msgbinary.SetProtoDataBound(DEFAULT_MSG_HEADSIZE, datalen)
+	msgbinary.SetProtoDataBound(DEFAULTMSGHEADSIZE, datalen)
 
 	// 初始化消息信息
 	// MessageBinaryHeadL1
@@ -58,11 +58,11 @@ func DefaultEncodeObj(v MsgStruct) *MessageBinary {
 	return msgbinary
 }
 
-// 默认通过字节流构造消息体
+// DefaultEncodeBytes 默认通过字节流构造消息体
 func DefaultEncodeBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	// 获取基础数据
 	datalen := len(protodata)
-	totalLength := DEFAULT_MSG_HEADSIZE + datalen
+	totalLength := DEFAULTMSGHEADSIZE + datalen
 	// 判断数据合法性
 	if totalLength >= MessageMaxSize {
 		log.Error("[EncodeObj] "+
@@ -84,11 +84,11 @@ func DefaultEncodeBytes(cmdid uint16, protodata []byte) *MessageBinary {
 
 	// MessageBinaryBody
 	// 将 protodata 拷贝至 buffer 的数据域
-	msgbinary.Read(DEFAULT_MSG_HEADSIZE, protodata, 0, datalen)
+	msgbinary.Read(DEFAULTMSGHEADSIZE, protodata, 0, datalen)
 
 	// 初始化消息信息
 	// 消息数据字段指针指向 buffer 数据域
-	msgbinary.SetProtoDataBound(DEFAULT_MSG_HEADSIZE, datalen)
+	msgbinary.SetProtoDataBound(DEFAULTMSGHEADSIZE, datalen)
 
 	// 初始化消息信息
 	msgbinary.SetTotalLength(totalLength)
@@ -98,7 +98,7 @@ func DefaultEncodeBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	return msgbinary
 }
 
-// 默认写头
+// DefaultWriteHead 默认写头
 func DefaultWriteHead(data []byte, totalLen int,
 	msgid uint16) (size int) {
 	binary.LittleEndian.PutUint32(data[size:], uint32(totalLen)) // 4
@@ -109,7 +109,7 @@ func DefaultWriteHead(data []byte, totalLen int,
 	return
 }
 
-// micserver 默认的消息编解码器
+// DefaultCodec micserver 默认的消息编解码器
 type DefaultCodec struct {
 	inMsg bool
 
@@ -118,12 +118,12 @@ type DefaultCodec struct {
 	msgID    uint16
 }
 
-// 遍历目标缓冲区中的消息
-func (this *DefaultCodec) RangeMsgBinary(
+// RangeMsgBinary 遍历目标缓冲区中的消息
+func (defaultCodec *DefaultCodec) RangeMsgBinary(
 	buf *buffer.IOBuffer, cb func(*MessageBinary)) (reerr error) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
+		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
 			log.Error("[DefaultCodec.RangeMsgBinary] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 			reerr = err
@@ -134,55 +134,54 @@ func (this *DefaultCodec) RangeMsgBinary(
 	for {
 		// 读消息头
 		// 当前不在消息体中，且当前缓冲区长度已大于消息头长度
-		if !this.inMsg && buf.Len() >= DEFAULT_MSG_HEADSIZE {
+		if !defaultCodec.inMsg && buf.Len() >= DEFAULTMSGHEADSIZE {
 
 			// 读头部4个字节
-			headData, err := buf.Read(0, DEFAULT_MSG_HEADSIZE)
+			headData, err := buf.Read(0, DEFAULTMSGHEADSIZE)
 			if err != nil {
 				return err
 			}
-			_, err = this.readHead(headData)
+			_, err = defaultCodec.readHead(headData)
 			if err != nil {
 				return fmt.Errorf("Head dec err:%s. headdata:%#v",
 					err.Error(), headData)
 			}
 
 			// 进入消息处理逻辑
-			this.inMsg = true
+			defaultCodec.inMsg = true
 		}
 
 		// 读消息体
-		if this.inMsg && buf.Len() >= this.protoLen {
-			cmdbuff, err := buf.Read(0, this.protoLen)
+		if defaultCodec.inMsg && buf.Len() >= defaultCodec.protoLen {
+			cmdbuff, err := buf.Read(0, defaultCodec.protoLen)
 			if err != nil {
 				return err
 			}
 
 			// 获取合适大小的消息体
-			msgbinary := GetMessageBinary(this.totalLen)
+			msgbinary := GetMessageBinary(defaultCodec.totalLen)
 			if msgbinary != nil {
-				msgbinary.SetTotalLength(this.totalLen)
-				msgbinary.SetMsgID(this.msgID)
+				msgbinary.SetTotalLength(defaultCodec.totalLen)
+				msgbinary.SetMsgID(defaultCodec.msgID)
 				// 解析消息（无6个字节的头）
-				err := msgbinary.Read(DEFAULT_MSG_HEADSIZE, cmdbuff, 0,
-					this.protoLen)
+				err := msgbinary.Read(DEFAULTMSGHEADSIZE, cmdbuff, 0,
+					defaultCodec.protoLen)
 				if err != nil {
 					log.Error("[DefaultCodec.RangeMsgBinary] "+
 						"解析消息错误 Err[%s]", err.Error())
 					return err
-				} else {
-					// 设置内容边界
-					msgbinary.SetProtoDataBound(DEFAULT_MSG_HEADSIZE,
-						this.protoLen)
-					// 调用回调函数处理消息
-					cb(msgbinary)
 				}
+				// 设置内容边界
+				msgbinary.SetProtoDataBound(DEFAULTMSGHEADSIZE,
+					defaultCodec.protoLen)
+				// 调用回调函数处理消息
+				cb(msgbinary)
 			} else {
 				log.Error("[DefaultCodec.RangeMsgBinary] "+
-					"无法分配MsgBinary的内存！！！ TotalLen[%d]", this.totalLen)
+					"无法分配MsgBinary的内存！！！ TotalLen[%d]", defaultCodec.totalLen)
 			}
 			// 退出消息处理状态
-			this.inMsg = false
+			defaultCodec.inMsg = false
 		} else {
 			break
 		}
@@ -190,30 +189,30 @@ func (this *DefaultCodec) RangeMsgBinary(
 	return nil
 }
 
-func (this *DefaultCodec) readHead(data []byte) (int, error) {
-	if len(data) < DEFAULT_MSG_HEADSIZE {
+func (defaultCodec *DefaultCodec) readHead(data []byte) (int, error) {
+	if len(data) < DEFAULTMSGHEADSIZE {
 		return 0, fmt.Errorf("data not enough")
 	}
 	size := 0
-	this.totalLen = int(binary.LittleEndian.Uint32(data[size:]))
-	this.protoLen = this.totalLen - DEFAULT_MSG_HEADSIZE
+	defaultCodec.totalLen = int(binary.LittleEndian.Uint32(data[size:]))
+	defaultCodec.protoLen = defaultCodec.totalLen - DEFAULTMSGHEADSIZE
 	size += 4
-	this.msgID = binary.LittleEndian.Uint16(data[size:])
+	defaultCodec.msgID = binary.LittleEndian.Uint16(data[size:])
 	size += 2
 	// cmdlen must  include head layer 1 size
-	if int(this.totalLen) < DEFAULT_MSG_HEADSIZE {
+	if int(defaultCodec.totalLen) < DEFAULTMSGHEADSIZE {
 		return 0, fmt.Errorf("error cmdlen")
 	}
-	return DEFAULT_MSG_HEADSIZE, nil
+	return DEFAULTMSGHEADSIZE, nil
 }
 
-// 编码一个消息对象
-func (this *DefaultCodec) EncodeObj(v MsgStruct) *MessageBinary {
+// EncodeObj 编码一个消息对象
+func (defaultCodec *DefaultCodec) EncodeObj(v IMsgStruct) *MessageBinary {
 	return DefaultEncodeObj(v)
 }
 
-// 编码一个由消息号及二进制内容构成的消息
-func (this *DefaultCodec) EncodeBytes(cmdid uint16,
+// EncodeBytes 编码一个由消息号及二进制内容构成的消息
+func (defaultCodec *DefaultCodec) EncodeBytes(cmdid uint16,
 	protodata []byte) *MessageBinary {
 	return DefaultEncodeBytes(cmdid, protodata)
 }

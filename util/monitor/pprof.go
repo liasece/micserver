@@ -3,13 +3,16 @@ package monitor
 import (
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
 	"time"
+
+	// pprof
+	_ "net/http/pprof"
 
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/util/sysutil"
 )
 
+// BindPprof func
 func BindPprof(ip string, port uint32) error {
 	log.Syslog("[startPprofThread] pprof正在启动 IPPort[%s:%d]", ip, port)
 	go startPprofThread(ip, port)
@@ -19,7 +22,7 @@ func BindPprof(ip string, port uint32) error {
 func startPprofThread(ip string, port uint32) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
+		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
 			log.Error("[startPprofThread] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}

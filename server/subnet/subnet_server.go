@@ -13,18 +13,18 @@ import (
 	"github.com/liasece/micserver/util/uid"
 )
 
-// 目标服务器尝试登陆到本服务器
-func (this *SubnetManager) OnServerLogin(conn *connect.Server,
+// OnServerLogin 目标服务器尝试登陆到本服务器
+func (manager *Manager) OnServerLogin(conn *connect.Server,
 	tarinfo *servercomm.SLoginCommand) {
-	this.connectMutex.Lock()
-	defer this.connectMutex.Unlock()
+	manager.connectMutex.Lock()
+	defer manager.connectMutex.Unlock()
 
-	this.Syslog("收到登陆请求 Server:%s", tarinfo.ModuleID)
+	manager.Syslog("收到登陆请求 Server:%s", tarinfo.ModuleID)
 
 	// 来源服务器请求登陆本服务器
-	myconn := this.GetServer(fmt.Sprint(tarinfo.ModuleID))
+	myconn := manager.GetServer(fmt.Sprint(tarinfo.ModuleID))
 	if myconn != nil {
-		this.Syslog("[SubnetManager.OnServerLogin] 重复连接 %s 优先级：%d:%d",
+		manager.Syslog("[Manager.OnServerLogin] 重复连接 %s 优先级：%d:%d",
 			tarinfo.ModuleID,
 			myconn.ConnectPriority, tarinfo.ConnectPriority)
 		if myconn.ConnectPriority < tarinfo.ConnectPriority {
@@ -32,13 +32,13 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 			myconn.IsNormalDisconnect = true
 			myconn.Terminate()
 			unuseid, _ := uid.GenUniqueID(0)
-			this.ChangeServerTempid(
+			manager.ChangeServerTempid(
 				myconn, myconn.GetTempID()+"unuse"+unuseid)
 		} else {
 			// 我方优先级比较高已经连接成功过了，非法连接
-			this.Syslog("[SubNetManager.OnServerLogin] "+
+			manager.Syslog("[SubNetManager.OnServerLogin] "+
 				"收到了重复的Server连接请求 Msg[%s]",
-				tarinfo.GetJson())
+				tarinfo.GetJSON())
 			return
 		}
 	}
@@ -52,17 +52,17 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 	// 检查是否获取信息成功
 	if serverInfo.ModuleID == "" {
 		// 如果获取信息不成功
-		this.Error("[SubNetManager.OnServerLogin] "+
+		manager.Error("[SubNetManager.OnServerLogin] "+
 			"连接分配异常 未知服务器连接 "+
 			"Addr[%s] Msg[%s]",
-			remoteaddr, tarinfo.GetJson())
+			remoteaddr, tarinfo.GetJSON())
 		retmsg := &servercomm.SLoginRetCommand{}
 		retmsg.Loginfailed = servercomm.LOGINRETCODE_IDENTITY
 		conn.SendCmd(retmsg)
 		conn.Terminate()
 		return
 	}
-	this.Syslog("[SubNetManager.OnServerLogin] "+
+	manager.Syslog("[SubNetManager.OnServerLogin] "+
 		"客户端连接验证成功 "+
 		" SerID[%s] IP[%s]",
 		serverInfo.ModuleID, serverInfo.ModuleAddr)
@@ -71,70 +71,70 @@ func (this *SubnetManager) OnServerLogin(conn *connect.Server,
 
 	// 来源服务器检查完毕
 	// 完善来源服务器在本服务器的信息
-	this.ChangeServerTempid(conn, fmt.Sprint(serverInfo.ModuleID))
+	manager.ChangeServerTempid(conn, fmt.Sprint(serverInfo.ModuleID))
 	conn.ModuleInfo = serverInfo
 	conn.SetVertify(true)
 	conn.SetTerminateTime(0) // 清除终止时间状态
 	// 向来源服务器回复登陆成功消息
 	retmsg := &servercomm.SLoginRetCommand{}
 	retmsg.Loginfailed = 0
-	retmsg.Destination = this.myServerInfo
+	retmsg.Destination = manager.myServerInfo
 	conn.SendCmd(retmsg)
 
 	// 通知其他服务器，次服务器登陆完成
 	// 如果我是SuperServer
 	// 向来源服务器发送本地已有的所有服务器信息
-	this.NotifyAllServerInfo(conn)
+	manager.NotifyAllServerInfo(conn)
 	// 把来源服务器信息广播给其它所有服务器
 	notifymsg := &servercomm.SStartMyNotifyCommand{}
 	notifymsg.ModuleInfo = serverInfo
-	this.BroadcastCmd(notifymsg)
-	this.subnetHook.OnServerJoinSubnet(conn)
+	manager.BroadcastCmd(notifymsg)
+	manager.subnetHook.OnServerJoinSubnet(conn)
 }
 
-// 绑定本服务器对子网开放的端口
-func (this *SubnetManager) BindTCPSubnet(settings *conf.ModuleConfig) error {
+// BindTCPSubnet 绑定本服务器对子网开放的端口
+func (manager *Manager) BindTCPSubnet(settings *conf.ModuleConfig) error {
 	if !settings.Exist(conf.SubnetTCPAddr) {
-		return fmt.Errorf("subnettcpaddr hasn't set.")
+		return fmt.Errorf("subnettcpaddr hasn't set")
 	}
 	addr := settings.GetString(conf.SubnetTCPAddr)
 	// init tcp subnet port
 	netlisten, err := net.Listen("tcp", addr)
 	if err != nil {
-		this.Error("[SubNetManager.BindTCPSubnet] "+
+		manager.Error("[SubNetManager.BindTCPSubnet] "+
 			"服务器绑定失败 IPPort[%s] Err[%s]",
 			addr, err.Error())
 		return err
 	}
-	this.Syslog("[SubNetManager.BindTCPSubnet] "+
+	manager.Syslog("[SubNetManager.BindTCPSubnet] "+
 		"服务器绑定成功 IPPort[%s]", addr)
-	this.myServerInfo.ModuleAddr = addr
-	go this.TCPServerListenerProcess(netlisten)
+	manager.myServerInfo.ModuleAddr = addr
+	go manager.TCPServerListenerProcess(netlisten)
 	return nil
 }
 
-// 监听本服务器的子网端口线程
-func (this *SubnetManager) TCPServerListenerProcess(listener net.Listener) {
+// TCPServerListenerProcess 监听本服务器的子网端口线程
+func (manager *Manager) TCPServerListenerProcess(listener net.Listener) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
-			this.Error("[SubNetManager.TCPServerListenerProcess] "+
+		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
+			manager.Error("[SubNetManager.TCPServerListenerProcess] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
 	defer listener.Close()
 	for true {
-		this.mTCPServerListener(listener)
+		manager.mTCPServerListener(listener)
 	}
 }
 
-// 保持监听本地服务器对子网端口
-func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
+// mTCPServerListener 保持监听本地服务器对子网端口
+func (manager *Manager) mTCPServerListener(listener net.Listener) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
+		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
-			this.Error("[SubNetManager.mTCPServerListener] "+
+			manager.Error("[SubNetManager.mTCPServerListener] "+
 				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -142,65 +142,65 @@ func (this *SubnetManager) mTCPServerListener(listener net.Listener) {
 	for true {
 		newconn, err := listener.Accept()
 		if err != nil {
-			this.Error("[SubNetManager.mTCPServerListener] "+
+			manager.Error("[SubNetManager.mTCPServerListener] "+
 				"服务器端口监听异常 Err[%s]",
 				err.Error())
 			continue
 		}
-		this.Syslog("[SubNetManager.mTCPServerListener] "+
+		manager.Syslog("[SubNetManager.mTCPServerListener] "+
 			"收到新的TCP连接 Addr[%s]",
 			newconn.RemoteAddr().String())
-		conn := this.NewTCPServer(connect.ServerSCTypeTask, newconn, "",
-			this.onConnectRecv, this.onConnectClose)
+		conn := manager.NewTCPServer(connect.ServerSCTypeTask, newconn, "",
+			manager.onConnectRecv, manager.onConnectClose)
 		if conn != nil {
-			conn.Logger = this.Logger
-			this.OnCreateNewServer(conn)
+			conn.Logger = manager.Logger
+			manager.OnCreateNewServer(conn)
 		}
 	}
 }
 
 // Local chan server init
 
-// 绑定本地 chan 连接类型
-func (this *SubnetManager) BindChanSubnet(settings *conf.ModuleConfig) error {
+// BindChanSubnet 绑定本地 chan 连接类型
+func (manager *Manager) BindChanSubnet(settings *conf.ModuleConfig) error {
 	nochan := settings.GetBool(conf.SubnetNoChan)
 	if nochan {
 		return nil
 	}
 	serverChan := make(chan *process.ChanServerHandshake, 1000)
-	process.AddServerChan(this.myServerInfo.ModuleID, serverChan)
-	go this.ChanServerListenerProcess(serverChan)
-	this.Syslog("BindChanSubnet ChanServer 注册成功")
+	process.AddServerChan(manager.myServerInfo.ModuleID, serverChan)
+	go manager.ChanServerListenerProcess(serverChan)
+	manager.Syslog("BindChanSubnet ChanServer 注册成功")
 	return nil
 }
 
-// 监听本地 chan 连接的消息
-func (this *SubnetManager) ChanServerListenerProcess(
+// ChanServerListenerProcess 监听本地 chan 连接的消息
+func (manager *Manager) ChanServerListenerProcess(
 	serverChan chan *process.ChanServerHandshake) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
-			this.Error("[ChanServerListenerProcess] "+
+		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
+			manager.Error("[ChanServerListenerProcess] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
 	defer func() {
-		process.DeleteServerChan(this.myServerInfo.ModuleID)
+		process.DeleteServerChan(manager.myServerInfo.ModuleID)
 		close(serverChan)
 	}()
 	for true {
-		this.mChanServerListener(serverChan)
+		manager.mChanServerListener(serverChan)
 	}
 }
 
-// 监听本地 chan 连接握手请求
-func (this *SubnetManager) mChanServerListener(
+// mChanServerListener 监听本地 chan 连接握手请求
+func (manager *Manager) mChanServerListener(
 	serverChan chan *process.ChanServerHandshake) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
+		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
-			this.Error("[SubNetManager.mChanServerListener] "+
+			manager.Error("[SubNetManager.mChanServerListener] "+
 				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -211,61 +211,61 @@ func (this *SubnetManager) mChanServerListener(
 			if !ok {
 				break
 			}
-			this.processChanServerRequest(newinfo)
+			manager.processChanServerRequest(newinfo)
 		}
 	}
 }
 
-// 处理 chan 握手请求的返回信息
-func (this *SubnetManager) processChanServerRequest(
+// processChanServerRequest 处理 chan 握手请求的返回信息
+func (manager *Manager) processChanServerRequest(
 	newinfo *process.ChanServerHandshake) {
 	remoteChan := process.GetServerChan(newinfo.ModuleInfo.ModuleID)
 	if remoteChan != nil {
 		if newinfo.Seq == 0 {
-			this.connectMutex.Lock()
-			oldconn := this.GetServer(newinfo.ModuleInfo.ModuleID)
+			manager.connectMutex.Lock()
+			oldconn := manager.GetServer(newinfo.ModuleInfo.ModuleID)
 			// 重复连接
 			if oldconn != nil {
-				this.Syslog("[SubnetManager.mChanServerListener] "+
+				manager.Syslog("[Manager.mChanServerListener] "+
 					"ModuleID[%s] 重复的连接", newinfo.ModuleInfo.ModuleID)
 			} else {
 				// 请求开始
 				newMsgChan := make(chan *msg.MessageBinary, 1000)
 				remoteChan <- &process.ChanServerHandshake{
-					ModuleInfo:    this.myServerInfo,
+					ModuleInfo:    manager.myServerInfo,
 					ServerMsgChan: newMsgChan,
 					ClientMsgChan: newinfo.ClientMsgChan,
 					Seq:           newinfo.Seq + 1,
 				}
-				this.Syslog("[SubNetManager.mChanServerListener] "+
+				manager.Syslog("[SubNetManager.mChanServerListener] "+
 					"收到新的 ServerChan 连接 ModuleID[%s]",
 					newinfo.ModuleInfo.ModuleID)
 				// 建立本地通信Server对象
-				conn := this.NewChanServer(connect.ServerSCTypeTask,
+				conn := manager.NewChanServer(connect.ServerSCTypeTask,
 					newinfo.ClientMsgChan, newMsgChan, "",
-					this.onConnectRecv, this.onConnectClose)
-				conn.Logger = this.Logger
-				this.OnCreateNewServer(conn)
+					manager.onConnectRecv, manager.onConnectClose)
+				conn.Logger = manager.Logger
+				manager.OnCreateNewServer(conn)
 			}
-			this.connectMutex.Unlock()
+			manager.connectMutex.Unlock()
 		} else if newinfo.Seq == 1 {
-			this.connectMutex.Lock()
-			oldconn := this.GetServer(newinfo.ModuleInfo.ModuleID)
+			manager.connectMutex.Lock()
+			oldconn := manager.GetServer(newinfo.ModuleInfo.ModuleID)
 			// 重复连接
 			if oldconn != nil {
-				this.Syslog("[SubnetManager.mChanServerListener] "+
+				manager.Syslog("[Manager.mChanServerListener] "+
 					"ModuleID[%s] 重复的连接", newinfo.ModuleInfo.ModuleID)
 			} else {
 				// 请求回复
-				this.Syslog("[SubNetManager.mChanServerListener] "+
+				manager.Syslog("[SubNetManager.mChanServerListener] "+
 					"收到 ServerChan 连接请求回复 ModuleID[%s]",
 					newinfo.ModuleInfo.ModuleID)
 				// 建立本地通信Server对象
-				this.doConnectChanServer(
+				manager.doConnectChanServer(
 					newinfo.ServerMsgChan, newinfo.ClientMsgChan,
 					newinfo.ModuleInfo.ModuleID)
 			}
-			this.connectMutex.Unlock()
+			manager.connectMutex.Unlock()
 		}
 	}
 }

@@ -8,7 +8,7 @@ const (
 	kernel32dll = "kernel32.dll"
 )
 
-// 将进程致命错误转储
+// SysDup 将进程致命错误转储
 func SysDup(fd int) {
 	kernel32 := syscall.NewLazyDLL(kernel32dll)
 	setStdHandle := kernel32.NewProc("SetStdHandle")

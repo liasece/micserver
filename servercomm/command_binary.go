@@ -593,107 +593,107 @@ func (this *SROCBind) GetSize() int {
 	return GetSizeSROCBind(this)
 }
 
-func (this *ModuleInfo) GetJson() string {
+func (this *ModuleInfo) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *STimeTickCommand) GetJson() string {
+func (this *STimeTickCommand) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *STestCommand) GetJson() string {
+func (this *STestCommand) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SLoginCommand) GetJson() string {
+func (this *SLoginCommand) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SLogoutCommand) GetJson() string {
+func (this *SLogoutCommand) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SSeverStartOKCommand) GetJson() string {
+func (this *SSeverStartOKCommand) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SLoginRetCommand) GetJson() string {
+func (this *SLoginRetCommand) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SStartRelyNotifyCommand) GetJson() string {
+func (this *SStartRelyNotifyCommand) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SStartMyNotifyCommand) GetJson() string {
+func (this *SStartMyNotifyCommand) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SNotifyAllInfo) GetJson() string {
+func (this *SNotifyAllInfo) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SNotifySafelyQuit) GetJson() string {
+func (this *SNotifySafelyQuit) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SUpdateSession) GetJson() string {
+func (this *SUpdateSession) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SReqCloseConnect) GetJson() string {
+func (this *SReqCloseConnect) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SForwardToModule) GetJson() string {
+func (this *SForwardToModule) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *ModuleMessage) GetJson() string {
+func (this *ModuleMessage) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SForwardToClient) GetJson() string {
+func (this *SForwardToClient) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SForwardFromGate) GetJson() string {
+func (this *SForwardFromGate) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *ClientMessage) GetJson() string {
+func (this *ClientMessage) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SROCRequest) GetJson() string {
+func (this *SROCRequest) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SROCResponse) GetJson() string {
+func (this *SROCResponse) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }
 
-func (this *SROCBind) GetJson() string {
+func (this *SROCBind) GetJSON() string {
 	json, _ := json.Marshal(this)
 	return string(json)
 }

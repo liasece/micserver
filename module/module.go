@@ -1,27 +1,25 @@
-/*
-基础模块，实现了基本的模块接口，利于上层使用 micserver ，在业务中自定义模块时，
-可以直接继承该基础模块，继承于基础模块（使用匿名成员实现）的上层业务模块，
-即实现了 IModule 接口。例如：
-	type FooModule struct {
-		module.BaseModule
-		...
-	}
-需要注意的是有些方法在重载时，需要在重载中调用父类的该方法，且调用顺序有要求：
-	如果你需要在例如 AfterInitModule() 中增加逻辑，请使用如下顺序：
-		func (this *FooModule) AfterInitModule() {
-			// 先调用父类方法
-			this.BaseModule.AfterInitModule()
-			// 其他逻辑
-			...
-		}
-	如果你需要在例如 KillModule() 中增加逻辑，请使用如下顺序：
-		func (this *FooModule) KillModule() {
-			// 其他逻辑
-			...
-			// 最后调用父类方法
-			this.BaseModule.KillModule()
-		}
-*/
+// Package module 基础模块，实现了基本的模块接口，利于上层使用 micserver ，在业务中自定义模块时，
+// 可以直接继承该基础模块，继承于基础模块（使用匿名成员实现）的上层业务模块，
+// 即实现了 IModule 接口。例如：
+// 	type FooModule struct {
+// 		module.BaseModule
+// 		...
+// 	}
+// 需要注意的是有些方法在重载时，需要在重载中调用父类的该方法，且调用顺序有要求：
+// 	如果你需要在例如 AfterInitModule() 中增加逻辑，请使用如下顺序：
+// 		func (bm *FooModule) AfterInitModule() {
+// 			// 先调用父类方法
+// 			bm.BaseModule.AfterInitModule()
+// 			// 其他逻辑
+// 			...
+// 		}
+// 	如果你需要在例如 KillModule() 中增加逻辑，请使用如下顺序：
+// 		func (bm *FooModule) KillModule() {
+// 			// 其他逻辑
+// 			...
+// 			// 最后调用父类方法
+// 			bm.BaseModule.KillModule()
+// 		}
 package module
 
 import (
@@ -39,7 +37,7 @@ import (
 	"github.com/liasece/micserver/util/uid"
 )
 
-// 一个模块应具备的接口
+// IModule 一个模块应具备的接口
 type IModule interface {
 	base.IModule
 	InitModule(conf.ModuleConfig)
@@ -49,14 +47,14 @@ type IModule interface {
 	KillModule()
 	IsStopped() bool
 	GetConfiger() *conf.ModuleConfig
-	ROCCallNR(callpath *roc.ROCPath, callarg []byte) error
-	ROCCallBlock(callpath *roc.ROCPath, callarg []byte) ([]byte, error)
+	ROCCallNR(callpath *roc.Path, callarg []byte) error
+	ROCCallBlock(callpath *roc.Path, callarg []byte) ([]byte, error)
 }
 
-// 基础模块
+// BaseModule 基础模块
 type BaseModule struct {
 	*log.Logger
-	timer.TimerManager
+	TimerManager timer.Manager
 	server.Server
 
 	// 模块配置
@@ -74,107 +72,107 @@ type BaseModule struct {
 	lastCheckLoad   int64
 }
 
-// 初始化模块
-func (this *BaseModule) InitModule(configer conf.ModuleConfig) {
-	this.configer = &configer
+// InitModule 初始化模块
+func (bm *BaseModule) InitModule(configer conf.ModuleConfig) {
+	bm.configer = &configer
 	// 初始化logger
-	if this.configer.ExistInModule(conf.LogWholePath) {
-		this.Logger = log.NewLogger(this.configer.GetBool(conf.IsDaemon),
-			this.configer.GetString(conf.LogWholePath))
-		this.SetLogName(this.moduleID)
+	if bm.configer.ExistInModule(conf.LogWholePath) {
+		bm.Logger = log.NewLogger(bm.configer.GetBool(conf.IsDaemon),
+			bm.configer.GetString(conf.LogWholePath))
+		bm.SetLogName(bm.moduleID)
 	} else {
-		this.Logger = log.GetDefaultLogger().Clone()
-		this.Logger.SetLogName(this.moduleID)
+		bm.Logger = log.GetDefaultLogger().Clone()
+		bm.Logger.SetLogName(bm.moduleID)
 	}
-	this.Syslog("[BaseModule.InitModule] module initting...")
-	this.Server.SetLogger(this.Logger)
-	this.Server.Init(this.moduleID)
-	this.Server.InitSubnet(this.configer)
+	bm.Syslog("[BaseModule.InitModule] module initting...")
+	bm.Server.SetLogger(bm.Logger)
+	bm.Server.Init(bm.moduleID)
+	bm.Server.InitSubnet(bm.configer)
 
 	// gateway初始化
-	if gateaddr := this.configer.GetString(conf.GateTCPAddr); gateaddr != "" {
-		this.Server.InitGate(gateaddr)
+	if gateaddr := bm.configer.GetString(conf.GateTCPAddr); gateaddr != "" {
+		bm.Server.InitGate(gateaddr)
 	}
 
-	this.RegTimer(time.Second*5, 0, false, this.watchLoadToLog)
+	bm.TimerManager.RegTimer(time.Second*5, 0, false, bm.watchLoadToLog)
 }
 
-// 在初始化完成后调用
-func (this *BaseModule) AfterInitModule() {
-	this.Syslog("[BaseModule.AfterInitModule] 模块 [%s] 初始化完成",
-		this.GetModuleID())
+// AfterInitModule 在初始化完成后调用
+func (bm *BaseModule) AfterInitModule() {
+	bm.Syslog("[BaseModule.AfterInitModule] 模块 [%s] 初始化完成",
+		bm.GetModuleID())
 }
 
-// 获取模块的配置
-func (this *BaseModule) GetConfiger() *conf.ModuleConfig {
-	return this.configer
+// GetConfiger 获取模块的配置
+func (bm *BaseModule) GetConfiger() *conf.ModuleConfig {
+	return bm.configer
 }
 
-// 获取模块的ID，模块的ID有模块类型和模块编号确定，如
-// 	moduleid = fmt.Sprintf("%s%d", typ, num)
-func (this *BaseModule) GetModuleID() string {
-	return this.moduleID
+// GetModuleID 获取模块的ID，模块的ID有模块类型和模块编号确定，如
+// moduleid = fmt.Sprintf("%s%d", typ, num)
+func (bm *BaseModule) GetModuleID() string {
+	return bm.moduleID
 }
 
-// 设置模块的ID，需要谨慎使用，不可在模块运行起来后设置！
-func (this *BaseModule) SetModuleID(id string) {
-	this.moduleID = id
-	this.moduleType = util.GetModuleIDType(id)
-	this.moduleNum = util.GetModuleIDNum(id)
-	this.moduleIDHash = hash.GetHash([]byte(id))
+// SetModuleID 设置模块的ID，需要谨慎使用，不可在模块运行起来后设置！
+func (bm *BaseModule) SetModuleID(id string) {
+	bm.moduleID = id
+	bm.moduleType = util.GetModuleIDType(id)
+	bm.moduleNum = util.GetModuleIDNum(id)
+	bm.moduleIDHash = hash.GetHash([]byte(id))
 }
 
-// 获取模块类型
-func (this *BaseModule) GetModuleType() string {
-	return this.moduleType
+// GetModuleType 获取模块类型
+func (bm *BaseModule) GetModuleType() string {
+	return bm.moduleType
 }
 
-// 获取模块编号
-func (this *BaseModule) GetModuleNum() int {
-	return this.moduleNum
+// GetModuleNum 获取模块编号
+func (bm *BaseModule) GetModuleNum() int {
+	return bm.moduleNum
 }
 
-// 获取模块ID哈希值
-func (this *BaseModule) GetModuleIDHash() uint32 {
-	return this.moduleIDHash
+// GetModuleIDHash 获取模块ID哈希值
+func (bm *BaseModule) GetModuleIDHash() uint32 {
+	return bm.moduleIDHash
 }
 
-// 在该模块环境下生成一个UUID，这个UUID保证在本模块中是唯一的
-func (this *BaseModule) GenUniqueID() (string, error) {
-	return uid.GenUniqueID(uint16(this.GetModuleIDHash()))
+// GenUniqueID 在该模块环境下生成一个UUID，这个UUID保证在本模块中是唯一的
+func (bm *BaseModule) GenUniqueID() (string, error) {
+	return uid.GenUniqueID(uint16(bm.GetModuleIDHash()))
 }
 
-// 当模块被中止时调用
-func (this *BaseModule) KillModule() {
-	this.Syslog("[BaseModule] Killing module...")
-	this.Server.Stop()
-	this.hasKilledModule = true
-	this.KillRegister()
+// KillModule 当模块被中止时调用
+func (bm *BaseModule) KillModule() {
+	bm.Syslog("[BaseModule] Killing module...")
+	bm.Server.Stop()
+	bm.hasKilledModule = true
+	bm.TimerManager.KillRegister()
 
 	// 退出完成
-	this.hasStopped = true
+	bm.hasStopped = true
 }
 
-// 判断模块是否已中止
-func (this *BaseModule) IsStopped() bool {
-	return this.hasStopped
+// IsStopped 判断模块是否已中止
+func (bm *BaseModule) IsStopped() bool {
+	return bm.hasStopped
 }
 
-// 开始运行一个模块
-func (this *BaseModule) TopRunner() {
-	this.RegTimer(time.Minute, 0, false, func(t time.Duration) bool {
-		this.Syslog("[BaseModule] Timer 1 Minute...")
+// TopRunner 开始运行一个模块
+func (bm *BaseModule) TopRunner() {
+	bm.TimerManager.RegTimer(time.Minute, 0, false, func(t time.Duration) bool {
+		bm.Syslog("[BaseModule] Timer 1 Minute...")
 		return true
 	})
 }
 
-func (this *BaseModule) watchLoadToLog(dt time.Duration) bool {
-	load := this.load.GetLoad()
-	incValue := load - this.lastCheckLoad
+func (bm *BaseModule) watchLoadToLog(dt time.Duration) bool {
+	load := bm.load.GetLoad()
+	incValue := load - bm.lastCheckLoad
 	if incValue > 0 {
-		this.Info("[BaseModule] Within %d sec load:[%d]",
+		bm.Info("[BaseModule] Within %d sec load:[%d]",
 			int64(dt.Seconds()), incValue)
 	}
-	this.lastCheckLoad = load
+	bm.lastCheckLoad = load
 	return true
 }

@@ -6,11 +6,12 @@ import (
 	"github.com/liasece/micserver/util/strings"
 )
 
+// GetStringHash get string hash
 func GetStringHash(str string) uint32 {
 	return GetHash(strings.StringToBytes(str))
 }
 
-// GetHash returns a murmur32 hash for the data slice.
+// GetHash GetHash returns a murmur32 hash for the data slice.
 func GetHash(data []byte) uint32 {
 	// Seed is set to 37, same as C# version of emitter
 	var h1 uint32 = 37

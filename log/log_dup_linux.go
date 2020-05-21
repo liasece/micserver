@@ -4,7 +4,7 @@ import (
 	"syscall"
 )
 
-// 将进程致命错误转储
+// SysDup 将进程致命错误转储
 func SysDup(fd int) {
 	e1 := syscall.Dup2(fd, 1)
 	if e1 != nil {

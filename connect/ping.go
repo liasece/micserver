@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// 连接的 Ping 信息
+// Ping 连接的 Ping 信息
 // 可以主动设置发送时间，或者使用内部的三次握手实现双端 Ping
 type Ping struct {
 	syn       int32
@@ -16,79 +16,78 @@ type Ping struct {
 	req2Time uint64
 }
 
-// 通过发送/接收判断延迟
-func (this *Ping) RecordSend() {
-	this.req1Time = uint64(time.Now().UnixNano()) / 1000000
+// RecordSend 通过发送/接收判断延迟
+func (p *Ping) RecordSend() {
+	p.req1Time = uint64(time.Now().UnixNano()) / 1000000
 }
 
-// 通过发送/接收判断延迟
-func (this *Ping) RecordRecv() {
-	this.req2Time = uint64(time.Now().UnixNano()) / 1000000
-	this.rtt = this.req2Time - this.req1Time
+// RecordRecv 通过发送/接收判断延迟
+func (p *Ping) RecordRecv() {
+	p.req2Time = uint64(time.Now().UnixNano()) / 1000000
+	p.rtt = p.req2Time - p.req1Time
 }
 
-// 当收到ping请求时，根据ping状态，可以自动判断该ping请求是否需要pong，
+// OnRecv 当收到ping请求时，根据ping状态，可以自动判断该ping请求是否需要pong，
 // 计算出需要返回的信息（如果需要pong），计算ping时延
-func (this *Ping) OnRecv(syn, ack, seq int32) (int32, int32, int32) {
-	if this.syn == 0 {
-		this.onReq1(syn, ack, seq)
-		return this.getRes()
-	} else {
-		this.onReq2(syn, ack, seq)
-		return 0, 0, 0
+func (p *Ping) OnRecv(syn, ack, seq int32) (int32, int32, int32) {
+	if p.syn == 0 {
+		p.onReq1(syn, ack, seq)
+		return p.getRes()
 	}
+	p.onReq2(syn, ack, seq)
+	return 0, 0, 0
 }
 
-func (this *Ping) onReq1(syn, ack, seq int32) {
+func (p *Ping) onReq1(syn, ack, seq int32) {
 	if syn == 0 {
-		this.clearStatus()
+		p.clearStatus()
 		return
 	}
-	this.syn = syn
-	this.clientSeq = seq
-	this.req1Time = uint64(time.Now().UnixNano()) / 1000000
+	p.syn = syn
+	p.clientSeq = seq
+	p.req1Time = uint64(time.Now().UnixNano()) / 1000000
 }
 
-func (this *Ping) onReq2(syn, ack, seq int32) {
+func (p *Ping) onReq2(syn, ack, seq int32) {
 	if syn != 0 {
-		this.clearStatus()
+		p.clearStatus()
 		return
 	}
-	if seq != this.clientSeq+1 {
+	if seq != p.clientSeq+1 {
 		return
 	}
-	if ack != this.serverSeq+1 {
+	if ack != p.serverSeq+1 {
 		return
 	}
-	this.syn = syn
-	this.clientSeq = seq
-	this.req2Time = uint64(time.Now().UnixNano()) / 1000000
-	this.rtt = this.req2Time - this.req1Time
+	p.syn = syn
+	p.clientSeq = seq
+	p.req2Time = uint64(time.Now().UnixNano()) / 1000000
+	p.rtt = p.req2Time - p.req1Time
 }
 
-// 获取syn ack seq
-func (this *Ping) getRes() (int32, int32, int32) {
-	if this.syn == 0 {
+// getRes 获取syn ack seq
+func (p *Ping) getRes() (int32, int32, int32) {
+	if p.syn == 0 {
 		return 0, 0, 0
 	}
-	this.serverSeq++
-	return this.syn, this.clientSeq + 1, this.serverSeq
+	p.serverSeq++
+	return p.syn, p.clientSeq + 1, p.serverSeq
 }
 
-// 获取syn ack seq
-func (this *Ping) getReq() (int32, int32, int32) {
-	this.clientSeq++
-	return 1, this.clientSeq + 1, this.serverSeq
+// getReq 获取syn ack seq
+func (p *Ping) getReq() (int32, int32, int32) {
+	p.clientSeq++
+	return 1, p.clientSeq + 1, p.serverSeq
 }
 
-// 该ping信息的上一次延迟时间
-func (this *Ping) RTT() uint64 {
-	return this.rtt
+// RTT 该ping信息的上一次延迟时间
+func (p *Ping) RTT() uint64 {
+	return p.rtt
 }
 
-func (this *Ping) clearStatus() {
-	this.clientSeq = 0
-	this.syn = 0
-	this.req1Time = 0
-	this.req2Time = 0
+func (p *Ping) clearStatus() {
+	p.clientSeq = 0
+	p.syn = 0
+	p.req1Time = 0
+	p.req2Time = 0
 }

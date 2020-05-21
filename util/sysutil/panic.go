@@ -1,5 +1,5 @@
 /*
-系统panic恢复
+Package sysutil 系统panic恢复
 */
 package sysutil
 
@@ -8,8 +8,8 @@ import (
 	"runtime"
 )
 
-// 获取系统的panic信息
-func GetPanicInfo(erri interface{}) (error, string) {
+// GetPanicInfo 获取系统的panic信息
+func GetPanicInfo(erri interface{}) (string, error) {
 	if erri != nil {
 		var err error
 		switch erri.(type) {
@@ -24,7 +24,7 @@ func GetPanicInfo(erri interface{}) (error, string) {
 		buf := make([]byte, 4*1024)
 		n := runtime.Stack(buf, false)
 		stackInfo += fmt.Sprintf("%s", buf[:n])
-		return err, stackInfo
+		return stackInfo, err
 	}
-	return nil, ""
+	return "", nil
 }

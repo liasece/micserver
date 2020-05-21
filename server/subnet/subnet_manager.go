@@ -1,5 +1,5 @@
 /*
-micserver中的子网信息，管理了所有模块间的连接
+Package subnet micserver中的子网信息，管理了所有模块间的连接
 */
 package subnet
 
@@ -15,8 +15,8 @@ import (
 	"github.com/liasece/micserver/util"
 )
 
-// 服务器子网连接管理器
-type SubnetManager struct {
+// Manager 服务器子网连接管理器
+type Manager struct {
 	*log.Logger
 	// 服务器连接池
 	connect.ServerPool
@@ -35,30 +35,30 @@ type SubnetManager struct {
 	subnetHook base.SubnetHook
 }
 
-// 根据模块配置初始化子网连接管理器
-func (this *SubnetManager) Init(moudleConf *conf.ModuleConfig) {
-	this.myServerInfo = &servercomm.ModuleInfo{}
-	this.moudleConf = moudleConf
-	this.ServerPool.Logger = this.Logger
+// Init 根据模块配置初始化子网连接管理器
+func (manager *Manager) Init(moudleConf *conf.ModuleConfig) {
+	manager.myServerInfo = &servercomm.ModuleInfo{}
+	manager.moudleConf = moudleConf
+	manager.ServerPool.Logger = manager.Logger
 	// 初始化消息处理队列
-	this.InitMsgQueue(int32(moudleConf.GetInt64(conf.MsgThreadNum)))
+	manager.InitMsgQueue(int32(moudleConf.GetInt64(conf.MsgThreadNum)))
 	// 我的服务器信息
-	this.myServerInfo.ModuleID = this.moudleConf.ID
-	this.connInfos.Logger = this.Logger
+	manager.myServerInfo.ModuleID = manager.moudleConf.ID
+	manager.connInfos.Logger = manager.Logger
 	// 初始化连接
-	this.BindTCPSubnet(this.moudleConf)
-	this.BindChanSubnet(this.moudleConf)
+	manager.BindTCPSubnet(manager.moudleConf)
+	manager.BindChanSubnet(manager.moudleConf)
 }
 
-// 设置子网事件监听者
-func (this *SubnetManager) HookSubnet(subnetHook base.SubnetHook) {
-	this.subnetHook = subnetHook
+// HookSubnet 设置子网事件监听者
+func (manager *Manager) HookSubnet(subnetHook base.SubnetHook) {
+	manager.subnetHook = subnetHook
 }
 
-// 指定类型的获取最新版本的服务器版本号
-func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uint64 {
+// GetLatestVersionConnInfoByType 指定类型的获取最新版本的服务器版本号
+func (manager *Manager) GetLatestVersionConnInfoByType(servertype string) uint64 {
 	latestVersion := uint64(0)
-	this.connInfos.Range(func(value *servercomm.ModuleInfo) bool {
+	manager.connInfos.Range(func(value *servercomm.ModuleInfo) bool {
 		if util.GetModuleIDType(value.ModuleID) == servertype &&
 			value.Version > latestVersion {
 			latestVersion = value.Version
@@ -68,17 +68,17 @@ func (this *SubnetManager) GetLatestVersionConnInfoByType(servertype string) uin
 	return latestVersion
 }
 
-// 发送当前已连接的所有服务器信息到目标连接
-func (this *SubnetManager) NotifyAllServerInfo(server *connect.Server) {
+// NotifyAllServerInfo 发送当前已连接的所有服务器信息到目标连接
+func (manager *Manager) NotifyAllServerInfo(server *connect.Server) {
 	retmsg := &servercomm.SNotifyAllInfo{}
 	retmsg.ServerInfos = make([]*servercomm.ModuleInfo, 0)
-	this.connInfos.Range(func(value *servercomm.ModuleInfo) bool {
+	manager.connInfos.Range(func(value *servercomm.ModuleInfo) bool {
 		retmsg.ServerInfos = append(retmsg.ServerInfos, value)
 		return true
 	})
 	if len(retmsg.ServerInfos) > 0 {
-		this.Debug("[NotifyAllServerInfo] 发送所有服务器列表信息 Msg[%s]",
-			retmsg.GetJson())
+		manager.Debug("[NotifyAllServerInfo] 发送所有服务器列表信息 Msg[%s]",
+			retmsg.GetJSON())
 		server.SendCmd(retmsg)
 	}
 }

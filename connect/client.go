@@ -9,7 +9,7 @@ import (
 	"github.com/liasece/micserver/session"
 )
 
-// 一个客户端连接，一般由 Gateway 创建
+// Client 一个客户端连接，一般由 Gateway 创建
 type Client struct {
 	BaseConnect
 
@@ -19,87 +19,87 @@ type Client struct {
 	// 接收消息通道
 	readch chan *msg.MessageBinary
 	// 回调
-	connHook ConnectHook
+	connHook IConnectHook
 }
 
-// Initial a new client
+// InitTCP Initial a new client
 // netconn: 连接的net.Conn对象
-func (this *Client) InitTCP(netconn net.Conn, connHook ConnectHook) {
-	this.BaseConnect.Init()
-	this.Session = &session.Session{}
-	this.IConnection = NewTCP(netconn, this.Logger,
+func (c *Client) InitTCP(netconn net.Conn, connHook IConnectHook) {
+	c.BaseConnect.Init()
+	c.Session = &session.Session{}
+	c.IConnection = NewTCP(netconn, c.Logger,
 		ClientConnSendChanSize, ClientConnSendBufferSize,
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
-	if this.Logger != nil {
-		this.Logger.SetTopic(fmt.Sprintf("Client:%s(%s)",
-			this.IConnection.RemoteAddr(), this.GetTempID()))
+	if c.Logger != nil {
+		c.Logger.SetTopic(fmt.Sprintf("Client:%s(%s)",
+			c.IConnection.RemoteAddr(), c.GetTempID()))
 	}
 	// 客户端连接的连接ID就是该连接的TmpID
-	this.Session.SetConnectID(this.GetTempID())
-	this.readch = this.GetRecvMessageChannel()
-	this.connHook = connHook
-	go this.recvMsgThread()
+	c.Session.SetConnectID(c.GetTempID())
+	c.readch = c.GetRecvMessageChannel()
+	c.connHook = connHook
+	go c.recvMsgThread()
 }
 
-// 为该客户端建立一个 TCP 连接
-func (this *Client) DialTCP(addr string, connHook ConnectHook) error {
+// DialTCP 为该客户端建立一个 TCP 连接
+func (c *Client) DialTCP(addr string, connHook IConnectHook) error {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return err
 	}
-	this.InitTCP(conn, connHook)
-	this.StartRecv()
+	c.InitTCP(conn, connHook)
+	c.StartRecv()
 	return nil
 }
 
-// 当收到一个消息时调用
-func (this *Client) onRecvMessage(msg *msg.MessageBinary) {
-	if this.connHook != nil {
-		this.connHook.OnRecvConnectMessage(this, msg)
+// onRecvMessage 当收到一个消息时调用
+func (c *Client) onRecvMessage(msg *msg.MessageBinary) {
+	if c.connHook != nil {
+		c.connHook.OnRecvConnectMessage(c, msg)
 	}
 }
 
-// 当客户端连接关闭时调用
-func (this *Client) onClose() {
-	if this.connHook != nil {
-		this.connHook.OnConnectClose(this)
+// onClose 当客户端连接关闭时调用
+func (c *Client) onClose() {
+	if c.connHook != nil {
+		c.connHook.OnConnectClose(c)
 	}
 }
 
-// 接收消息线程
-func (this *Client) recvMsgThread() {
+// recvMsgThread 接收消息线程
+func (c *Client) recvMsgThread() {
 	defer func() {
-		this.onClose()
+		c.onClose()
 	}()
 
 	for {
 		select {
-		case m, ok := <-this.readch:
+		case m, ok := <-c.readch:
 			if !ok || m == nil {
 				return
 			}
-			this.onRecvMessage(m)
+			c.onRecvMessage(m)
 		}
 	}
 }
 
-// 返回连接是否仍可用
-func (this *Client) Check() bool {
+// Check 返回连接是否仍可用
+func (c *Client) Check() bool {
 	curtime := time.Now().Unix()
 	// 检查本服务器时候还存活
-	if this.IsTerminateForce() {
+	if c.IsTerminateForce() {
 		// 本服务器关闭
-		this.Debug("[Client.Check] 服务器强制断开连接")
+		c.Debug("[Client.Check] 服务器强制断开连接")
 		// 强制移除客户端连接
 		return false
 	}
 	// 检查客户端连接是否验证超时
-	if this.IsTerminateTimeout(curtime) {
+	if c.IsTerminateTimeout(curtime) {
 		// 客户端超时未通过验证
-		if !this.Session.IsVertify() {
-			this.Debug("[Client.Check] 长时间未通过验证，断开连接")
+		if !c.Session.IsVertify() {
+			c.Debug("[Client.Check] 长时间未通过验证，断开连接")
 		} else {
-			this.Debug("[Client.Check] 长时间未活动，断开连接")
+			c.Debug("[Client.Check] 长时间未活动，断开连接")
 		}
 		return false
 	}

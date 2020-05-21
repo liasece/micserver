@@ -1,5 +1,5 @@
 // Copyright 2019 The Misserver Authors. All rights reserved.
-// Use of this source code is governed by a MIT-style
+// Use of agent source code is governed by a MIT-style
 // license that can be found in the LICENSE.txt file.
 
 /*
@@ -18,28 +18,28 @@ import (
 	"github.com/liasece/micserver/rocutil/options"
 )
 
-// ROC对象代理，由 rocutil 创建的ROC对象均由代理来实现roc对象需要的接口，
+// ROCObjAgent ROC对象代理，由 rocutil 创建的ROC对象均由代理来实现roc对象需要的接口，
 // 同时实现通过代理对象具有的函数，自动编解码参数列表，实现更为简单的ROC调用。
 type ROCObjAgent struct {
 	obj interface{}
 
 	opts *options.Options
-	typ  roc.ROCObjType
+	typ  roc.ObjType
 	id   string
 
 	methodMapping sync.Map
 }
 
-// 初始化该代理，目标对象不需要实现任何接口，但是需要告知目标对象的类型和ID，以便
+// Init 初始化该代理，目标对象不需要实现任何接口，但是需要告知目标对象的类型和ID，以便
 // 代理提供ROC对象的接口给ROC系统。
-func (this *ROCObjAgent) Init(obj interface{}, rocObjType roc.ROCObjType,
+func (agent *ROCObjAgent) Init(obj interface{}, rocObjType roc.ObjType,
 	rocObjID string, ops []*options.Options) error {
-	this.obj = obj
-	this.typ = rocObjType
-	this.id = rocObjID
-	this.opts = &options.Options{}
+	agent.obj = obj
+	agent.typ = rocObjType
+	agent.id = rocObjID
+	agent.opts = &options.Options{}
 	for _, optItem := range ops {
-		this.opts.Merge(optItem)
+		agent.opts.Merge(optItem)
 	}
 
 	objType := reflect.TypeOf(obj)
@@ -52,9 +52,9 @@ func (this *ROCObjAgent) Init(obj interface{}, rocObjType roc.ROCObjType,
 		}
 		name := objType.Method(i).Name
 		// check func name
-		if this.opts != nil && this.opts.CheckFuncName != nil {
+		if agent.opts != nil && agent.opts.CheckFuncName != nil {
 			var use bool
-			name, use = this.opts.CheckFuncName(name)
+			name, use = agent.opts.CheckFuncName(name)
 			if !use {
 				continue
 			}
@@ -66,29 +66,29 @@ func (this *ROCObjAgent) Init(obj interface{}, rocObjType roc.ROCObjType,
 		// init new method
 		newMethod := &Method{}
 		newMethod.Init(name, method)
-		this.addMethod(newMethod)
+		agent.addMethod(newMethod)
 	}
 	return nil
 }
 
-// 添加一个ROC对象的方法
-func (this *ROCObjAgent) addMethod(m *Method) {
-	this.methodMapping.Store(m.GetName(), m)
+// addMethod 添加一个ROC对象的方法
+func (agent *ROCObjAgent) addMethod(m *Method) {
+	agent.methodMapping.Store(m.GetName(), m)
 }
 
-// 获取一个指定名称的方法
-func (this *ROCObjAgent) getMethod(name string) *Method {
-	vi, ok := this.methodMapping.Load(name)
+// getMethod 获取一个指定名称的方法
+func (agent *ROCObjAgent) getMethod(name string) *Method {
+	vi, ok := agent.methodMapping.Load(name)
 	if !ok {
 		return nil
 	}
 	return vi.(*Method)
 }
 
-// 提供给 roc.Server 的接口，受到ROC调用时调用
-func (this *ROCObjAgent) OnROCCall(path *roc.ROCPath, arg []byte) ([]byte, error) {
+// OnROCCall 提供给 roc.Server 的接口，受到ROC调用时调用
+func (agent *ROCObjAgent) OnROCCall(path *roc.Path, arg []byte) ([]byte, error) {
 	funcName := path.Move()
-	if method := this.getMethod(funcName); method != nil {
+	if method := agent.getMethod(funcName); method != nil {
 		callArg := &CallArg{}
 		err := json.Unmarshal(arg, callArg)
 		if err != nil {
@@ -96,14 +96,14 @@ func (this *ROCObjAgent) OnROCCall(path *roc.ROCPath, arg []byte) ([]byte, error
 		}
 
 		// 调用前处理
-		if this.opts != nil && this.opts.OnBeforeROCCall != nil {
-			this.opts.OnBeforeROCCall(this.obj, path, arg)
+		if agent.opts != nil && agent.opts.OnBeforeROCCall != nil {
+			agent.opts.OnBeforeROCCall(agent.obj, path, arg)
 		}
 		// 实际调用该函数
 		result, callErr := method.Call(callArg)
 		// 调用后处理
-		if this.opts != nil && this.opts.OnAfterROCCall != nil {
-			this.opts.OnAfterROCCall(this.obj, path, arg)
+		if agent.opts != nil && agent.opts.OnAfterROCCall != nil {
+			agent.opts.OnAfterROCCall(agent.obj, path, arg)
 		}
 
 		if callErr != nil {
@@ -119,12 +119,12 @@ func (this *ROCObjAgent) OnROCCall(path *roc.ROCPath, arg []byte) ([]byte, error
 	return nil, nil
 }
 
-// 提供给 roc.Server 的接口，获取ROC对象的类型
-func (this *ROCObjAgent) GetROCObjType() roc.ROCObjType {
-	return this.typ
+// GetROCObjType 提供给 roc.Server 的接口，获取ROC对象的类型
+func (agent *ROCObjAgent) GetROCObjType() roc.ObjType {
+	return agent.typ
 }
 
-// 提供给 roc.Server 的接口，获取ROC对象的ID
-func (this *ROCObjAgent) GetROCObjID() string {
-	return this.id
+// GetROCObjID 提供给 roc.Server 的接口，获取ROC对象的ID
+func (agent *ROCObjAgent) GetROCObjID() string {
+	return agent.id
 }

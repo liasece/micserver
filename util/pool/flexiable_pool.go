@@ -13,24 +13,26 @@ var sizeControl []int = []int{32, 64, 128, 256, 512, 1024, 2 * 1024,
 	128 * 1024 * 1024, 256 * 1024 * 1024, 512 * 1024 * 1024,
 	1024 * 1024 * 1024}
 
+// FlexiblePool Flexible Pool
 type FlexiblePool struct {
 	pools         []sync.Pool
 	sizeControler []int
 	New           func(int) interface{}
 }
 
-func (this *FlexiblePool) MaxSize() int {
-	return this.sizeControler[len(this.sizeControler)-1]
+// MaxSize max pool item size
+func (fp *FlexiblePool) MaxSize() int {
+	return fp.sizeControler[len(fp.sizeControler)-1]
 }
 
-// 获取某大小所在的区间下标，容忍最大值模式
-func (this *FlexiblePool) getIndex(size int) int {
-	if size <= this.sizeControler[0] {
+// getIndex 获取某大小所在的区间下标，容忍最大值模式
+func (fp *FlexiblePool) getIndex(size int) int {
+	if size <= fp.sizeControler[0] {
 		return 0
 	}
-	controlSize := len(this.sizeControler)
+	controlSize := len(fp.sizeControler)
 	for i := 1; i < controlSize; i++ {
-		if size > this.sizeControler[i-1] && size <= this.sizeControler[i] {
+		if size > fp.sizeControler[i-1] && size <= fp.sizeControler[i] {
 			// 大小介于 (i-1,i]
 			return i
 		}
@@ -38,14 +40,14 @@ func (this *FlexiblePool) getIndex(size int) int {
 	return -1
 }
 
-// 获取某大小所在的区间下标，保证安全
-func (this *FlexiblePool) getIndexSafety(size int) int {
-	if size < this.sizeControler[0] {
+// getIndexSafety 获取某大小所在的区间下标，保证安全
+func (fp *FlexiblePool) getIndexSafety(size int) int {
+	if size < fp.sizeControler[0] {
 		return -1
 	}
-	controlSize := len(this.sizeControler)
+	controlSize := len(fp.sizeControler)
 	for i := 1; i < controlSize; i++ {
-		if size >= this.sizeControler[i-1] && size < this.sizeControler[i] {
+		if size >= fp.sizeControler[i-1] && size < fp.sizeControler[i] {
 			// 大小介于 (i-1,i]
 			return i - 1
 		}
@@ -53,33 +55,36 @@ func (this *FlexiblePool) getIndexSafety(size int) int {
 	return controlSize - 1
 }
 
-func (this *FlexiblePool) Get(size int) (interface{}, error) {
-	if size > this.MaxSize() {
-		return nil, errors.New("Cap size out of maximum.")
+// Get func
+func (fp *FlexiblePool) Get(size int) (interface{}, error) {
+	if size > fp.MaxSize() {
+		return nil, errors.New("cap size out of maximum")
 	}
-	index := this.getIndex(size)
+	index := fp.getIndex(size)
 	if index < 0 {
-		return nil, errors.New("SizeControl index out of range.")
+		return nil, errors.New("sizeControl index out of range")
 	}
-	res := this.pools[index].Get()
+	res := fp.pools[index].Get()
 	if res == nil {
-		res = this.New(this.sizeControler[index])
+		res = fp.New(fp.sizeControler[index])
 	}
 	return res, nil
 }
 
-func (this *FlexiblePool) Put(data interface{}, size int) error {
-	if size > this.MaxSize() {
-		return errors.New("Cap size out of maximum.")
+// Put func
+func (fp *FlexiblePool) Put(data interface{}, size int) error {
+	if size > fp.MaxSize() {
+		return errors.New("cap size out of maximum")
 	}
-	index := this.getIndexSafety(size)
+	index := fp.getIndexSafety(size)
 	if index < 0 {
-		return errors.New("SizeControl index out of range.")
+		return errors.New("SizeControl index out of range")
 	}
-	this.pools[index].Put(data)
+	fp.pools[index].Put(data)
 	return nil
 }
 
+// NewFlexiblePool func
 func NewFlexiblePool(sizeControler []int,
 	Newer func(int) interface{}) *FlexiblePool {
 	if sizeControler == nil {

@@ -1,12 +1,10 @@
-/*
-micserver 最基础的运行单位，app中包含了多个module，app在启动时会初始化所有module，
-并且根据配置初始化module之间的连接。
-App 是 micserver 中在 "Module" 上一层的概念，使用 micserver 的
-第一步就是实例化出一个 App 对象，并且向其中插入你的 Modules 。
-建议一个代码上下文中仅存在一个 App 对象，如果你的需求让你觉得你有
-必要实例化多个 App 在同一个可执行文件中，那么你应该考虑增加一个
-Module 而不是 App 。
-*/
+// Package app micserver 最基础的运行单位，app中包含了多个module，app在启动时会初始化所有module，
+// 并且根据配置初始化module之间的连接。
+// App 是 micserver 中在 "Module" 上一层的概念，使用 micserver 的
+// 第一步就是实例化出一个 App 对象，并且向其中插入你的 Modules 。
+// 建议一个代码上下文中仅存在一个 App 对象，如果你的需求让你觉得你有
+// 必要实例化多个 App 在同一个可执行文件中，那么你应该考虑增加一个
+// Module 而不是 App 。
 package app
 
 import (
@@ -22,6 +20,7 @@ import (
 	"github.com/liasece/micserver/util/sysutil"
 )
 
+// App basic runtime
 type App struct {
 
 	// 匿名成员 Logger 帮助你在此 App 中通过 App.Debug 等方式输出你的
@@ -40,79 +39,81 @@ type App struct {
 	isStoped chan struct{}
 }
 
-// 初始化App的设置
-func (this *App) Setup(configer *conf.TopConfig) {
-	process.AddApp(this)
-	this.isStoped = make(chan struct{})
-	this.Configer = configer
+// Setup 初始化App的设置
+func (a *App) Setup(configer *conf.TopConfig) {
+	process.AddApp(a)
+	a.isStoped = make(chan struct{})
+	a.Configer = configer
 	// 初始化Log
-	if this.Configer.AppConfig.Exist(conf.LogWholePath) {
-		setting := this.Configer.AppConfig
-		this.Logger = log.NewLogger(setting.GetBool(conf.IsDaemon),
+	if a.Configer.AppConfig.Exist(conf.LogWholePath) {
+		setting := a.Configer.AppConfig
+		a.Logger = log.NewLogger(setting.GetBool(conf.IsDaemon),
 			setting.GetString(conf.LogWholePath))
-		log.SetDefaultLogger(this.Logger)
-		this.Logger.SetLogName("app")
+		log.SetDefaultLogger(a.Logger)
+		a.Logger.SetLogName("app")
 	} else {
-		this.Logger = log.GetDefaultLogger()
+		a.Logger = log.GetDefaultLogger()
 	}
 	// 初始化Log等级
-	if this.Configer.AppConfig.Exist(conf.LogLevel) {
-		err := this.Logger.SetLogLevelByStr(
-			this.Configer.AppConfig.GetString(conf.LogLevel))
+	if a.Configer.AppConfig.Exist(conf.LogLevel) {
+		err := a.Logger.SetLogLevelByStr(
+			a.Configer.AppConfig.GetString(conf.LogLevel))
 		if err != nil {
-			this.Error("Set log level err: %s", err.Error())
+			a.Error("Set log level err: %s", err.Error())
 		}
 	}
-	this.Info("APP setup secess!!!")
+	a.Info("APP setup secess!!!")
 }
 
-func (this *App) tryInit(modules []module.IModule) {
-	this.initOnce.Do(func() {
-		this.init(modules)
+// tryInit func
+func (a *App) tryInit(modules []module.IModule) {
+	a.initOnce.Do(func() {
+		a.init(modules)
 	})
 }
 
-func (this *App) init(modules []module.IModule) {
-	this.modules = modules
+// init func
+func (a *App) init(modules []module.IModule) {
+	a.modules = modules
 	// create all module
-	for _, m := range this.modules {
+	for _, m := range a.modules {
 		process.AddModule(m)
-		this.Syslog("[App.Init] init module:%s (%s:%d:%d)", m.GetModuleID(),
+		a.Syslog("[App.Init] init module:%s (%s:%d:%d)", m.GetModuleID(),
 			m.GetModuleType(), m.GetModuleNum(), m.GetModuleIDHash())
-		m.InitModule(*this.Configer.AppConfig.GetModuleConfig(m.GetModuleID()))
+		m.InitModule(*a.Configer.AppConfig.GetModuleConfig(m.GetModuleID()))
 		m.AfterInitModule()
 		go m.TopRunner()
 	}
 
-	subnetTCPAddrMap := this.Configer.AppConfig.GetSubnetTCPAddrMap()
-	for _, m := range this.modules {
+	subnetTCPAddrMap := a.Configer.AppConfig.GetSubnetTCPAddrMap()
+	for _, m := range a.modules {
 		m.BindSubnet(subnetTCPAddrMap)
 	}
 
-	this.Syslog("[App.Init] App 初始化成功！")
-	this.Syslog("[App.Init] App 初始化 Module 数量：%d", len(this.modules))
+	a.Syslog("[App.Init] App 初始化成功！")
+	a.Syslog("[App.Init] App 初始化 Module 数量：%d", len(a.modules))
 }
 
-// cpu性能测试
-func (this *App) startTestCpuProfile() {
+// startTestCPUProfile cpu性能测试
+func (a *App) startTestCPUProfile() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
-			this.Error("[startTestCpuProfile] "+
+		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
+			a.Error("[startTestCPUProfile] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
-	this.Debug("[SubNetManager.startTestCpuProfile] " +
+	a.Debug("[SubNetManager.startTestCPUProfile] " +
 		"[性能分析] StartTestCpuProfile start")
-	filename := this.Configer.GetProp("profile_filename")
-	testtime := this.Configer.GetPropInt64("profile_time")
+	filename := a.Configer.GetProp("profile_filename")
+	testtime := a.Configer.GetPropInt64("profile_time")
 	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return
 	}
 	err = pprof.StartCPUProfile(f)
 	if err != nil {
-		this.Error("[startTestCpuProfile] pprof.StartCPUProfile Err[%s]",
+		a.Error("[startTestCPUProfile] pprof.StartCPUProfile Err[%s]",
 			err.Error())
 		return
 	}
@@ -121,26 +122,26 @@ func (this *App) startTestCpuProfile() {
 	}
 	pprof.StopCPUProfile()
 	f.Close()
-	this.Debug("[SubNetManager.startTestCpuProfile] " +
+	a.Debug("[SubNetManager.startTestCPUProfile] " +
 		"[性能分析] StartTestCpuProfile end")
 }
 
-// 运行并阻塞本App，直到程序主动退出
-func (this *App) RunAndBlock(modules []module.IModule) {
-	this.tryInit(modules)
-	this.Syslog("[App.Run] ----- Main has started ----- ")
+// RunAndBlock 运行并阻塞本App，直到程序主动退出
+func (a *App) RunAndBlock(modules []module.IModule) {
+	a.tryInit(modules)
+	a.Syslog("[App.Run] ----- Main has started ----- ")
 
 	// 监听系统Signal
-	go this.SignalListen()
+	go a.SignalListen()
 
 	// 保持程序运行
-	<-this.isStoped
+	<-a.isStoped
 
-	for _, v := range this.modules {
+	for _, v := range a.modules {
 		v.KillModule()
 	}
 
-	for _, v := range this.modules {
+	for _, v := range a.modules {
 		if !v.IsStopped() {
 			// 等待模块退出完成
 			time.Sleep(300 * time.Millisecond)
@@ -148,14 +149,14 @@ func (this *App) RunAndBlock(modules []module.IModule) {
 	}
 
 	// 当程序即将结束时
-	this.Syslog("[App.RunAndBlock] All server is over add save datas")
+	a.Syslog("[App.RunAndBlock] All server is over add save datas")
 
-	this.Debug("[App.RunAndBlock] ----- Main has stopped ----- ")
+	a.Debug("[App.RunAndBlock] ----- Main has stopped ----- ")
 	// 等日志打完
 	time.Sleep(500 * time.Millisecond)
 }
 
-// 运行，默认执行 RunAndBlock ，阻塞
-func (this *App) Run(modules []module.IModule) {
-	this.RunAndBlock(modules)
+// Run 运行，默认执行 RunAndBlock ，阻塞
+func (a *App) Run(modules []module.IModule) {
+	a.RunAndBlock(modules)
 }

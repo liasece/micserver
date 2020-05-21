@@ -1,4 +1,4 @@
-// Remote Object Call.
+// Package roc Remote Object Call.
 // ROC ，是 micserver 重要的分布式目标调用思想。
 // 如果一个对象，例如房间/商品/玩家/工会，需要提供一个可供远程执行的操作，
 // 这在以前称之为 RPC 调用，在 micserver 中，任意一个构造了这种对象的模块，
@@ -19,80 +19,80 @@ import (
 	"github.com/liasece/micserver/util/pool"
 )
 
-// ROC 对象的类型，本质上是字符串
-type ROCObjType string
+// ObjType ROC 对象的类型，本质上是字符串
+type ObjType string
 
 // ROC 对象分组数
 const (
-	ROC_POOL_GROUP_SUM = 8
+	PoolGroupSum = 8
 )
 
-// 一个类型的ROC，维护了这个类型的所有 ROC 对象
+// ROC 一个类型的ROC，维护了这个类型的所有 ROC 对象
 type ROC struct {
 	objPool   pool.MapPool
 	eventHook IROCObjEventHook
 }
 
-// 初始化该类型的ROC
-func (this *ROC) Init() {
-	this.objPool.Init(ROC_POOL_GROUP_SUM)
+// Init 初始化该类型的ROC
+func (roc *ROC) Init() {
+	roc.objPool.Init(PoolGroupSum)
 }
 
-// 设置消息
-func (this *ROC) HookObjEvent(hook IROCObjEventHook) {
-	this.eventHook = hook
+// HookObjEvent 设置消息
+func (roc *ROC) HookObjEvent(hook IROCObjEventHook) {
+	roc.eventHook = hook
 }
 
-func (this *ROC) onRegObj(obj IObj) {
-	if this.eventHook != nil {
-		this.eventHook.OnROCObjAdd(obj)
+func (roc *ROC) onRegObj(obj IObj) {
+	if roc.eventHook != nil {
+		roc.eventHook.OnROCObjAdd(obj)
 	}
 }
 
-func (this *ROC) onDelObj(obj IObj) {
-	if this.eventHook != nil {
-		this.eventHook.OnROCObjDel(obj)
+func (roc *ROC) onDelObj(obj IObj) {
+	if roc.eventHook != nil {
+		roc.eventHook.OnROCObjDel(obj)
 	}
 }
 
-// 在使用远程对象调用前，需要先注册
-func (this *ROC) RegObj(obj IObj) error {
+// RegObj 在使用远程对象调用前，需要先注册
+func (roc *ROC) RegObj(obj IObj) error {
 	id := obj.GetROCObjID()
-	this.objPool.Store(id, obj)
-	this.onRegObj(obj)
+	roc.objPool.Store(id, obj)
+	roc.onRegObj(obj)
 	return nil
 }
 
-// 删除目标ROC对象
-func (this *ROC) DelObj(obj IObj) error {
+// DelObj 删除目标ROC对象
+func (roc *ROC) DelObj(obj IObj) error {
 	id := obj.GetROCObjID()
-	return this.DelObjByID(id)
+	return roc.DelObjByID(id)
 }
 
-// 删除指定ID的ROC对象
-func (this *ROC) DelObjByID(id string) error {
-	localObj, ok := this.GetObj(id)
-	this.objPool.Delete(id)
+// DelObjByID 删除指定ID的ROC对象
+func (roc *ROC) DelObjByID(id string) error {
+	localObj, ok := roc.GetObj(id)
+	roc.objPool.Delete(id)
 	if ok && localObj != nil {
-		this.onDelObj(localObj)
+		roc.onDelObj(localObj)
 	}
 	return nil
 }
 
-// 获取指定ID的ROC对象
-func (this *ROC) GetObj(id string) (IObj, bool) {
-	vi, ok := this.objPool.Load(id)
+// GetObj 获取指定ID的ROC对象
+func (roc *ROC) GetObj(id string) (IObj, bool) {
+	vi, ok := roc.objPool.Load(id)
 	if !ok || vi == nil {
 		return nil, ok
 	}
 	return vi.(IObj), ok
 }
 
-// 获取或者注册一个ROC对象
-func (this *ROC) GetOrRegObj(id string, obj IObj) (IObj, bool) {
-	vi, isLoad := this.objPool.LoadOrStore(id, obj)
+// GetOrRegObj 获取或者注册一个ROC对象
+func (roc *ROC) GetOrRegObj(id string, obj IObj) (IObj, bool) {
+	vi, isLoad := roc.objPool.LoadOrStore(id, obj)
 	if !isLoad {
-		this.onRegObj(obj)
+		roc.onRegObj(obj)
 	}
 	if vi == nil {
 		return nil, isLoad
@@ -100,9 +100,9 @@ func (this *ROC) GetOrRegObj(id string, obj IObj) (IObj, bool) {
 	return vi.(IObj), isLoad
 }
 
-// 遍历该类型的ROC对象
-func (this *ROC) RangeObj(f func(obj IObj) bool) {
-	this.objPool.Range(func(ki, vi interface{}) bool {
+// RangeObj 遍历该类型的ROC对象
+func (roc *ROC) RangeObj(f func(obj IObj) bool) {
+	roc.objPool.Range(func(ki, vi interface{}) bool {
 		v, ok := vi.(IObj)
 		if !ok {
 			log.Error("interface conversion: %+v is not roc.IObj", vi)

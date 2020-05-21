@@ -1,15 +1,16 @@
 /*
-网关的基本接口
+Package base 网关的基本接口
 */
 package base
 
 import (
+	"net"
+
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/msg"
-	"net"
 )
 
-// 上层网关服务需要实现的处理网关事件的接口
+// GateHook 上层网关服务需要实现的处理网关事件的接口
 type GateHook interface {
 	// 接受到客户端tcp连接
 	OnAcceptClientConnect(conn net.Conn)

@@ -4,146 +4,146 @@ import (
 	"github.com/liasece/micserver/util/conv"
 )
 
-// 模块的配置，也包括了该模块所属的App配置
+// ModuleConfig 模块的配置，也包括了该模块所属的App配置
 type ModuleConfig struct {
 	ID          string      `json:"id"`
 	Settings    *BaseConfig `json:"settings"`
 	AppSettings *BaseConfig `json:"-"`
 }
 
-// 获取配置值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
+// get 获取配置值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
 // 再尝试获取 App 中的配置，如果都不存在则返回 nil
-func (this *ModuleConfig) get(key ConfigKey) interface{} {
-	if this.Settings.Exist(key) {
-		return this.Settings.Get(key)
+func (mc *ModuleConfig) get(key ConfigKey) interface{} {
+	if mc.Settings.Exist(key) {
+		return mc.Settings.Get(key)
 	}
-	if this.AppSettings.Exist(key) {
-		return this.AppSettings.Get(key)
+	if mc.AppSettings.Exist(key) {
+		return mc.AppSettings.Get(key)
 	}
 	return nil
 }
 
-// 判断配置是否存在，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
+// exist 判断配置是否存在，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
 // 再尝试获取 App 中的配置，如果都不存在则返回 nil
-func (this *ModuleConfig) exist(key ConfigKey) bool {
-	if this.Settings.Exist(key) {
+func (mc *ModuleConfig) exist(key ConfigKey) bool {
+	if mc.Settings.Exist(key) {
 		return true
 	}
-	if this.AppSettings.Exist(key) {
+	if mc.AppSettings.Exist(key) {
 		return true
 	}
 	return false
 }
 
-// 判断目标配置是否在 Module 配置中存在，无视 App 的配置
-func (this *ModuleConfig) existInModule(key ConfigKey) bool {
-	if this.Settings.Exist(key) {
+// existInModule 判断目标配置是否在 Module 配置中存在，无视 App 的配置
+func (mc *ModuleConfig) existInModule(key ConfigKey) bool {
+	if mc.Settings.Exist(key) {
 		return true
 	}
 	return false
 }
 
-// 判断目标配置是否在 App 配置中存在，无视 Module 的配置
-func (this *ModuleConfig) existInApp(key ConfigKey) bool {
-	if this.AppSettings.Exist(key) {
+// existInApp 判断目标配置是否在 App 配置中存在，无视 Module 的配置
+func (mc *ModuleConfig) existInApp(key ConfigKey) bool {
+	if mc.AppSettings.Exist(key) {
 		return true
 	}
 	return false
 }
 
-// 判断配置是否存在，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
+// Exist 判断配置是否存在，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
 // 再尝试获取 App 中的配置，如果都不存在则返回 nil
-func (this *ModuleConfig) Exist(key ConfigKey) bool {
-	if this == nil {
+func (mc *ModuleConfig) Exist(key ConfigKey) bool {
+	if mc == nil {
 		return false
 	}
-	return this.exist(key)
+	return mc.exist(key)
 }
 
-// 判断目标配置是否在 Module 配置中存在，无视 App 的配置
-func (this *ModuleConfig) ExistInModule(key ConfigKey) bool {
-	if this == nil {
+// ExistInModule 判断目标配置是否在 Module 配置中存在，无视 App 的配置
+func (mc *ModuleConfig) ExistInModule(key ConfigKey) bool {
+	if mc == nil {
 		return false
 	}
-	return this.existInModule(key)
+	return mc.existInModule(key)
 }
 
-// 判断目标配置是否在 App 配置中存在，无视 Module 的配置
-func (this *ModuleConfig) ExistInApp(key ConfigKey) bool {
-	if this == nil {
+// ExistInApp 判断目标配置是否在 App 配置中存在，无视 Module 的配置
+func (mc *ModuleConfig) ExistInApp(key ConfigKey) bool {
+	if mc == nil {
 		return false
 	}
-	return this.existInApp(key)
+	return mc.existInApp(key)
 }
 
-// 获取配置值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
+// Get 获取配置值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
 // 再尝试获取 App 中的配置，如果都不存在则返回 nil
-func (this *ModuleConfig) Get(key ConfigKey) interface{} {
-	if this == nil {
+func (mc *ModuleConfig) Get(key ConfigKey) interface{} {
+	if mc == nil {
 		return nil
 	}
-	return this.get(key)
+	return mc.get(key)
 }
 
-// 获取配置 bool 值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
+// GetBool 获取配置 bool 值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
 // 再尝试获取 App 中的配置，如果都不存在则返回 nil
-func (this *ModuleConfig) GetBool(key ConfigKey) bool {
-	if this == nil {
+func (mc *ModuleConfig) GetBool(key ConfigKey) bool {
+	if mc == nil {
 		return false
 	}
-	v := this.get(key)
+	v := mc.get(key)
 	if v == nil {
 		return false
 	}
 	return conv.MustInterfaceToBool(v)
 }
 
-// 获取配置 string 值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
+// GetString 获取配置 string 值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
 // 再尝试获取 App 中的配置，如果都不存在则返回 nil
-func (this *ModuleConfig) GetString(key ConfigKey) string {
-	if this == nil {
+func (mc *ModuleConfig) GetString(key ConfigKey) string {
+	if mc == nil {
 		return ""
 	}
-	v := this.get(key)
+	v := mc.get(key)
 	if v == nil {
 		return ""
 	}
 	return conv.MustInterfaceToString(v)
 }
 
-// 获取配置 int64 值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
+// GetInt64 获取配置 int64 值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
 // 再尝试获取 App 中的配置，如果都不存在则返回 nil
-func (this *ModuleConfig) GetInt64(key ConfigKey) int64 {
-	if this == nil {
+func (mc *ModuleConfig) GetInt64(key ConfigKey) int64 {
+	if mc == nil {
 		return 0
 	}
-	v := this.get(key)
+	v := mc.get(key)
 	if v == nil {
 		return 0
 	}
 	return conv.MustInterfaceToInt64(v)
 }
 
-// 获取配置 []int64 值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
+// GetInt64Slice 获取配置 []int64 值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
 // 再尝试获取 App 中的配置，如果都不存在则返回 nil
-func (this *ModuleConfig) GetInt64Slice(key ConfigKey) []int64 {
-	if this == nil {
+func (mc *ModuleConfig) GetInt64Slice(key ConfigKey) []int64 {
+	if mc == nil {
 		return nil
 	}
-	v := this.get(key)
+	v := mc.get(key)
 	if v == nil {
 		return nil
 	}
 	return conv.MustInterfaceToInt64Slice(v)
 }
 
-// 获取配置 []string 值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
+// GetStringSlice 获取配置 []string 值，先尝试获取 Module 中的配置，如果 Module 中不存在该配置，
 // 再尝试获取 App 中的配置，如果都不存在则返回 nil
-func (this *ModuleConfig) GetStringSlice(key ConfigKey) []string {
-	if this == nil {
+func (mc *ModuleConfig) GetStringSlice(key ConfigKey) []string {
+	if mc == nil {
 		return nil
 	}
-	v := this.get(key)
+	v := mc.get(key)
 	if v == nil {
 		return nil
 	}

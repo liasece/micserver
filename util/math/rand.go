@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// RandBetween rand a num between min to max
 func RandBetween(min, max int) int {
 	if min >= max || max == 0 {
 		return max
@@ -20,7 +21,7 @@ func RandBetween(min, max int) int {
 // GenerateRandomBytes returns securely generated random bytes.
 // It will return an error if the system's secure random
 // number generator fails to function correctly, in which
-// case the caller should not continue.
+// GenerateRandomBytes case the caller should not continue.
 func GenerateRandomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := crand.Read(b)
@@ -36,13 +37,13 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 // securely generated random string.
 // It will return an error if the system's secure random
 // number generator fails to function correctly, in which
-// case the caller should not continue.
+// GenerateRandomString case the caller should not continue.
 func GenerateRandomString(s int) (string, error) {
 	b, err := GenerateRandomBytes(s)
 	return hex.EncodeToString(b), err
 }
 
-// 乱序切片
+// SliceOutOfOrder 乱序切片
 func SliceOutOfOrder(in []string) []string {
 	rr := rand.New(rand.NewSource(time.Now().UnixNano()))
 	l := len(in)
@@ -53,7 +54,7 @@ func SliceOutOfOrder(in []string) []string {
 	return in
 }
 
-// 乱序切片
+// SliceOutOfOrderByInt 乱序切片
 func SliceOutOfOrderByInt(in []uint64) []uint64 {
 	rr := rand.New(rand.NewSource(time.Now().UnixNano()))
 	l := len(in)
@@ -69,42 +70,45 @@ type valueWeightItem struct {
 	value  uint64
 }
 
-// 权值对，根据权重随机一个值出来
-type GBValueWeightPair struct {
+// ValueWeightPair 权值对，根据权重随机一个值出来
+type ValueWeightPair struct {
 	allweight uint32
 	valuelist []valueWeightItem
 }
 
-func NewValueWeightPair() *GBValueWeightPair {
-	vwp := new(GBValueWeightPair)
+// NewValueWeightPair new value weight pair
+func NewValueWeightPair() *ValueWeightPair {
+	vwp := new(ValueWeightPair)
 	vwp.valuelist = make([]valueWeightItem, 0)
 	return vwp
 }
 
-func (this *GBValueWeightPair) Add(weight uint32, value uint64) {
+// Add add weight
+func (v *ValueWeightPair) Add(weight uint32, value uint64) {
 	valueinfo := valueWeightItem{}
 	valueinfo.weight = weight
 	valueinfo.value = value
-	this.valuelist = append(this.valuelist, valueinfo)
-	this.allweight += weight
+	v.valuelist = append(v.valuelist, valueinfo)
+	v.allweight += weight
 }
 
-func (this *GBValueWeightPair) Random() uint64 {
-	if this.allweight > 0 {
+// Random random a num
+func (v *ValueWeightPair) Random() uint64 {
+	if v.allweight > 0 {
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		randvalue := uint32(r.Intn(int(this.allweight)))
+		randvalue := uint32(r.Intn(int(v.allweight)))
 		addweight := uint32(0)
-		for i := 0; i < len(this.valuelist); i++ {
-			addweight += this.valuelist[i].weight
+		for i := 0; i < len(v.valuelist); i++ {
+			addweight += v.valuelist[i].weight
 			if randvalue <= addweight {
-				return this.valuelist[i].value
+				return v.valuelist[i].value
 			}
 		}
 	}
 	return 0
 }
 
-// 根据权重列表随机出一个结果，返回命中下标
+// RandWeight 根据权重列表随机出一个结果，返回命中下标
 func RandWeight(weight []uint32) uint32 {
 	total := uint32(0)
 	for _, v := range weight {
@@ -122,11 +126,12 @@ func RandWeight(weight []uint32) uint32 {
 	return 0
 }
 
+// UtilWeightInterface infterface
 type UtilWeightInterface interface {
 	GetWeight() uint32
 }
 
-// 根据权重列表随机出一个结果，返回命中下标
+// RandWeightStruct 根据权重列表随机出一个结果，返回命中下标
 func RandWeightStruct(weight []UtilWeightInterface) interface{} {
 	if len(weight) == 0 {
 		return nil

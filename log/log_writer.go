@@ -5,35 +5,36 @@ import (
 	"time"
 )
 
-const tunnel_size_default = 1024
+const tunnelSizeDefault = 1024
 
-type writerType int
+// WriterType writer type
+type WriterType int
 
 const (
 	writerTypeConsole = 1
 	writerTypeFile    = 2
 )
 
-// log写入器
-type LogWriter struct {
+// RecordWriter log写入器
+type RecordWriter struct {
 	writers  []Writer
 	tunnel   chan *Record
 	c        chan bool
 	stopchan chan struct{}
 }
 
-// 初始化log写入器
-func (this *LogWriter) Init() {
-	this.writers = make([]Writer, 0, 2)
-	this.tunnel = make(chan *Record, tunnel_size_default)
-	this.stopchan = make(chan struct{})
-	this.c = make(chan bool, 1)
+// Init 初始化log写入器
+func (recordWriter *RecordWriter) Init() {
+	recordWriter.writers = make([]Writer, 0, 2)
+	recordWriter.tunnel = make(chan *Record, tunnelSizeDefault)
+	recordWriter.stopchan = make(chan struct{})
+	recordWriter.c = make(chan bool, 1)
 
-	go this.boostrapLogWriter()
+	go recordWriter.boostrapLogWriter()
 }
 
-// 增加一个文件输出器
-func (this *LogWriter) AddLogFile(filename string, redirecterr bool) {
+// AddLogFile 增加一个文件输出器
+func (recordWriter *RecordWriter) AddLogFile(filename string, redirecterr bool) {
 	//	fmt.Printf("log filename,%s \n", filename)
 	filebasename := filename
 	filename += ".%Y%M%D-%H"
@@ -44,15 +45,15 @@ func (this *LogWriter) AddLogFile(filename string, redirecterr bool) {
 	err := w.SetPathPattern(filebasename, filename)
 	if err != nil {
 	}
-	this.registerLogWriter(w)
+	recordWriter.registerLogWriter(w)
 }
 
-// 修改所有的文件输出器的目标文件
-func (this *LogWriter) ChangeLogFile(filename string) {
+// ChangeLogFile 修改所有的文件输出器的目标文件
+func (recordWriter *RecordWriter) ChangeLogFile(filename string) {
 	filebasename := filename
 	filename += ".%Y%M%D-%H"
-	for i := 0; i < len(this.writers); i++ {
-		w := this.writers[i]
+	for i := 0; i < len(recordWriter.writers); i++ {
+		w := recordWriter.writers[i]
 		if w.GetType() == writerTypeFile {
 			if r, ok := w.(Rotater); ok {
 				err := r.SetPathPattern(filebasename, filename)
@@ -66,42 +67,42 @@ func (this *LogWriter) ChangeLogFile(filename string) {
 	}
 }
 
-// 移除控制台输出器
-func (this *LogWriter) RemoveConsoleLog() {
+// RemoveConsoleLog 移除控制台输出器
+func (recordWriter *RecordWriter) RemoveConsoleLog() {
 	newlist := make([]Writer, 0, 2)
-	for i := 0; i < len(this.writers); i++ {
-		w := this.writers[i]
+	for i := 0; i < len(recordWriter.writers); i++ {
+		w := recordWriter.writers[i]
 		if w.GetType() != writerTypeConsole {
 			newlist = append(newlist, w)
 		}
 	}
-	this.writers = newlist
+	recordWriter.writers = newlist
 }
 
-// 注册一个文件输出器到该 log 写入器中
-func (this *LogWriter) registerLogWriter(w Writer) {
+// registerLogWriter 注册一个文件输出器到该 log 写入器中
+func (recordWriter *RecordWriter) registerLogWriter(w Writer) {
 	if err := w.Init(); err != nil {
 		panic(err)
 	}
-	this.writers = append(this.writers, w)
+	recordWriter.writers = append(recordWriter.writers, w)
 }
 
-// 关闭当前写入器的所有输出器
-func (this *LogWriter) Close() {
+// Close 关闭当前写入器的所有输出器
+func (recordWriter *RecordWriter) Close() {
 	select {
-	case <-this.stopchan:
+	case <-recordWriter.stopchan:
 		return
 	default:
-		close(this.stopchan)
-		// close(this.tunnel)
+		close(recordWriter.stopchan)
+		// close(recordWriter.tunnel)
 		break
 	}
 	select {
-	case <-this.c:
+	case <-recordWriter.c:
 		break
 	}
 
-	for _, w := range this.writers {
+	for _, w := range recordWriter.writers {
 		if f, ok := w.(Flusher); ok {
 			if err := f.Flush(); err != nil {
 				syslog.Println(err)
@@ -110,34 +111,34 @@ func (this *LogWriter) Close() {
 	}
 }
 
-// 写入一条日志记录，等待后续异步处理
-func (this *LogWriter) write(r *Record) {
+// write 写入一条日志记录，等待后续异步处理
+func (recordWriter *RecordWriter) write(r *Record) {
 	select {
-	case <-this.stopchan:
+	case <-recordWriter.stopchan:
 		return
 	default:
 	}
 	select {
-	case <-this.stopchan:
+	case <-recordWriter.stopchan:
 		break
-	case this.tunnel <- r:
+	case recordWriter.tunnel <- r:
 		break
 	}
 }
 
-// 日志写入线程
-func (this *LogWriter) boostrapLogWriter() {
+// boostrapLogWriter 日志写入线程
+func (recordWriter *RecordWriter) boostrapLogWriter() {
 	var (
 		r  *Record
 		ok bool
 	)
 
-	if r, ok = <-this.tunnel; !ok {
-		this.c <- true
+	if r, ok = <-recordWriter.tunnel; !ok {
+		recordWriter.c <- true
 		return
 	}
 
-	for _, w := range this.writers {
+	for _, w := range recordWriter.writers {
 		if err := w.Write(r); err != nil {
 			syslog.Println(err)
 		}
@@ -150,9 +151,9 @@ func (this *LogWriter) boostrapLogWriter() {
 	lastRecordTime := time.Now()
 	for {
 		select {
-		case r, ok = <-this.tunnel:
+		case r, ok = <-recordWriter.tunnel:
 			if !ok {
-				this.c <- true
+				recordWriter.c <- true
 				return
 			}
 			needTryRotate := false
@@ -164,7 +165,7 @@ func (this *LogWriter) boostrapLogWriter() {
 				// 更新最后一条记录的时间
 				lastRecordTimeUnix60 = nowTimeUnix60
 			}
-			for _, w := range this.writers {
+			for _, w := range recordWriter.writers {
 				if needTryRotate {
 					// 需要增加log文件
 					if r, ok := w.(Rotater); ok {
@@ -179,11 +180,11 @@ func (this *LogWriter) boostrapLogWriter() {
 				}
 			}
 			recordPool.Put(r)
-		case <-this.stopchan:
-			this.c <- true
+		case <-recordWriter.stopchan:
+			recordWriter.c <- true
 			return
 		case <-flushTimer.C:
-			for _, w := range this.writers {
+			for _, w := range recordWriter.writers {
 				if f, ok := w.(Flusher); ok {
 					if err := f.Flush(); err != nil {
 						syslog.Println(err)
@@ -193,15 +194,15 @@ func (this *LogWriter) boostrapLogWriter() {
 			flushTimer.Reset(time.Millisecond * 500)
 		case <-rotateTimer.C:
 			//	fmt.Printf("start rotate file,actions, 1111\n")
-			this.tryRotate()
+			recordWriter.tryRotate()
 			rotateTimer.Reset(time.Second * 60)
 		}
 	}
 }
 
-// 尝试将文件输出器转储
-func (this *LogWriter) tryRotate() {
-	for _, w := range this.writers {
+// tryRotate 尝试将文件输出器转储
+func (recordWriter *RecordWriter) tryRotate() {
+	for _, w := range recordWriter.writers {
 		if r, ok := w.(Rotater); ok {
 			if err := r.Rotate(); err != nil {
 				syslog.Println(err)

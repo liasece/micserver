@@ -16,19 +16,19 @@ var sizeControl []int = []int{32, 64, 128, 256, 512, 1024, 2 * 1024,
 	1024 * 1024, 2 * 1024 * 1024, 4 * 1024 * 1024, 8 * 1024 * 1024}
 var pools *pool.FlexiblePool
 
-// 初始化灵活对象池
+// init 初始化灵活对象池
 func init() {
 	pools = pool.NewFlexiblePool(sizeControl, newMsgBinaryBySize)
 }
 
-// 根据 MessageBinary.buffer 的大小来创建一个对象池中的对象
+// newMsgBinaryBySize 根据 MessageBinary.buffer 的大小来创建一个对象池中的对象
 func newMsgBinaryBySize(size int) interface{} {
 	msg := new(MessageBinary)
 	msg.buffer = make([]byte, size)
 	return msg
 }
 
-// 根据消息内容大小从对象池获取对应的消息对象
+// GetMessageBinary 根据消息内容大小从对象池获取对应的消息对象
 func GetMessageBinary(totalLength int) *MessageBinary {
 	msg, err := pools.Get(totalLength)
 	if err != nil {

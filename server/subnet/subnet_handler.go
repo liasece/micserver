@@ -12,30 +12,30 @@ import (
 	"github.com/liasece/micserver/util/sysutil"
 )
 
-// 服务器消息处理封包
+// ConnectMsgQueueStruct 服务器消息处理封包
 type ConnectMsgQueueStruct struct {
 	conn *connect.Server
 	msg  *msg.MessageBinary
 }
 
-// 当TCP连接被移除时调用
-func (this *SubnetManager) onConnectClose(conn *connect.Server) {
-	this.RemoveServer(conn.GetTempID())
+// onConnectClose 当TCP连接被移除时调用
+func (manager *Manager) onConnectClose(conn *connect.Server) {
+	manager.RemoveServer(conn.GetTempID())
 }
 
-// 当收到TCP消息时调用
-func (this *SubnetManager) OnRecvTCPMsg(conn *connect.Server,
+// OnRecvTCPMsg 当收到TCP消息时调用
+func (manager *Manager) OnRecvTCPMsg(conn *connect.Server,
 	msgbinary *msg.MessageBinary) {
-	if this.subnetHook != nil {
-		this.subnetHook.OnRecvSubnetMsg(conn, msgbinary)
+	if manager.subnetHook != nil {
+		manager.subnetHook.OnRecvSubnetMsg(conn, msgbinary)
 	} else {
-		this.Syslog("this.SubnetCallback.fonRecvMsg == nil MsgID[%d]",
+		manager.Syslog("manager.SubnetCallback.fonRecvMsg == nil MsgID[%d]",
 			msgbinary.GetMsgID())
 	}
 }
 
-// 获取TCP消息的消息处理通道
-func (this *SubnetManager) getRecvTCPMsgParseChan(conn *connect.Server,
+// getRecvTCPMsgParseChan 获取TCP消息的消息处理通道
+func (manager *Manager) getRecvTCPMsgParseChan(conn *connect.Server,
 	maxChan int32, msgbinary *msg.MessageBinary) int32 {
 	chankey := ""
 	if conn.ModuleInfo != nil {
@@ -58,25 +58,25 @@ func (this *SubnetManager) getRecvTCPMsgParseChan(conn *connect.Server,
 	return 0
 }
 
-// 当新增一个服务器连接时调用
-func (this *SubnetManager) OnCreateNewServer(conn *connect.Server) {
+// OnCreateNewServer 当新增一个服务器连接时调用
+func (manager *Manager) OnCreateNewServer(conn *connect.Server) {
 }
 
-// 当收到了一个服务器消息时调用
-func (this *SubnetManager) onConnectRecv(conn *connect.Server,
+// onConnectRecv 当收到了一个服务器消息时调用
+func (manager *Manager) onConnectRecv(conn *connect.Server,
 	msgbin *msg.MessageBinary) {
 	if conn.GetSCType() == connect.ServerSCTypeTask {
 		curtime := time.Now().Unix()
 		if conn.IsTerminateTimeout(curtime) {
-			this.onClientDisconnected(conn)
-			this.Error("[SubnetManager.handleConnection] "+
+			manager.onClientDisconnected(conn)
+			manager.Error("[Manager.handleConnection] "+
 				"长时间未通过验证，断开连接 TmpID[%d]",
 				conn.GetTempID())
 			return
 		}
 		if conn.IsTerminateForce() {
-			this.onClientDisconnected(conn)
-			this.Syslog("[SubnetManager.handleConnection] "+
+			manager.onClientDisconnected(conn)
+			manager.Syslog("[Manager.handleConnection] "+
 				"服务器主动断开连接 TmpID[%s]", conn.GetTempID())
 			return
 		}
@@ -85,7 +85,7 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 	case servercomm.STestCommandID:
 		recvmsg := &servercomm.STestCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
-		this.Syslog("[SubnetManager.msgParseTCPConn] "+
+		manager.Syslog("[Manager.msgParseTCPConn] "+
 			"Server 收到测试消息 MsgLen[%d] No.[%d]",
 			msgbin.GetTotalLength(), recvmsg.Testno)
 		return
@@ -94,8 +94,8 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		return
 	case servercomm.SLoginRetCommandID:
-		this.connectMutex.Lock()
-		defer this.connectMutex.Unlock()
+		manager.connectMutex.Lock()
+		defer manager.connectMutex.Unlock()
 		// 收到登陆服务器返回的消息
 		recvmsg := &servercomm.SLoginRetCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
@@ -103,123 +103,122 @@ func (this *SubnetManager) onConnectRecv(conn *connect.Server,
 			conn.Terminate()
 			if recvmsg.Loginfailed == servercomm.LOGINRETCODE_IDENTICAL {
 				conn.IsNormalDisconnect = true
-				this.Syslog("[SubnetManager.msgParseTCPConn] "+
+				manager.Syslog("[Manager.msgParseTCPConn] "+
 					"重复连接,不必连接 TmpID[%s]", conn.GetTempID())
 			} else {
-				this.Error("[SubnetManager.msgParseTCPConn] "+
+				manager.Error("[Manager.msgParseTCPConn] "+
 					"连接验证失败,断开连接 TmpID[%s]", conn.GetTempID())
 			}
 			return
 		}
 		conn.ModuleInfo = recvmsg.Destination
-		this.Syslog("[SubnetManager.msgParseTCPConn] "+
+		manager.Syslog("[Manager.msgParseTCPConn] "+
 			"连接服务器验证成功,id:%s,ipport:%s",
 			conn.ModuleInfo.ModuleID, conn.ModuleInfo.ModuleAddr)
-		this.subnetHook.OnServerJoinSubnet(conn)
+		manager.subnetHook.OnServerJoinSubnet(conn)
 		return
 	case servercomm.SLoginCommandID:
 		recvmsg := &servercomm.SLoginCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
-		this.OnServerLogin(conn, recvmsg)
+		manager.OnServerLogin(conn, recvmsg)
 		return
 	case servercomm.SLogoutCommandID:
 		// 服务器已主动关闭，不再尝试连接它了
 		conn.IsNormalDisconnect = true
-		this.connectMutex.Lock()
-		defer this.connectMutex.Unlock()
-		this.connInfos.Delete(conn.ModuleInfo.ModuleID)
-		this.Syslog("[msgParseTCPConn] 服务器已主动关闭，不再尝试连接它了 "+
-			"ModuleInfo[%s]", conn.ModuleInfo.GetJson())
+		manager.connectMutex.Lock()
+		defer manager.connectMutex.Unlock()
+		manager.connInfos.Delete(conn.ModuleInfo.ModuleID)
+		manager.Syslog("[msgParseTCPConn] 服务器已主动关闭，不再尝试连接它了 "+
+			"ModuleInfo[%s]", conn.ModuleInfo.GetJSON())
 		return
 	case servercomm.SNotifyAllInfoID:
 		// 收到所有服务器的配置信息
 		recvmsg := &servercomm.SNotifyAllInfo{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
-		this.connectMutex.Lock()
-		defer this.connectMutex.Unlock()
-		this.Syslog("[SubnetManager.msgParseTCPConn] " +
+		manager.connectMutex.Lock()
+		defer manager.connectMutex.Unlock()
+		manager.Syslog("[Manager.msgParseTCPConn] " +
 			"收到所有服务器列表信息")
 		// 所有服务器信息列表
 		for i := 0; i < len(recvmsg.ServerInfos); i++ {
 			serverinfo := recvmsg.ServerInfos[i]
-			this.connInfos.Add(serverinfo)
+			manager.connInfos.Add(serverinfo)
 		}
 		return
 	}
 	msgqueues := &ConnectMsgQueueStruct{}
 	msgqueues.conn = conn
 	msgqueues.msg = msgbin
-	this.MultiQueueControl(msgqueues)
+	manager.MultiQueueControl(msgqueues)
 }
 
-// 分配消息处理线程
-func (this *SubnetManager) MultiQueueControl(
+// MultiQueueControl 分配消息处理线程
+func (manager *Manager) MultiQueueControl(
 	msgqueues *ConnectMsgQueueStruct) {
-	if this.maxRunningMsgNum < 1 {
-		this.OnRecvTCPMsg(msgqueues.conn, msgqueues.msg)
+	if manager.maxRunningMsgNum < 1 {
+		manager.OnRecvTCPMsg(msgqueues.conn, msgqueues.msg)
 		return
 	}
-	who := this.getRecvTCPMsgParseChan(msgqueues.conn,
-		this.maxRunningMsgNum, msgqueues.msg)
-	if who >= int32(len(this.runningMsgChan)) || who < 0 {
-		panic(fmt.Sprintf("who[%d] >= len(this.runningMsgChan)[%d]", who,
-			len(this.runningMsgChan)))
+	who := manager.getRecvTCPMsgParseChan(msgqueues.conn,
+		manager.maxRunningMsgNum, msgqueues.msg)
+	if who >= int32(len(manager.runningMsgChan)) || who < 0 {
+		panic(fmt.Sprintf("who[%d] >= len(manager.runningMsgChan)[%d]", who,
+			len(manager.runningMsgChan)))
 	}
-	this.runningMsgChan[who] <- msgqueues
+	manager.runningMsgChan[who] <- msgqueues
 }
 
-// 初始化消息处理队列
-func (this *SubnetManager) InitMsgQueue(sum int32) {
+// InitMsgQueue 初始化消息处理队列
+func (manager *Manager) InitMsgQueue(sum int32) {
 	// 最大同时处理的消息数量
-	this.maxRunningMsgNum = sum // 消息队列线程数
-	if this.maxRunningMsgNum < 1 {
-		this.maxRunningMsgNum = 1
-		this.Error("[SubnetManager.InitMsgQueue] " +
+	manager.maxRunningMsgNum = sum // 消息队列线程数
+	if manager.maxRunningMsgNum < 1 {
+		manager.maxRunningMsgNum = 1
+		manager.Error("[Manager.InitMsgQueue] " +
 			"消息处理线程数量过小，置为1...")
 	}
-	this.runningMsgChan = make([]chan *ConnectMsgQueueStruct,
-		this.maxRunningMsgNum)
-	this.Syslog("[SubnetManager.InitMsgQueue] "+
-		"Task 消息处理线程数量 ThreadNum[%d]", this.maxRunningMsgNum)
-	for i := int32(0); i < this.maxRunningMsgNum; i++ {
-		this.runningMsgChan[i] = make(chan *ConnectMsgQueueStruct,
+	manager.runningMsgChan = make([]chan *ConnectMsgQueueStruct,
+		manager.maxRunningMsgNum)
+	manager.Syslog("[Manager.InitMsgQueue] "+
+		"Task 消息处理线程数量 ThreadNum[%d]", manager.maxRunningMsgNum)
+	for i := int32(0); i < manager.maxRunningMsgNum; i++ {
+		manager.runningMsgChan[i] = make(chan *ConnectMsgQueueStruct,
 			15000)
-		go this.RecvmsgProcess(i)
+		go manager.RecvmsgProcess(i)
 	}
 }
 
-// 并行处理接收消息队列数据
-func (this *SubnetManager) MultiRecvmsgQueue(
+// MultiRecvmsgQueue 并行处理接收消息队列数据
+func (manager *Manager) MultiRecvmsgQueue(
 	index int32) (normalreturn bool) {
-	if this.runningMsgChan == nil || this.runningMsgChan[index] == nil {
-		panic(fmt.Sprintf("this.runningMsgChan[%d] == nil", index))
-		return true
+	if manager.runningMsgChan == nil || manager.runningMsgChan[index] == nil {
+		panic(fmt.Sprintf("manager.runningMsgChan[%d] == nil", index))
 	}
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
-		if err, stackInfo := sysutil.GetPanicInfo(recover()); err != nil {
+		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
 			// 这里的err其实就是panic传入的内容
-			this.Error("[SubnetManager.MultiRecvmsgQueue] "+
+			manager.Error("[Manager.MultiRecvmsgQueue] "+
 				"Panic: ErrName[%v] \n Stack[%s]", err, stackInfo)
 			normalreturn = false
 		}
 	}()
 	normalreturn = true
 
-	msgchan := this.runningMsgChan[index]
+	msgchan := manager.runningMsgChan[index]
 	for msgqueues := range msgchan {
 		functiontime := monitor.FunctionTime{}
 		functiontime.Start("MultiRecvmsgQueue")
-		this.OnRecvTCPMsg(msgqueues.conn, msgqueues.msg)
+		manager.OnRecvTCPMsg(msgqueues.conn, msgqueues.msg)
 		functiontime.Stop()
 	}
 	return true
 }
 
-// 保持服务器消息处理线程
-func (this *SubnetManager) RecvmsgProcess(index int32) {
+// RecvmsgProcess 保持服务器消息处理线程
+func (manager *Manager) RecvmsgProcess(index int32) {
 	for {
-		if this.MultiRecvmsgQueue(index) {
+		if manager.MultiRecvmsgQueue(index) {
 			// 正常退出
 			break
 		}

@@ -1,13 +1,11 @@
-/*
-micserver 中网络连接的基础IO接口实现，支持自定义网络协议
-*/
+// Package baseio micserver 中网络连接的基础IO接口实现，支持自定义网络协议
 package baseio
 
 import (
 	"io"
 )
 
-// 网络层协议接口
+// Protocal 网络层协议接口
 type Protocal interface {
 	// 读数据
 	DoRead(reader io.ReadWriter, state interface{},
@@ -17,7 +15,7 @@ type Protocal interface {
 		toData []byte) (int, interface{}, error)
 }
 
-// 协议处理工作
+// Worker 协议处理工作
 type Worker struct {
 	rw       io.ReadWriter
 	protocal Protocal
@@ -26,36 +24,35 @@ type Worker struct {
 	protocolState interface{}
 }
 
-// 初始化网络基础IO
-func (this *Worker) Init(rw io.ReadWriter) {
-	this.rw = rw
+// Init 初始化网络基础IO
+func (w *Worker) Init(rw io.ReadWriter) {
+	w.rw = rw
 }
 
-// 设置网络层协议工作
-func (this *Worker) HookProtocal(p Protocal) {
-	this.protocal = p
+// HookProtocal 设置网络层协议工作
+func (w *Worker) HookProtocal(p Protocal) {
+	w.protocal = p
 }
 
-// 从io中读数据，如果自定义了网络层协议，则使用自定义协议读取，否则默认TCP协议
-func (this *Worker) Read(toData []byte) (int, error) {
-	if this.protocal != nil {
-		n, state, err := this.protocal.DoRead(
-			this.rw, this.protocolState, toData)
-		this.protocolState = state
+// Read 从io中读数据，如果自定义了网络层协议，则使用自定义协议读取，否则默认TCP协议
+func (w *Worker) Read(toData []byte) (int, error) {
+	if w.protocal != nil {
+		n, state, err := w.protocal.DoRead(
+			w.rw, w.protocolState, toData)
+		w.protocolState = state
 		return n, err
-	} else {
-		return this.rw.Read(toData)
 	}
+	return w.rw.Read(toData)
 }
 
-// 向io中写数据，如果自定义了网络层协议，则使用自定义协议写入，否则默认TCP协议
-func (this *Worker) Write(data []byte) (int, error) {
-	if this.protocal != nil {
-		n, state, err := this.protocal.DoWrite(this.rw,
-			this.protocolState, data)
-		this.protocolState = state
+// Write 向io中写数据，如果自定义了网络层协议，则使用自定义协议写入，否则默认TCP协议
+func (w *Worker) Write(data []byte) (int, error) {
+	if w.protocal != nil {
+		n, state, err := w.protocal.DoWrite(w.rw,
+			w.protocolState, data)
+		w.protocolState = state
 		return n, err
-	} else {
-		return this.rw.Write(data)
 	}
+
+	return w.rw.Write(data)
 }

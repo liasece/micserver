@@ -1,5 +1,5 @@
 /*
-管理当前Module所拥有的Session
+Package session 管理当前Module所拥有的Session
 */
 package session
 
@@ -7,13 +7,13 @@ import (
 	"sync"
 )
 
-// 当前Module的Session管理器
-type SessionManager struct {
+// Manager 当前Module的Session管理器
+type Manager struct {
 	sessions sync.Map
 }
 
-func (this *SessionManager) get(uuid string) *Session {
-	if vi, ok := this.sessions.Load(uuid); ok {
+func (sessionManager *Manager) get(uuid string) *Session {
+	if vi, ok := sessionManager.sessions.Load(uuid); ok {
 		if vi != nil {
 			return vi.(*Session)
 		}
@@ -21,23 +21,23 @@ func (this *SessionManager) get(uuid string) *Session {
 	return nil
 }
 
-// 保存一个目标UUID的session，必须存在不为空的uuid，否则不会保存
-func (this *SessionManager) store(session *Session) {
+// store 保存一个目标UUID的session，必须存在不为空的uuid，否则不会保存
+func (sessionManager *Manager) store(session *Session) {
 	uuid := session.GetUUID()
 	if uuid == "" {
 		return
 	}
-	this.sessions.Store(uuid, session)
+	sessionManager.sessions.Store(uuid, session)
 }
 
-// 保存一个Session
-func (this *SessionManager) Store(session *Session) {
-	this.store(session)
+// Store 保存一个Session
+func (sessionManager *Manager) Store(session *Session) {
+	sessionManager.store(session)
 }
 
-func (this *SessionManager) loadOrStore(uuid string,
+func (sessionManager *Manager) loadOrStore(uuid string,
 	session *Session) (*Session, bool) {
-	vi, isload := this.sessions.LoadOrStore(uuid, session)
+	vi, isload := sessionManager.sessions.LoadOrStore(uuid, session)
 	var v *Session
 	if vi != nil {
 		v = vi.(*Session)
@@ -45,33 +45,32 @@ func (this *SessionManager) loadOrStore(uuid string,
 	return v, isload
 }
 
-func (this *SessionManager) delete(uuid string) {
-	this.sessions.Delete(uuid)
+func (sessionManager *Manager) delete(uuid string) {
+	sessionManager.sessions.Delete(uuid)
 }
 
-// 加载或保存一个Session，返回操作成功的Session以及是否时加载行为
-func (this *SessionManager) LoadOrStore(uuid string,
+// LoadOrStore 加载或保存一个Session，返回操作成功的Session以及是否时加载行为
+func (sessionManager *Manager) LoadOrStore(uuid string,
 	session *Session) (*Session, bool) {
-	return this.loadOrStore(uuid, session)
+	return sessionManager.loadOrStore(uuid, session)
 }
 
-// 根据Session的UUID获取一个Session
-func (this *SessionManager) GetSession(uuid string) *Session {
-	return this.get(uuid)
+// GetSession 根据Session的UUID获取一个Session
+func (sessionManager *Manager) GetSession(uuid string) *Session {
+	return sessionManager.get(uuid)
 }
 
-// 更新一个 session 到管理器中
+// MustUpdateFromMap 更新一个 session 到管理器中
 // targetSession 可以是不在当前管理器中的，但是其必须拥有UUID
 // 如果当前管理器中已存在 targetSession.UUID 指定的session，
 // 且两者不是同一个Session，会用 targetSession 完善当前管理器中已存在的Session
-func (this *SessionManager) MustUpdateFromMap(targetSession *Session,
+func (sessionManager *Manager) MustUpdateFromMap(targetSession *Session,
 	data map[string]string) {
 	uuid := targetSession.GetUUID()
 	if uuid == "" {
 		panic("targetSession uuid must exist")
-		return
 	}
-	session, isload := this.LoadOrStore(uuid, targetSession)
+	session, isload := sessionManager.LoadOrStore(uuid, targetSession)
 	if isload && session != targetSession {
 		// 存在两个主键一样的session，用传入session完善本地已存在的session
 		session.OnlyAddKeyFromSession(targetSession)
@@ -79,14 +78,14 @@ func (this *SessionManager) MustUpdateFromMap(targetSession *Session,
 	session.FromMap(data)
 }
 
-// 删除目标uuid的session
-func (this *SessionManager) DeleteSession(uuid string) {
-	this.delete(uuid)
+// DeleteSession 删除目标uuid的session
+func (sessionManager *Manager) DeleteSession(uuid string) {
+	sessionManager.delete(uuid)
 }
 
-// 更新 session 绑定的UUID，由于 session manager 使用UUID作为索引
+// UpdateSessionUUID 更新 session 绑定的UUID，由于 session manager 使用UUID作为索引
 // session 的主键，所以UUID的更改需要同时修改manager中的绑定的
-func (this *SessionManager) UpdateSessionUUID(uuid string, session *Session) {
+func (sessionManager *Manager) UpdateSessionUUID(uuid string, session *Session) {
 	if session == nil {
 		return
 	}
@@ -95,20 +94,20 @@ func (this *SessionManager) UpdateSessionUUID(uuid string, session *Session) {
 	if olduuid != "" {
 		// 本地管理器中存在原UUID的session
 		// 如果本地和目标修改的session不是同一个，需要复制其内容到新的session中
-		oldsession := this.GetSession(olduuid)
+		oldsession := sessionManager.GetSession(olduuid)
 		if oldsession != nil {
 			if oldsession != session {
 				session.OnlyAddKeyFromSession(oldsession)
 			}
 			// 主键被修改了，需要删除旧的主键
 			if uuid != olduuid {
-				this.DeleteSession(olduuid)
+				sessionManager.DeleteSession(olduuid)
 			}
 		}
 	}
 	// 如果目标修改为的UUID已存在于本地，需要将本地已存在的Session合并到目标session，
 	// 这里不需要删除本地管理器中主键为uuid的session，由后续的 Store() 实现替换
-	localsession := this.GetSession(uuid)
+	localsession := sessionManager.GetSession(uuid)
 	if localsession != nil && localsession != session {
 		// 替换一个新的session对象
 		session.OnlyAddKeyFromSession(localsession)
@@ -116,5 +115,5 @@ func (this *SessionManager) UpdateSessionUUID(uuid string, session *Session) {
 
 	// 实际处理session的uuid修改
 	session.setUUID(uuid)
-	this.Store(session)
+	sessionManager.Store(session)
 }

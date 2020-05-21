@@ -11,32 +11,39 @@ package monitor
 
 import (
 	"fmt"
-	"github.com/liasece/micserver/log"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/liasece/micserver/log"
 )
 
+// FunctionTime function time
 type FunctionTime struct {
 	starttime    uint64
 	endtime      uint64
 	functionname string
 }
 
-func (this *FunctionTime) Start(name string) {
-	this.functionname = name
-	this.starttime = uint64(time.Now().UnixNano() / 1000000)
+// Start func
+func (ftime *FunctionTime) Start(name string) {
+	ftime.functionname = name
+	ftime.starttime = uint64(time.Now().UnixNano() / 1000000)
 }
-func (this *FunctionTime) Stop() {
-	this.endtime = uint64(time.Now().UnixNano() / 1000000)
-	usetime := this.endtime - this.starttime
+
+// Stop func
+func (ftime *FunctionTime) Stop() {
+	ftime.endtime = uint64(time.Now().UnixNano() / 1000000)
+	usetime := ftime.endtime - ftime.starttime
 	if usetime > 500 {
-		log.Error("[消耗时间统计],消耗时间超时,%s,%d 毫秒", this.functionname, usetime)
+		log.Error("[消耗时间统计],消耗时间超时,%s,%d 毫秒", ftime.functionname, usetime)
 	}
 }
-func (this *FunctionTime) StopUseTime() uint64 {
-	this.endtime = uint64(time.Now().UnixNano() / 1000000)
-	usetime := this.endtime - this.starttime
+
+// StopUseTime func
+func (ftime *FunctionTime) StopUseTime() uint64 {
+	ftime.endtime = uint64(time.Now().UnixNano() / 1000000)
+	usetime := ftime.endtime - ftime.starttime
 	return uint64(usetime)
 }
 
@@ -47,7 +54,7 @@ type gbFunctionInfo struct {
 	usetime      uint64
 }
 
-// 性能统计分析
+// GBOptimizeAnalysisM 性能统计分析
 type GBOptimizeAnalysisM struct {
 	functionmaps map[string]gbFunctionInfo
 	starttime    uint64
@@ -55,38 +62,43 @@ type GBOptimizeAnalysisM struct {
 	mutex        sync.Mutex
 }
 
-var optimize_analysic_s *GBOptimizeAnalysisM
+var optimizeAnalysic *GBOptimizeAnalysisM
 
 func init() {
-	optimize_analysic_s = &GBOptimizeAnalysisM{}
-	optimize_analysic_s.functionmaps = make(map[string]gbFunctionInfo)
+	optimizeAnalysic = &GBOptimizeAnalysisM{}
+	optimizeAnalysic.functionmaps = make(map[string]gbFunctionInfo)
 }
 
+// GetGBOptimizeAnalysisM func
 func GetGBOptimizeAnalysisM() *GBOptimizeAnalysisM {
-	return optimize_analysic_s
+	return optimizeAnalysic
 }
-func (this *GBOptimizeAnalysisM) StartCheck() {
-	this.starttime = uint64(time.Now().UnixNano() / 1000000)
+
+// StartCheck func
+func (ftime *GBOptimizeAnalysisM) StartCheck() {
+	ftime.starttime = uint64(time.Now().UnixNano() / 1000000)
 }
-func (this *GBOptimizeAnalysisM) StopCheck() {
-	this.endtime = uint64(time.Now().UnixNano() / 1000000)
-	usetime := this.endtime - this.starttime
+
+// StopCheck func
+func (ftime *GBOptimizeAnalysisM) StopCheck() {
+	ftime.endtime = uint64(time.Now().UnixNano() / 1000000)
+	usetime := ftime.endtime - ftime.starttime
 	if usetime > 100 {
-		this.mutex.Lock()
-		for _, funcinfo := range this.functionmaps {
+		ftime.mutex.Lock()
+		for _, funcinfo := range ftime.functionmaps {
 			log.Debug("[分时消耗统计],消耗时间,%s,%s,%d 毫秒,调用:%d次", funcinfo.functionname, funcinfo.callname, funcinfo.usetime, funcinfo.callcount)
 		}
 		log.Debug("[分时消耗统计],消耗时间总计:%d毫秒", usetime)
-		this.functionmaps = make(map[string]gbFunctionInfo)
-		this.mutex.Unlock()
+		ftime.functionmaps = make(map[string]gbFunctionInfo)
+		ftime.mutex.Unlock()
 	} else {
-		this.mutex.Lock()
-		this.functionmaps = make(map[string]gbFunctionInfo)
-		this.mutex.Unlock()
+		ftime.mutex.Lock()
+		ftime.functionmaps = make(map[string]gbFunctionInfo)
+		ftime.mutex.Unlock()
 	}
 }
 
-// 结束数据会存入 GBOptimizeAnalysisM 中
+// FunctionTimeAnalysic 结束数据会存入 GBOptimizeAnalysisM 中
 type FunctionTimeAnalysic struct {
 	starttime    uint64
 	endtime      uint64
@@ -94,28 +106,31 @@ type FunctionTimeAnalysic struct {
 	callname     string
 }
 
-func (this *FunctionTimeAnalysic) Start() {
-	this.starttime = uint64(time.Now().UnixNano() / 1000000)
+// Start func
+func (ftime *FunctionTimeAnalysic) Start() {
+	ftime.starttime = uint64(time.Now().UnixNano() / 1000000)
 	pc, file, line, _ := runtime.Caller(1)
-	this.functionname = fmt.Sprintf("%s:%d", file, line)
+	ftime.functionname = fmt.Sprintf("%s:%d", file, line)
 	f := runtime.FuncForPC(pc)
-	this.callname = f.Name()
+	ftime.callname = f.Name()
 }
-func (this *FunctionTimeAnalysic) Stop() {
-	this.endtime = uint64(time.Now().UnixNano() / 1000000)
-	usetime := this.endtime - this.starttime
-	optimize_analysic_s.mutex.Lock()
-	if oldinfo, found := optimize_analysic_s.functionmaps[this.functionname]; found {
+
+// Stop func
+func (ftime *FunctionTimeAnalysic) Stop() {
+	ftime.endtime = uint64(time.Now().UnixNano() / 1000000)
+	usetime := ftime.endtime - ftime.starttime
+	optimizeAnalysic.mutex.Lock()
+	if oldinfo, found := optimizeAnalysic.functionmaps[ftime.functionname]; found {
 		oldinfo.usetime += usetime
 		oldinfo.callcount++
-		optimize_analysic_s.functionmaps[this.functionname] = oldinfo
+		optimizeAnalysic.functionmaps[ftime.functionname] = oldinfo
 	} else {
 		newinfo := gbFunctionInfo{}
-		newinfo.functionname = this.functionname
-		newinfo.callname = this.callname
+		newinfo.functionname = ftime.functionname
+		newinfo.callname = ftime.callname
 		newinfo.usetime += usetime
 		newinfo.callcount = 1
-		optimize_analysic_s.functionmaps[this.functionname] = newinfo
+		optimizeAnalysic.functionmaps[ftime.functionname] = newinfo
 	}
-	optimize_analysic_s.mutex.Unlock()
+	optimizeAnalysic.mutex.Unlock()
 }

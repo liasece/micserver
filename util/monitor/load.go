@@ -4,19 +4,22 @@ import (
 	"sync/atomic"
 )
 
-// 负载
+// Load 负载
 type Load struct {
 	value int64
 }
 
-func (this *Load) GetLoad() int64 {
-	return atomic.LoadInt64(&this.value)
+// GetLoad func
+func (load *Load) GetLoad() int64 {
+	return atomic.LoadInt64(&load.value)
 }
 
-func (this *Load) AddLoad(add int64) {
-	atomic.AddInt64(&this.value, add)
+// AddLoad func
+func (load *Load) AddLoad(add int64) {
+	atomic.AddInt64(&load.value, add)
 }
 
-func (this *Load) SetLoad(value int64) {
-	atomic.StoreInt64(&this.value, value)
+// SetLoad func
+func (load *Load) SetLoad(value int64) {
+	atomic.StoreInt64(&load.value, value)
 }

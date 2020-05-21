@@ -4,21 +4,20 @@ import (
 	"sync"
 )
 
-// ROC 管理器，每个 Module 都包含了一个ROC管理器，管理了本 Module 已注册的所有ROC类型
-// 及ROC对象。
-type ROCManager struct {
+// Manager ROC 管理器，每个 Module 都包含了一个ROC管理器，管理了本 Module 已注册的所有ROC类型及ROC对象。
+type Manager struct {
 	rocs      sync.Map
 	eventHook IROCObjEventHook
 }
 
-// 新建一种类型的ROC
-func (this *ROCManager) NewROC(objtype ROCObjType) *ROC {
+// NewROC 新建一种类型的ROC
+func (rocManager *Manager) NewROC(objtype ObjType) *ROC {
 	var res *ROC
 	newroc := &ROC{}
-	vi, isLoad := this.rocs.LoadOrStore(objtype, newroc)
+	vi, isLoad := rocManager.rocs.LoadOrStore(objtype, newroc)
 	if !isLoad {
 		newroc.Init()
-		newroc.HookObjEvent(this)
+		newroc.HookObjEvent(rocManager)
 		res = newroc
 	} else {
 		res = vi.(*ROC)
@@ -26,69 +25,69 @@ func (this *ROCManager) NewROC(objtype ROCObjType) *ROC {
 	return res
 }
 
-// 监听ROC事件
-func (this *ROCManager) HookObjEvent(hook IROCObjEventHook) {
-	this.eventHook = hook
+// HookObjEvent 监听ROC事件
+func (rocManager *Manager) HookObjEvent(hook IROCObjEventHook) {
+	rocManager.eventHook = hook
 }
 
-// 当增加一个ROC对象时调用
-func (this *ROCManager) OnROCObjAdd(obj IObj) {
-	if this.eventHook != nil {
-		this.eventHook.OnROCObjAdd(obj)
+// OnROCObjAdd 当增加一个ROC对象时调用
+func (rocManager *Manager) OnROCObjAdd(obj IObj) {
+	if rocManager.eventHook != nil {
+		rocManager.eventHook.OnROCObjAdd(obj)
 	}
 }
 
-// 当删除一个ROC对象时调用
-func (this *ROCManager) OnROCObjDel(obj IObj) {
-	if this.eventHook != nil {
-		this.eventHook.OnROCObjDel(obj)
+// OnROCObjDel 当删除一个ROC对象时调用
+func (rocManager *Manager) OnROCObjDel(obj IObj) {
+	if rocManager.eventHook != nil {
+		rocManager.eventHook.OnROCObjDel(obj)
 	}
 }
 
-// 注册一个ROC对象，如果该类型的ROC未注册将返回 error
-func (this *ROCManager) RegObj(obj IObj) error {
+// RegObj 注册一个ROC对象，如果该类型的ROC未注册将返回 error
+func (rocManager *Manager) RegObj(obj IObj) error {
 	objtype := obj.GetROCObjType()
-	roc := this.GetROC(objtype)
+	roc := rocManager.GetROC(objtype)
 	if roc == nil {
 		return ErrUnregisterROC
 	}
 	return roc.RegObj(obj)
 }
 
-// 获取一个类型ROC
-func (this *ROCManager) GetROC(objtype ROCObjType) *ROC {
-	vi, ok := this.rocs.Load(objtype)
+// GetROC 获取一个类型ROC
+func (rocManager *Manager) GetROC(objtype ObjType) *ROC {
+	vi, ok := rocManager.rocs.Load(objtype)
 	if !ok {
 		return nil
 	}
 	return vi.(*ROC)
 }
 
-// 解码ROC调用路径
-func (this *ROCManager) CallPathDecode(kstr string) (ROCObjType, string) {
+// CallPathDecode 解码ROC调用路径
+func (rocManager *Manager) CallPathDecode(kstr string) (ObjType, string) {
 	return kstrDecode(kstr)
 }
 
 // kstr的格式必须为 ROC 远程对象调用那样定义的格式
-// (对象类型)([对象的键])
-func (this *ROCManager) getObj(objType ROCObjType, objID string) (IObj, bool) {
-	roc := this.GetROC(objType)
+// getObj (对象类型)([对象的键])
+func (rocManager *Manager) getObj(objType ObjType, objID string) (IObj, bool) {
+	roc := rocManager.GetROC(objType)
 	if roc == nil {
 		return nil, false
 	}
 	return roc.GetObj(objID)
 }
 
-// kstr的格式必须为 ROC 远程对象调用那样定义的格式
+// GetObj kstr的格式必须为 ROC 远程对象调用那样定义的格式
 // (对象类型)([对象的键])
-func (this *ROCManager) GetObj(objType ROCObjType, objID string) (IObj, bool) {
-	return this.getObj(objType, objID)
+func (rocManager *Manager) GetObj(objType ObjType, objID string) (IObj, bool) {
+	return rocManager.getObj(objType, objID)
 }
 
-// 执行远程发来的ROC调用请求
-func (this *ROCManager) Call(callstr string, arg []byte) ([]byte, error) {
-	path := NewROCPath(callstr)
-	obj, ok := this.getObj(path.GetObjType(), path.GetObjID())
+// Call 执行远程发来的ROC调用请求
+func (rocManager *Manager) Call(callstr string, arg []byte) ([]byte, error) {
+	path := NewPath(callstr)
+	obj, ok := rocManager.getObj(path.GetObjType(), path.GetObjID())
 	if !ok || obj == nil {
 		path.Reset()
 		return nil, ErrUnknowObj

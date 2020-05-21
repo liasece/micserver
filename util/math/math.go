@@ -1,7 +1,6 @@
 package math
 
-import ()
-
+// Abs func
 func Abs(n int32) uint32 {
 	if n < 0 {
 		return uint32(-n)

@@ -8,7 +8,7 @@ import (
 	"github.com/liasece/micserver/servercomm"
 )
 
-// 服务器连接，在一个模块的 SubnetManager 中，连接至该模块的任何模块都在该模块中
+// Server 服务器连接，在一个模块的 SubnetManager 中，连接至该模块的任何模块都在该模块中
 // 存在一个 Server 连接。
 type Server struct {
 	BaseConnect
@@ -21,50 +21,50 @@ type Server struct {
 	serverSCType TServerSCType
 }
 
-// 初始化一个新的服务器连接
+// InitTCP 初始化一个新的服务器连接
 // sctype: 连接的 客户端/服务器 类型
 // netconn: 连接的net.Conn对象
-func (this *Server) InitTCP(sctype TServerSCType, netconn net.Conn,
+func (s *Server) InitTCP(sctype TServerSCType, netconn net.Conn,
 	onRecv func(*Server, *msg.MessageBinary),
 	onClose func(*Server)) {
-	this.BaseConnect.Init()
-	this.ModuleInfo = &servercomm.ModuleInfo{}
-	this.SetSC(sctype)
-	this.ConnectPriority = rand.Int63()
-	this.IConnection = NewTCP(netconn, this.Logger,
+	s.BaseConnect.Init()
+	s.ModuleInfo = &servercomm.ModuleInfo{}
+	s.SetSC(sctype)
+	s.ConnectPriority = rand.Int63()
+	s.IConnection = NewTCP(netconn, s.Logger,
 		ServerSendChanSize, ServerSendBufferSize,
 		ServerRecvChanSize, ServerRecvBufferSize)
 	// 禁止连接自动扩容缓冲区
-	this.IConnection.SetBanAutoResize(true)
-	this.IConnection.StartRecv()
-	go this.recvMsgThread(this.IConnection.GetRecvMessageChannel(),
+	s.IConnection.SetBanAutoResize(true)
+	s.IConnection.StartRecv()
+	go s.recvMsgThread(s.IConnection.GetRecvMessageChannel(),
 		onRecv, onClose)
 }
 
-// 初始化一个新的服务器连接
+// InitChan 初始化一个新的服务器连接
 // sctype: 连接的 客户端/服务器 类型
 // sendChan: 发送消息管道
 // recvChan: 接收消息管道
-func (this *Server) InitChan(sctype TServerSCType,
+func (s *Server) InitChan(sctype TServerSCType,
 	sendChan chan *msg.MessageBinary, recvChan chan *msg.MessageBinary,
 	onRecv func(*Server, *msg.MessageBinary),
 	onClose func(*Server)) {
-	this.BaseConnect.Init()
-	this.ModuleInfo = &servercomm.ModuleInfo{}
-	this.SetSC(sctype)
-	this.ConnectPriority = rand.Int63()
-	this.IConnection = NewChan(sendChan, recvChan, this.Logger)
-	this.IConnection.StartRecv()
-	go this.recvMsgThread(this.IConnection.GetRecvMessageChannel(),
+	s.BaseConnect.Init()
+	s.ModuleInfo = &servercomm.ModuleInfo{}
+	s.SetSC(sctype)
+	s.ConnectPriority = rand.Int63()
+	s.IConnection = NewChan(sendChan, recvChan, s.Logger)
+	s.IConnection.StartRecv()
+	go s.recvMsgThread(s.IConnection.GetRecvMessageChannel(),
 		onRecv, onClose)
 }
 
-func (this *Server) recvMsgThread(c chan *msg.MessageBinary,
+func (s *Server) recvMsgThread(c chan *msg.MessageBinary,
 	onRecv func(*Server, *msg.MessageBinary),
 	onClose func(*Server)) {
 	defer func() {
 		if onClose != nil {
-			onClose(this)
+			onClose(s)
 		}
 	}()
 
@@ -75,18 +75,18 @@ func (this *Server) recvMsgThread(c chan *msg.MessageBinary,
 				return
 			}
 			if onRecv != nil {
-				onRecv(this, m)
+				onRecv(s, m)
 			}
 		}
 	}
 }
 
-// 设置该服务器连接是连接方还是受连接方
-func (this *Server) SetSC(sctype TServerSCType) {
-	this.serverSCType = sctype
+// SetSC 设置该服务器连接是连接方还是受连接方
+func (s *Server) SetSC(sctype TServerSCType) {
+	s.serverSCType = sctype
 }
 
-// 获取该服务器连接是连接方还是受连接方
-func (this *Server) GetSCType() TServerSCType {
-	return this.serverSCType
+// GetSCType 获取该服务器连接是连接方还是受连接方
+func (s *Server) GetSCType() TServerSCType {
+	return s.serverSCType
 }

@@ -1,5 +1,5 @@
 /*
-服务器子网基础
+Package base 服务器子网基础
 */
 package base
 
@@ -8,7 +8,7 @@ import (
 	"github.com/liasece/micserver/msg"
 )
 
-// 服务器子网管理器需要实现的接口
+// SubnetHook 服务器子网管理器需要实现的接口
 type SubnetHook interface {
 	// 当一个服务器成功加入网络时调用
 	OnServerJoinSubnet(server *connect.Server)

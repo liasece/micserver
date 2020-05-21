@@ -8,16 +8,18 @@
  */
 
 /*
-无拷贝IO缓冲区实现
+Package buffer 无拷贝IO缓冲区实现
 */
 package buffer
 
 import (
 	"errors"
-	"github.com/liasece/micserver/log"
 	"io"
+
+	"github.com/liasece/micserver/log"
 )
 
+// io buffer errors
 var (
 	ErrBufNil    = errors.New("buf is nil")
 	ErrReaderNil = errors.New("reader is nil")
@@ -26,7 +28,7 @@ var (
 	ErrLess0     = errors.New("less than 0")
 )
 
-// 不是线程安全的
+// IOBuffer 不是线程安全的
 type IOBuffer struct {
 	*log.Logger
 
@@ -39,7 +41,7 @@ type IOBuffer struct {
 	banAutoResize bool
 }
 
-// 构造一个缓冲区
+// NewIOBuffer 构造一个缓冲区
 func NewIOBuffer(reader io.Reader, length int) *IOBuffer {
 	buf := make([]byte, length)
 	return &IOBuffer{
@@ -52,17 +54,17 @@ func NewIOBuffer(reader io.Reader, length int) *IOBuffer {
 	}
 }
 
-// 设置缓冲区是否可以根据需求自动调整大小
+// SetBanAutoResize 设置缓冲区是否可以根据需求自动调整大小
 func (b *IOBuffer) SetBanAutoResize(value bool) {
 	b.banAutoResize = value
 }
 
-// 当前缓冲区内容的长度
+// Len 当前缓冲区内容的长度
 func (b *IOBuffer) Len() int {
 	return b.end - b.start
 }
 
-// 将有用的字节前移
+// grow 将有用的字节前移
 func (b *IOBuffer) grow() error {
 	if b.buf == nil {
 		return ErrBufNil
@@ -89,17 +91,17 @@ func (b *IOBuffer) resize(length int) error {
 	return nil
 }
 
-// 当前剩余大小
+// RemainSize 当前剩余大小
 func (b *IOBuffer) RemainSize() int {
 	return b.maxLength - (b.end - b.start)
 }
 
-// 总大小
+// TotalSize 总大小
 func (b *IOBuffer) TotalSize() int {
 	return b.maxLength
 }
 
-// 从reader里面读取数据，如果reader阻塞，会发生阻塞
+// ReadFromReader 从reader里面读取数据，如果reader阻塞，会发生阻塞
 func (b *IOBuffer) ReadFromReader() (int, error) {
 	if b.reader == nil {
 		return 0, ErrReaderNil
@@ -134,7 +136,7 @@ func (b *IOBuffer) ReadFromReader() (int, error) {
 	return n, nil
 }
 
-// 返回n个字节，而不产生移位
+// Seek 返回n个字节，而不产生移位
 func (b *IOBuffer) Seek(n int) ([]byte, error) {
 	if b.buf == nil {
 		return nil, ErrBufNil
@@ -146,7 +148,7 @@ func (b *IOBuffer) Seek(n int) ([]byte, error) {
 	return nil, ErrNotEnough
 }
 
-// 返回所有字节，而不产生移位
+// SeekAll 返回所有字节，而不产生移位
 func (b *IOBuffer) SeekAll() ([]byte, error) {
 	if b.buf == nil {
 		return nil, ErrBufNil
@@ -154,7 +156,7 @@ func (b *IOBuffer) SeekAll() ([]byte, error) {
 	return b.buf[b.start:b.end], nil
 }
 
-// 舍弃offset个字段，读取n个字段
+// Read 舍弃offset个字段，读取n个字段
 func (b *IOBuffer) Read(offset, n int) ([]byte, error) {
 	if b.buf == nil {
 		return nil, ErrBufNil
@@ -174,7 +176,7 @@ func (b *IOBuffer) Read(offset, n int) ([]byte, error) {
 	return buf, nil
 }
 
-// 写入一段数据，要么全部成功，要么全部不成功
+// Write 写入一段数据，要么全部成功，要么全部不成功
 func (b *IOBuffer) Write(src []byte) error {
 	gerr := b.grow()
 	if gerr != nil {
@@ -209,7 +211,7 @@ func (b *IOBuffer) Write(src []byte) error {
 	return nil
 }
 
-// 修改缓冲区内容起始指针
+// MoveStart 修改缓冲区内容起始指针
 func (b *IOBuffer) MoveStart(n int) error {
 	tmpn := b.start + n
 	if tmpn < 0 {

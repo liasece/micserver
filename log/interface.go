@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// 日志系统实现的接口
+// ILogger 日志系统实现的接口
 type ILogger interface {
 	Syslog(fmt string, args ...interface{})
 	Debug(fmt string, args ...interface{})
@@ -25,21 +25,21 @@ type ILogger interface {
 	GetLogger() *Logger
 }
 
-// 输出器实现的接口
+// Writer 输出器实现的接口
 type Writer interface {
 	Init() error
 	Write(*Record) error
-	GetType() writerType
+	GetType() WriterType
 }
 
-// 转储器实现的接口
+// Rotater 转储器实现的接口
 type Rotater interface {
 	Rotate() error
 	RotateByTime(*time.Time) error
 	SetPathPattern(string, string) error
 }
 
-// 刷新输出
+// Flusher 刷新输出
 type Flusher interface {
 	Flush() error
 }

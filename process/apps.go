@@ -1,7 +1,5 @@
-/*
-process 是一个 micserver 中的单例，用于获取该进程中存在的所有 App 以及 Module，
-以便实现例如 roc catch 的优化，有一些数据不必每个 Module 都持有一份。
-*/
+// Package process 是一个 micserver 中的单例，用于获取该进程中存在的所有 App 以及 Module，
+// 以便实现例如 roc catch 的优化，有一些数据不必每个 Module 都持有一份。
 package process
 
 import (
@@ -15,7 +13,7 @@ var (
 	_gAppMutex sync.Mutex
 )
 
-// 增加一个App
+// AddApp 增加一个App
 func AddApp(app base.IApp) {
 	_gAppMutex.Lock()
 	defer _gAppMutex.Unlock()
@@ -26,7 +24,7 @@ func AddApp(app base.IApp) {
 	_gApps = append(_gApps, app)
 }
 
-// 获取当前进程的 App 列表
+// GetApps 获取当前进程的 App 列表
 func GetApps() []base.IApp {
 	_gAppMutex.Lock()
 	defer _gAppMutex.Unlock()

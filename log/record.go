@@ -9,7 +9,7 @@ var (
 	recordPool *sync.Pool
 )
 
-// 一条日志记录
+// Record 一条日志记录
 type Record struct {
 	time     string
 	name     string
@@ -19,7 +19,7 @@ type Record struct {
 	timeUnix int64
 }
 
-// 格式化该日志记录字符串
+// String 格式化该日志记录字符串
 func (r *Record) String() string {
-	return fmt.Sprintf("%s [%s] %s %s\n", r.time, r.name, LEVEL_FLAGS[r.level], r.info)
+	return fmt.Sprintf("%s [%s] %s %s\n", r.time, r.name, LEVELFLAGS[r.level], r.info)
 }

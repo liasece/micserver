@@ -1,5 +1,5 @@
 /*
-micserver中管理与其他服务器连接的管理器
+Package server micserver中管理与其他服务器连接的管理器
 */
 package server
 
@@ -17,7 +17,7 @@ import (
 	"github.com/liasece/micserver/util"
 )
 
-// 一个Module就是一个Server
+// Server 一个Module就是一个Server
 type Server struct {
 	*log.Logger
 	// event libs
@@ -25,9 +25,9 @@ type Server struct {
 
 	serverCmdHandler   serverCmdHandler
 	clientEventHandler clientEventHandler
-	subnetManager      *subnet.SubnetManager
-	gateBase           *gate.GateBase
-	sessionManager     session.SessionManager
+	subnetManager      *subnet.Manager
+	gateBase           *gate.Base
+	sessionManager     session.Manager
 
 	// server info
 	moduleid     string
@@ -36,225 +36,225 @@ type Server struct {
 	stopChan     chan bool
 }
 
-// 初始化本服务
-func (this *Server) Init(moduleid string) {
-	this.moduleid = moduleid
-	this.stopChan = make(chan bool)
-	this.ROCServer.Init(this)
+// Init 初始化本服务
+func (s *Server) Init(moduleid string) {
+	s.moduleid = moduleid
+	s.stopChan = make(chan bool)
+	s.ROCServer.Init(s)
 }
 
-// 初始化本服务的子网管理器
-func (this *Server) InitSubnet(conf *conf.ModuleConfig) {
-	this.moduleConfig = conf
+// InitSubnet 初始化本服务的子网管理器
+func (s *Server) InitSubnet(conf *conf.ModuleConfig) {
+	s.moduleConfig = conf
 	// 初始化服务器网络管理器
-	if this.subnetManager == nil {
-		this.subnetManager = &subnet.SubnetManager{}
+	if s.subnetManager == nil {
+		s.subnetManager = &subnet.Manager{}
 	}
-	this.serverCmdHandler.server = this
-	this.subnetManager.Logger = this.Logger.Clone()
-	this.subnetManager.Init(conf)
-	this.subnetManager.HookSubnet(&this.serverCmdHandler)
+	s.serverCmdHandler.server = s
+	s.subnetManager.Logger = s.Logger.Clone()
+	s.subnetManager.Init(conf)
+	s.subnetManager.HookSubnet(&s.serverCmdHandler)
 }
 
-// 设置本服务的服务事件监听者
-func (this *Server) HookServer(serverHook serverbase.ServerHook) {
-	this.serverCmdHandler.HookServer(serverHook)
+// HookServer 设置本服务的服务事件监听者
+func (s *Server) HookServer(serverHook serverbase.ServerHook) {
+	s.serverCmdHandler.HookServer(serverHook)
 }
 
-// 设置本服务的网关事件监听者，如果本服务没有启用网关，将不会收到任何事件
-func (this *Server) HookGate(gateHook gatebase.GateHook) {
-	this.clientEventHandler.HookGate(gateHook)
+// HookGate 设置本服务的网关事件监听者，如果本服务没有启用网关，将不会收到任何事件
+func (s *Server) HookGate(gateHook gatebase.GateHook) {
+	s.clientEventHandler.HookGate(gateHook)
 }
 
-// 尝试连接本服务子网中的其他服务器
-func (this *Server) BindSubnet(subnetAddrMap map[string]string) {
+// BindSubnet 尝试连接本服务子网中的其他服务器
+func (s *Server) BindSubnet(subnetAddrMap map[string]string) {
 	for k, addr := range subnetAddrMap {
-		if k != this.moduleid {
-			this.subnetManager.TryConnectServer(k, addr)
+		if k != s.moduleid {
+			s.subnetManager.TryConnectServer(k, addr)
 		}
 	}
 }
 
-// 初始化本服务的网关部分
-func (this *Server) InitGate(gateaddr string) {
-	this.gateBase = &gate.GateBase{
-		Logger: this.Logger,
+// InitGate 初始化本服务的网关部分
+func (s *Server) InitGate(gateaddr string) {
+	s.gateBase = &gate.Base{
+		Logger: s.Logger,
 	}
-	this.clientEventHandler.server = this
-	this.gateBase.Init(this.moduleid)
-	this.gateBase.BindOuterTCP(gateaddr)
+	s.clientEventHandler.server = s
+	s.gateBase.Init(s.moduleid)
+	s.gateBase.BindOuterTCP(gateaddr)
 
 	// 事件监听
-	this.gateBase.HookGate(&this.clientEventHandler)
+	s.gateBase.HookGate(&s.clientEventHandler)
 }
 
-// 设置本服务的Logger
-func (this *Server) SetLogger(source *log.Logger) {
+// SetLogger 设置本服务的Logger
+func (s *Server) SetLogger(source *log.Logger) {
 	if source == nil {
-		this.Logger = nil
+		s.Logger = nil
 		return
 	}
-	this.Logger = source.Clone()
+	s.Logger = source.Clone()
 }
 
-// 获取一个客户端连接
-func (this *Server) GetClient(tmpid string) *connect.Client {
-	if this.gateBase != nil {
-		return this.gateBase.GetClient(tmpid)
+// GetClient 获取一个客户端连接
+func (s *Server) GetClient(tmpid string) *connect.Client {
+	if s.gateBase != nil {
+		return s.gateBase.GetClient(tmpid)
 	}
 	return nil
 }
 
-// 获取一个客户端连接
-func (this *Server) RangeClient(
+// RangeClient 获取一个客户端连接
+func (s *Server) RangeClient(
 	f func(tmpid string, client *connect.Client) bool) {
-	if this.gateBase != nil {
-		this.gateBase.Range(f)
+	if s.gateBase != nil {
+		s.gateBase.Range(f)
 	}
 }
 
-// 当一个服务器成功加入网络时调用
-func (this *Server) onServerJoinSubnet(server *connect.Server) {
-	this.Debug("服务器 ModuleID[%s] 加入子网成功",
+// onServerJoinSubnet 当一个服务器成功加入网络时调用
+func (s *Server) onServerJoinSubnet(server *connect.Server) {
+	s.Debug("服务器 ModuleID[%s] 加入子网成功",
 		server.ModuleInfo.ModuleID)
-	this.ROCServer.onServerJoinSubnet(server)
+	s.ROCServer.onServerJoinSubnet(server)
 }
 
-// 发送一个服务器消息到另一个服务器
-func (this *Server) SendModuleMsg(
-	to string, msgstr msg.MsgStruct) {
-	conn := this.subnetManager.GetServer(to)
+// SendModuleMsg 发送一个服务器消息到另一个服务器
+func (s *Server) SendModuleMsg(
+	to string, msgstr msg.IMsgStruct) {
+	conn := s.subnetManager.GetServer(to)
 	if conn != nil {
-		conn.SendCmd(this.getModuleMsgPack(msgstr, conn))
+		conn.SendCmd(s.getModuleMsgPack(msgstr, conn))
 	}
 }
 
-// 断开一个客户端连接,仅框架内使用
-func (this *Server) SInner_CloseSessionConnect(gateid string, connectid string) {
-	this.ReqCloseConnect(gateid, connectid)
+// SInnerCloseSessionConnect 断开一个客户端连接,仅框架内使用
+func (s *Server) SInnerCloseSessionConnect(gateid string, connectid string) {
+	s.ReqCloseConnect(gateid, connectid)
 }
 
-// 请求关闭远程瞪的目标客户端连接
-func (this *Server) ReqCloseConnect(gateid string, connectid string) {
-	if this.moduleid == gateid {
-		this.doCloseConnect(connectid)
+// ReqCloseConnect 请求关闭远程瞪的目标客户端连接
+func (s *Server) ReqCloseConnect(gateid string, connectid string) {
+	if s.moduleid == gateid {
+		s.doCloseConnect(connectid)
 	} else {
 		// 向gate请求
-		conn := this.subnetManager.GetServer(gateid)
+		conn := s.subnetManager.GetServer(gateid)
 		if conn != nil {
 			msg := &servercomm.SReqCloseConnect{
-				FromModuleID: this.moduleid,
+				FromModuleID: s.moduleid,
 				ToModuleID:   gateid,
 				ClientConnID: connectid,
 			}
 			conn.SendCmd(msg)
 		} else {
-			this.Error("Server.ReqCloseConnect "+
+			s.Error("Server.ReqCloseConnect "+
 				"target module does not exist GateID[%s]",
 				gateid)
 		}
 	}
 }
 
-// 关闭本地的目标客户端连接
-func (this *Server) doCloseConnect(connectid string) {
-	if this.gateBase == nil {
-		this.Error("Server.doCloseConnect this module isn't gate")
+// doCloseConnect 关闭本地的目标客户端连接
+func (s *Server) doCloseConnect(connectid string) {
+	if s.gateBase == nil {
+		s.Error("Server.doCloseConnect s module isn't gate")
 		return
 	}
-	client := this.gateBase.GetClient(connectid)
+	client := s.gateBase.GetClient(connectid)
 	if client == nil {
-		this.Error("Server.doCloseConnect client does not exist ConnectID[%s]",
+		s.Error("Server.doCloseConnect client does not exist ConnectID[%s]",
 			connectid)
 		return
 	}
 	client.Terminate()
 }
 
-// 发送一个服务器消息到另一个服务器,仅框架内使用
-func (this *Server) SInner_SendModuleMsg(
-	to string, msgstr msg.MsgStruct) {
-	conn := this.subnetManager.GetServer(to)
+// SInnerSendModuleMsg 发送一个服务器消息到另一个服务器,仅框架内使用
+func (s *Server) SInnerSendModuleMsg(
+	to string, msgstr msg.IMsgStruct) {
+	conn := s.subnetManager.GetServer(to)
 	if conn != nil {
 		conn.SendCmd(msgstr)
 	} else {
-		this.Error("Server.SInner_SendServerMsg conn == nil[%s]", to)
+		s.Error("Server.SInnerSendServerMsg conn == nil[%s]", to)
 	}
 }
 
-// 发送一个服务器消息到另一个服务器,仅框架内使用
-func (this *Server) SInner_SendClientMsg(
+// SInnerSendClientMsg 发送一个服务器消息到另一个服务器,仅框架内使用
+func (s *Server) SInnerSendClientMsg(
 	gateid string, connectid string, msgid uint16, data []byte) {
-	this.SendBytesToClient(gateid, connectid, msgid, data)
+	s.SendBytesToClient(gateid, connectid, msgid, data)
 }
 
-// 转发一个客户端消息到另一个服务器
-func (this *Server) ForwardClientMsgToModule(fromconn *connect.Client,
+// ForwardClientMsgToModule 转发一个客户端消息到另一个服务器
+func (s *Server) ForwardClientMsgToModule(fromconn *connect.Client,
 	to string, msgid uint16, data []byte) {
-	conn := this.subnetManager.GetServer(to)
+	conn := s.subnetManager.GetServer(to)
 	if conn != nil {
-		conn.SendCmd(this.getFarwardFromGateMsgPack(msgid, data, fromconn, conn))
+		conn.SendCmd(s.getFarwardFromGateMsgPack(msgid, data, fromconn, conn))
 	} else {
-		this.Error("Server.ForwardClientMsgToServer conn == nil [%s]",
+		s.Error("Server.ForwardClientMsgToServer conn == nil [%s]",
 			to)
 	}
 }
 
-// 广播一个消息到连接到本服务器的所有服务器
-func (this *Server) BroadcastModuleCmd(msgstr msg.MsgStruct) {
-	this.subnetManager.BroadcastCmd(this.getModuleMsgPack(msgstr, nil))
+// BroadcastModuleCmd 广播一个消息到连接到本服务器的所有服务器
+func (s *Server) BroadcastModuleCmd(msgstr msg.IMsgStruct) {
+	s.subnetManager.BroadcastCmd(s.getModuleMsgPack(msgstr, nil))
 }
 
-// 获取一个均衡的负载服务器
-func (this *Server) GetBalanceModuleID(moduletype string) string {
-	server := this.subnetManager.GetRandomServer(moduletype)
+// GetBalanceModuleID 获取一个均衡的负载服务器
+func (s *Server) GetBalanceModuleID(moduletype string) string {
+	server := s.subnetManager.GetRandomServer(moduletype)
 	if server != nil {
 		return server.GetTempID()
 	}
 	return ""
 }
 
-// 删除本地维护的 session
-func (this *Server) DeleteSession(uuid string) {
-	this.sessionManager.DeleteSession(uuid)
+// DeleteSession 删除本地维护的 session
+func (s *Server) DeleteSession(uuid string) {
+	s.sessionManager.DeleteSession(uuid)
 }
 
-// 获取本地维护的 session
-func (this *Server) GetSession(uuid string) *session.Session {
-	return this.sessionManager.GetSession(uuid)
+// GetSession 获取本地维护的 session
+func (s *Server) GetSession(uuid string) *session.Session {
+	return s.sessionManager.GetSession(uuid)
 }
 
-// 更新本地的Session，如果没有的话注册它
-func (this *Server) MustUpdateSessionFromMap(uuid string, data map[string]string) {
-	s := this.server.sessionManager.GetSession(uuid)
-	if s == nil {
-		s = &session.Session{}
-		this.server.sessionManager.UpdateSessionUUID(uuid, s)
+// MustUpdateSessionFromMap 更新本地的Session，如果没有的话注册它
+func (s *Server) MustUpdateSessionFromMap(uuid string, data map[string]string) {
+	se := s.server.sessionManager.GetSession(uuid)
+	if se == nil {
+		se = &session.Session{}
+		s.server.sessionManager.UpdateSessionUUID(uuid, se)
 	}
-	this.server.sessionManager.MustUpdateFromMap(s, data)
-	this.server.Syslog("[MustUpdateSessionFromMap] Session Manager Update: %+v",
+	s.server.sessionManager.MustUpdateFromMap(se, data)
+	s.server.Syslog("[MustUpdateSessionFromMap] Session Manager Update: %+v",
 		data)
 }
 
-// 更新目标Session的UUID
-func (this *Server) UpdateSessionUUID(uuid string, session *session.Session) {
-	this.server.sessionManager.UpdateSessionUUID(uuid, session)
+// UpdateSessionUUID 更新目标Session的UUID
+func (s *Server) UpdateSessionUUID(uuid string, session *session.Session) {
+	s.server.sessionManager.UpdateSessionUUID(uuid, session)
 }
 
-// 发送一个消息到客户端
-func (this *Server) SendBytesToClient(gateid string,
+// SendBytesToClient 发送一个消息到客户端
+func (s *Server) SendBytesToClient(gateid string,
 	to string, msgid uint16, data []byte) error {
 	sec := false
-	if this.moduleid == gateid {
-		if this.DoSendBytesToClient(
-			this.moduleid, gateid, to, msgid, data) == nil {
+	if s.moduleid == gateid {
+		if s.DoSendBytesToClient(
+			s.moduleid, gateid, to, msgid, data) == nil {
 			sec = true
 		}
 	} else {
-		conn := this.subnetManager.GetServer(gateid)
+		conn := s.subnetManager.GetServer(gateid)
 		if conn != nil {
 			forward := &servercomm.SForwardToClient{}
-			forward.FromModuleID = this.moduleid
+			forward.FromModuleID = s.moduleid
 			forward.MsgID = msgid
 			forward.ToClientID = to
 			forward.ToGateID = gateid
@@ -263,7 +263,7 @@ func (this *Server) SendBytesToClient(gateid string,
 			conn.SendCmd(forward)
 			sec = true
 		} else {
-			this.Error("目标服务器连接不存在 GateID[%s]", gateid)
+			s.Error("目标服务器连接不存在 GateID[%s]", gateid)
 		}
 	}
 	if !sec {
@@ -272,12 +272,12 @@ func (this *Server) SendBytesToClient(gateid string,
 	return nil
 }
 
-// 发送一个消息到连接到本服务器的客户端
-func (this *Server) DoSendBytesToClient(fromserver string, gateid string,
+// DoSendBytesToClient 发送一个消息到连接到本服务器的客户端
+func (s *Server) DoSendBytesToClient(fromserver string, gateid string,
 	to string, msgid uint16, data []byte) error {
 	sec := false
-	if this.gateBase != nil {
-		conn := this.gateBase.GetClient(to)
+	if s.gateBase != nil {
+		conn := s.gateBase.GetClient(to)
 		if conn != nil {
 			if fromserver != gateid {
 				conn.Session.SetBind(util.GetModuleIDType(fromserver),
@@ -293,11 +293,11 @@ func (this *Server) DoSendBytesToClient(fromserver string, gateid string,
 	return nil
 }
 
-// 获取一个服务器消息的服务器间转发协议
-func (this *Server) getModuleMsgPack(msgstr msg.MsgStruct,
-	tarconn *connect.Server) msg.MsgStruct {
+// getModuleMsgPack 获取一个服务器消息的服务器间转发协议
+func (s *Server) getModuleMsgPack(msgstr msg.IMsgStruct,
+	tarconn *connect.Server) msg.IMsgStruct {
 	res := &servercomm.SForwardToModule{}
-	res.FromModuleID = this.moduleid
+	res.FromModuleID = s.moduleid
 	if tarconn != nil {
 		res.ToModuleID = tarconn.ModuleInfo.ModuleID
 	}
@@ -308,11 +308,11 @@ func (this *Server) getModuleMsgPack(msgstr msg.MsgStruct,
 	return res
 }
 
-// 获取一个客户端消息到其他服务器间的转发协议
-func (this *Server) getFarwardFromGateMsgPack(msgid uint16, data []byte,
-	fromconn *connect.Client, tarconn *connect.Server) msg.MsgStruct {
+// getFarwardFromGateMsgPack 获取一个客户端消息到其他服务器间的转发协议
+func (s *Server) getFarwardFromGateMsgPack(msgid uint16, data []byte,
+	fromconn *connect.Client, tarconn *connect.Server) msg.IMsgStruct {
 	res := &servercomm.SForwardFromGate{}
-	res.FromModuleID = this.moduleid
+	res.FromModuleID = s.moduleid
 	if tarconn != nil {
 		res.ToModuleID = tarconn.ModuleInfo.ModuleID
 	}
@@ -327,6 +327,7 @@ func (this *Server) getFarwardFromGateMsgPack(msgid uint16, data []byte,
 	return res
 }
 
-func (this *Server) Stop() {
-	this.isStop = true
+// Stop stop server
+func (s *Server) Stop() {
+	s.isStop = true
 }

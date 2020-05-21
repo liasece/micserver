@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// interface{} -->> string
+// MustInterfaceToString interface{} -->> string
 func MustInterfaceToString(vi interface{}) string {
 	switch vi.(type) {
 	case string:
@@ -15,10 +15,9 @@ func MustInterfaceToString(vi interface{}) string {
 	default:
 		return fmt.Sprint(vi)
 	}
-	return ""
 }
 
-// interface{} -->> bool
+// MustInterfaceToBool interface{} -->> bool
 func MustInterfaceToBool(vi interface{}) bool {
 	if MustInterfaceToInt64(vi) != 0 {
 		return true
@@ -33,7 +32,7 @@ func MustInterfaceToBool(vi interface{}) bool {
 	return false
 }
 
-// interface{} -->> int64
+// MustInterfaceToInt64 interface{} -->> int64
 func MustInterfaceToInt64(vi interface{}) int64 {
 	switch vi.(type) {
 	case int64:
@@ -59,7 +58,7 @@ func MustInterfaceToInt64(vi interface{}) int64 {
 	return 0
 }
 
-// interface{} -->> float64
+// MustInterfaceToFloat64 interface{} -->> float64
 func MustInterfaceToFloat64(vi interface{}) float64 {
 	switch vi.(type) {
 	case int64:
@@ -85,7 +84,7 @@ func MustInterfaceToFloat64(vi interface{}) float64 {
 	return 0
 }
 
-// []interface{} -->> []int64
+// MustInterfaceSliceToInt64Slice []interface{} -->> []int64
 func MustInterfaceSliceToInt64Slice(vsi []interface{}) []int64 {
 	if vsi == nil {
 		return nil
@@ -97,7 +96,7 @@ func MustInterfaceSliceToInt64Slice(vsi []interface{}) []int64 {
 	return res
 }
 
-// []interface{} -->> []string
+// MustInterfaceSliceToStringSlice []interface{} -->> []string
 func MustInterfaceSliceToStringSlice(vsi []interface{}) []string {
 	if vsi == nil {
 		return nil
@@ -109,7 +108,7 @@ func MustInterfaceSliceToStringSlice(vsi []interface{}) []string {
 	return res
 }
 
-// interface{} -->> []int64
+// MustInterfaceToInt64Slice interface{} -->> []int64
 func MustInterfaceToInt64Slice(vi interface{}) []int64 {
 	switch vi.(type) {
 	case []interface{}:
@@ -169,7 +168,7 @@ func MustInterfaceToInt64Slice(vi interface{}) []int64 {
 	return nil
 }
 
-// interface{} -->> []string
+// MustInterfaceToStringSlice interface{} -->> []string
 func MustInterfaceToStringSlice(vi interface{}) []string {
 	switch vi.(type) {
 	case []interface{}:

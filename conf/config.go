@@ -1,42 +1,43 @@
-/*
-包含micserver中使用的 配置文件/命令行参数 的配置
-*/
+// Package conf 包含micserver中使用的 配置文件/命令行参数 的配置
 package conf
 
 import (
+	// pprof
+	_ "net/http/pprof"
+
 	"encoding/json"
 	"flag"
-	"github.com/liasece/micserver/log"
 	"io/ioutil"
-	_ "net/http/pprof"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/liasece/micserver/log"
 )
 
-// 所有配置，包括从文件以进命令行输入的所有配置内容
+// TopConfig 所有配置，包括从文件以进命令行输入的所有配置内容
 type TopConfig struct {
 	AppConfig AppConfig `json:"app"` // 进程配置信息
 
 	// 全局配置字符串，一般是从进程启动时携带的参数提供的
-	globalProp     map[string]string `json:"-"`
+	globalProp     map[string]string
 	argvModuleList []string
 
 	// 服务器数字版本
 	// 建议命名规则为： YYYYMMDDhhmmss (年月日时分秒)
 	Version uint64 `json:"-"`
 
-	hasConfigPprof bool       `json:"-"`
-	loadConfigTime uint32     `json:"-"`
-	mutex          sync.Mutex `json:"-"`
+	hasConfigPprof bool
+	loadConfigTime uint32
+	mutex          sync.Mutex
 }
 
-// 从配置文件以及命令行参数中加载配置
+// LoadConfig 从配置文件以及命令行参数中加载配置
 func LoadConfig(filepath string) (*TopConfig, error) {
 	res := &TopConfig{}
-	err := res.loadJsonConfigFile(filepath)
+	err := res.loadJSONConfigFile(filepath)
 	if err != nil {
-		log.Error("loadJsonConfigFile(filepath) err:%v", err)
+		log.Error("loadJSONConfigFile(filepath) err:%v", err)
 		return nil, err
 	}
 	res.InitParse()
@@ -44,122 +45,122 @@ func LoadConfig(filepath string) (*TopConfig, error) {
 	return res, nil
 }
 
-func (this *TopConfig) loadJsonConfigFile(path string) error {
+func (tc *TopConfig) loadJSONConfigFile(path string) error {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(content, &this)
+	err = json.Unmarshal(content, &tc)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// 命令行参数中的模块名列表，可使用命令行参数的 -p 选项携带，例如：
+// GetArgvModuleList 命令行参数中的模块名列表，可使用命令行参数的 -p 选项携带，例如：
 // ./foo -p gate001,gate002,logic001
 // 表明该进程中启动的模块包括 gate001 gate002 logic001
-func (this *TopConfig) GetArgvModuleList() []string {
-	res := make([]string, len(this.argvModuleList))
-	for i, v := range this.argvModuleList {
+func (tc *TopConfig) GetArgvModuleList() []string {
+	res := make([]string, len(tc.argvModuleList))
+	for i, v := range tc.argvModuleList {
 		res[i] = v
 	}
 	return res
 }
 
-// 判断命令行参数是否携带名为key的参数
-func (this *TopConfig) HasProp(key string) bool {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-	return this.hasProp(key)
+// HasProp 判断命令行参数是否携带名为key的参数
+func (tc *TopConfig) HasProp(key string) bool {
+	tc.mutex.Lock()
+	defer tc.mutex.Unlock()
+	return tc.hasProp(key)
 }
 
-// 获取名为key的命令行参数
-func (this *TopConfig) GetProp(propname string) string {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-	return this.getProp(propname)
+// GetProp 获取名为key的命令行参数
+func (tc *TopConfig) GetProp(propname string) string {
+	tc.mutex.Lock()
+	defer tc.mutex.Unlock()
+	return tc.getProp(propname)
 }
 
-// 获取int类型，名为key的命令行参数
-func (this *TopConfig) GetPropInt64(propname string) int64 {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-	return int64(this.getPropInt(propname))
+// GetPropInt64 获取int类型，名为key的命令行参数
+func (tc *TopConfig) GetPropInt64(propname string) int64 {
+	tc.mutex.Lock()
+	defer tc.mutex.Unlock()
+	return int64(tc.getPropInt(propname))
 }
 
-// 获取bool类型，名为key的命令行参数
-func (this *TopConfig) GetPropBool(propname string) bool {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-	return this.getPropBool(propname)
+// GetPropBool 获取bool类型，名为key的命令行参数
+func (tc *TopConfig) GetPropBool(propname string) bool {
+	tc.mutex.Lock()
+	defer tc.mutex.Unlock()
+	return tc.getPropBool(propname)
 }
 
-// 获取命令行参数，无锁
-func (this *TopConfig) getProp(propname string) string {
-	if propvalue, found := this.globalProp[propname+"_s"]; found {
+// getProp 获取命令行参数，无锁
+func (tc *TopConfig) getProp(propname string) string {
+	if propvalue, found := tc.globalProp[propname+"_s"]; found {
 		return propvalue
 	}
-	if propvalue, found := this.globalProp[propname]; found {
+	if propvalue, found := tc.globalProp[propname]; found {
 		return propvalue
 	}
 	return ""
 }
 
-func (this *TopConfig) hasProp(propname string) bool {
-	if _, found := this.globalProp[propname+"_s"]; found {
+func (tc *TopConfig) hasProp(propname string) bool {
+	if _, found := tc.globalProp[propname+"_s"]; found {
 		return true
 	}
-	if _, found := this.globalProp[propname]; found {
+	if _, found := tc.globalProp[propname]; found {
 		return true
 	}
 	return false
 }
 
-func (this *TopConfig) getPropInt(propname string) int {
-	retvalue, _ := strconv.Atoi(this.getProp(propname))
+func (tc *TopConfig) getPropInt(propname string) int {
+	retvalue, _ := strconv.Atoi(tc.getProp(propname))
 	return retvalue
 }
 
-func (this *TopConfig) getPropBool(propname string) bool {
-	retvalue := this.getProp(propname)
+func (tc *TopConfig) getPropBool(propname string) bool {
+	retvalue := tc.getProp(propname)
 	if retvalue == "true" || retvalue == "True" || retvalue == "TRUE" {
 		return true
 	}
 	return false
 }
 
-// 初始化命令行参数
-func (this *TopConfig) InitParse() {
-	if this.globalProp == nil {
-		this.globalProp = make(map[string]string)
+// InitParse 初始化命令行参数
+func (tc *TopConfig) InitParse() {
+	if tc.globalProp == nil {
+		tc.globalProp = make(map[string]string)
 	}
-	if this.AppConfig.BaseConfig == nil {
-		this.AppConfig.BaseConfig = &BaseConfig{}
+	if tc.AppConfig.BaseConfig == nil {
+		tc.AppConfig.BaseConfig = &BaseConfig{}
 	}
 	for k, v := range cmdLineArgv {
-		this.globalProp[k] = v
+		tc.globalProp[k] = v
 	}
 	if cmdLineArgv != nil {
 		if v, ok := cmdLineArgv["isdaemon"]; ok {
-			this.AppConfig.set(IsDaemon, v)
+			tc.AppConfig.set(IsDaemon, v)
 		}
 		if v, ok := cmdLineArgv["logpath"]; ok {
-			this.AppConfig.set(LogWholePath, v)
+			tc.AppConfig.set(LogWholePath, v)
 		}
 		if v, ok := cmdLineArgv["processid"]; ok {
-			this.AppConfig.set(ProcessID, v)
+			tc.AppConfig.set(ProcessID, v)
 			if v != "development" {
-				this.argvModuleList = strings.Split(v, ",")
+				tc.argvModuleList = strings.Split(v, ",")
 			}
 		}
 
 		if v, ok := cmdLineArgv["version"]; ok {
 			tint, err := strconv.ParseUint(v, 10, 64)
 			if err == nil {
-				this.Version = tint
+				tc.Version = tint
 			}
-			this.AppConfig.set(Version, v)
+			tc.AppConfig.set(Version, v)
 		}
 	}
 }
@@ -167,7 +168,7 @@ func (this *TopConfig) InitParse() {
 // 命令行参数列表
 var cmdLineArgv map[string]string
 
-// 读取命令行参数
+// init 读取命令行参数
 func init() {
 	if cmdLineArgv == nil {
 		cmdLineArgv = make(map[string]string)
