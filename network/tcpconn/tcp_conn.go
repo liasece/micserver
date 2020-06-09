@@ -44,9 +44,9 @@ const (
 
 // TCPConn TCP 连接
 type TCPConn struct {
-	*log.Logger
-	conn net.Conn
-	work baseio.Worker
+	logger *log.Logger
+	conn   net.Conn
+	work   baseio.Worker
 
 	// 尝试关闭一个连接
 	shutdownChan chan struct{}
@@ -81,7 +81,7 @@ type TCPConn struct {
 // 返回：接收到的 messagebinary 的对象 chan
 func (tcpConn *TCPConn) Init(conn net.Conn,
 	sendChanSize int, sendBufferSize int,
-	recvChanSize int, recvBufferSize int) {
+	recvChanSize int, recvBufferSize int) error {
 	tcpConn.shutdownChan = make(chan struct{})
 	tcpConn.conn = conn
 	tcpConn.work.Init(conn)
@@ -90,17 +90,30 @@ func (tcpConn *TCPConn) Init(conn net.Conn,
 	// 发送
 	tcpConn.sendmsgchan = make(chan *msg.MessageBinary, sendChanSize)
 	tcpConn.maxWaitingSendBufferLength = msg.MessageMaxSize * sendChanSize
-	tcpConn.sendBuffer = buffer.NewIOBuffer(nil, sendBufferSize)
-	tcpConn.sendBuffer.Logger = tcpConn.Logger
+	{
+		var err error
+		tcpConn.sendBuffer, err = buffer.NewIOBuffer(nil, sendBufferSize)
+		if err != nil {
+			return err
+		}
+	}
+	tcpConn.sendBuffer.SetLogger(tcpConn.logger)
 	tcpConn.sendJoinedMessageBinaryBuffer = make([]*msg.MessageBinary,
 		MaxMsgPackSum)
 	go tcpConn.sendThread()
 
 	// 接收
 	tcpConn.recvmsgchan = make(chan *msg.MessageBinary, recvChanSize)
-	tcpConn.recvBuffer = buffer.NewIOBuffer(tcpConn, recvBufferSize)
-	tcpConn.recvBuffer.Logger = tcpConn.Logger
+	{
+		var err error
+		tcpConn.recvBuffer, err = buffer.NewIOBuffer(tcpConn, recvBufferSize)
+		if err != nil {
+			return err
+		}
+	}
+	tcpConn.recvBuffer.SetLogger(tcpConn.logger)
 	tcpConn.codec = &msg.DefaultCodec{}
+	return nil
 }
 
 // SetBanAutoResize 设置禁止缓冲区自动扩容
@@ -121,7 +134,7 @@ func (tcpConn *TCPConn) GetMsgCodec() msg.IMsgCodec {
 
 // SetLogger 设置 Logger
 func (tcpConn *TCPConn) SetLogger(l *log.Logger) {
-	tcpConn.Logger = l
+	tcpConn.logger = l
 }
 
 // StartRecv 开始接收消息
@@ -157,7 +170,7 @@ func (tcpConn *TCPConn) Shutdown() error {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			tcpConn.Warn("[TCPConn.shutdownThread] "+
+			tcpConn.logger.Warn("[TCPConn.shutdownThread] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
@@ -186,7 +199,7 @@ func (tcpConn *TCPConn) Write(data []byte) (int, error) {
 func (tcpConn *TCPConn) SendBytes(
 	cmdid uint16, protodata []byte) error {
 	if tcpConn.state >= TCPConnStateHold {
-		tcpConn.Warn("[TCPConn.SendBytes] 连接已失效，取消发送")
+		tcpConn.logger.Warn("[TCPConn.SendBytes] 连接已失效，取消发送")
 		return ErrCloseed
 	}
 	msgbinary := tcpConn.codec.EncodeBytes(cmdid, protodata)
@@ -200,45 +213,45 @@ func (tcpConn *TCPConn) SendMessageBinary(
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			tcpConn.Warn("[TCPConn.SendMessageBinary] "+
+			tcpConn.logger.Warn("[TCPConn.SendMessageBinary] "+
 				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 	}()
 	// 检查连接是否已死亡
 	if tcpConn.state >= TCPConnStateHold {
-		tcpConn.Warn("[TCPConn.SendMessageBinary] 连接已失效，取消发送")
+		tcpConn.logger.Warn("[TCPConn.SendMessageBinary] 连接已失效，取消发送")
 		return ErrCloseed
 	}
 	// 如果发送数据为空
 	if msgbinary == nil {
-		tcpConn.Debug("[TCPConn.SendMessageBinary] 发送消息为空，取消发送")
+		tcpConn.logger.Debug("[TCPConn.SendMessageBinary] 发送消息为空，取消发送")
 		return ErrSendNilData
 	}
 
 	// 检查发送channel是否已经关闭
 	select {
 	case <-tcpConn.shutdownChan:
-		tcpConn.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
+		tcpConn.logger.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
 		return ErrCloseed
 	default:
 	}
 
 	// 检查等待缓冲区数据是否已满
 	// if tcpConn.waitingSendBufferLength > int64(tcpConn.maxWaitingSendBufferLength) {
-	// 	tcpConn.Error("[TCPConn.SendMessageBinary] 等待发送缓冲区满")
+	// 	tcpConn.logger.Error("[TCPConn.SendMessageBinary] 等待发送缓冲区满")
 	// 	return ErrBufferFull
 	// }
 
 	// 确认发送channel是否已经关闭
 	select {
 	case <-tcpConn.shutdownChan:
-		tcpConn.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
+		tcpConn.logger.Warn("[TCPConn.SendMessageBinary] 发送Channel已关闭，取消发送")
 		return ErrCloseed
 	case tcpConn.sendmsgchan <- msgbinary:
 		atomic.AddInt64(&tcpConn.waitingSendBufferLength,
 			int64(msgbinary.GetTotalLength()))
 		// default:
-		// 	tcpConn.Warn("[TCPConn.SendMessageBinary] 发送Channel缓冲区满，阻塞超时")
+		// 	tcpConn.logger.Warn("[TCPConn.SendMessageBinary] 发送Channel缓冲区满，阻塞超时")
 		// 	return ErrBufferFull
 	}
 	return nil
@@ -253,12 +266,11 @@ func (tcpConn *TCPConn) sendThread() {
 		}
 	}
 	// 用于通知发送线程，发送channel已关闭
-	tcpConn.Debug("[TCPConn.sendThread] 断开连接")
+	tcpConn.logger.Debug("[TCPConn.sendThread] 断开连接")
 	// close(tcpConn.stopChan)
 	err := tcpConn.closeSocket()
 	if err != nil {
-		tcpConn.Error("[TCPConn.sendThread] closeSocket Err[%s]",
-			err.Error())
+		tcpConn.logger.Error("[TCPConn.sendThread] closeSocket Err[%s]", err.Error())
 	}
 }
 
@@ -273,8 +285,7 @@ func (tcpConn *TCPConn) asyncSendCmd() (normalreturn bool) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			tcpConn.Error("[TCPConn.asyncSendCmd] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+			tcpConn.logger.Error("[TCPConn.asyncSendCmd] Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 			normalreturn = false
 		}
 	}()
@@ -284,7 +295,7 @@ func (tcpConn *TCPConn) asyncSendCmd() (normalreturn bool) {
 		select {
 		case msg, ok := <-tcpConn.sendmsgchan:
 			if msg == nil || !ok {
-				tcpConn.Warn("[TCPConn.asyncSendCmd] " +
+				tcpConn.logger.Warn("[TCPConn.asyncSendCmd] " +
 					"Channle已关闭，发送行为终止")
 				break
 			}
@@ -303,8 +314,7 @@ func (tcpConn *TCPConn) asyncSendCmd() (normalreturn bool) {
 		case msg, ok := <-tcpConn.sendmsgchan:
 			// 从发送chan中获取一条消息
 			if msg == nil || !ok {
-				tcpConn.Warn("[TCPConn.asyncSendCmd] " +
-					"Channle已关闭，发送行为终止")
+				tcpConn.logger.Warn("[TCPConn.asyncSendCmd] Channle已关闭，发送行为终止")
 				break
 			}
 			tcpConn.sendMsgList(msg)
@@ -343,8 +353,7 @@ func (tcpConn *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 				// 取到了数据
 				if msg == nil || !ok {
 					// 通道中的数据不合法
-					tcpConn.Warn("[TCPConn.sendMsgList] " +
-						"Channle已关闭，发送行为终止")
+					tcpConn.logger.Warn("[TCPConn.sendMsgList] Channle已关闭，发送行为终止")
 					return nil
 				}
 				// 返回取到的消息
@@ -363,17 +372,13 @@ func (tcpConn *TCPConn) sendMsgList(tmsg *msg.MessageBinary) {
 
 	bs, err := tcpConn.sendBuffer.SeekAll()
 	if err != nil {
-		tcpConn.Error("[TCPConn.sendMsgList] "+
-			"tcpConn.sendBuffer.SeekAll() Err[%s]",
-			err.Error())
+		tcpConn.logger.Error("[TCPConn.sendMsgList] tcpConn.sendBuffer.SeekAll() Err[%s]", err.Error())
 	} else {
 		secn, err := tcpConn.work.Write(bs)
 		if err != nil {
-			tcpConn.Debug("[TCPConn.sendMsgList] "+
-				"缓冲区发送消息异常 Err[%s]",
-				err.Error())
+			tcpConn.logger.Debug("[TCPConn.sendMsgList] 缓冲区发送消息异常 Err[%s]", err.Error())
 		} else {
-			tcpConn.sendBuffer.MoveStart(secn)
+			tcpConn.sendBuffer.MoveStartPtr(secn)
 			// 发送
 			// 发送缓冲区长度减少
 			atomic.AddInt64(&tcpConn.waitingSendBufferLength, int64(-secn))
@@ -414,8 +419,7 @@ func (tcpConn *TCPConn) joinMsgByFunc(getMsg func(int, int) *msg.MessageBinary) 
 		sendata := msg.GetBuffer()[:sendlen]
 		err := tcpConn.sendBuffer.Write(sendata)
 		if err != nil {
-			tcpConn.Error("[TCPConn.joinMsgByFunc] "+
-				"tcpConn.sendBuffer.Write(sendata) Err:%s", err.Error())
+			tcpConn.logger.Error("[TCPConn.joinMsgByFunc] tcpConn.sendBuffer.Write(sendata) Err:%s", err.Error())
 		}
 		tcpConn.sendJoinedMessageBinaryBuffer[nowpkgsum] = msg
 		nowpkgsum++
@@ -430,8 +434,7 @@ func (tcpConn *TCPConn) recvThread() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			tcpConn.Error("[TCPConn.recvThread] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+			tcpConn.logger.Error("[TCPConn.recvThread] Panic: Err[%v] \n Stack[%s]", err, stackInfo)
 		}
 		close(tcpConn.recvmsgchan)
 	}()
@@ -465,8 +468,7 @@ func (tcpConn *TCPConn) recvThread() {
 				tcpConn.recvmsgchan <- msgbinary
 			})
 		if err != nil {
-			tcpConn.Error("[TCPConn.recvThread] "+
-				"RangeMsgBinary读消息失败，断开连接 Err[%s]", err.Error())
+			tcpConn.logger.Error("[TCPConn.recvThread] RangeMsgBinary读消息失败，断开连接 Err[%s]", err.Error())
 			return
 		}
 	}

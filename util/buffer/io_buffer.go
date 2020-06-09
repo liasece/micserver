@@ -1,12 +1,3 @@
-/**
- * \file IOBuffer.go
- * \version
- * \author Jansen
- * \date  2019年01月31日 12:22:43
- * \brief 消息收发缓冲区
- *
- */
-
 /*
 Package buffer 无拷贝IO缓冲区实现
 */
@@ -30,7 +21,7 @@ var (
 
 // IOBuffer 不是线程安全的
 type IOBuffer struct {
-	*log.Logger
+	logger *log.Logger
 
 	reader        io.Reader
 	buf           []byte
@@ -42,7 +33,11 @@ type IOBuffer struct {
 }
 
 // NewIOBuffer 构造一个缓冲区
-func NewIOBuffer(reader io.Reader, length int) *IOBuffer {
+// length 必须大于0, 否则返回 ErrLess0 错误
+func NewIOBuffer(reader io.Reader, length int) (*IOBuffer, error) {
+	if length < 0 {
+		return nil, ErrLess0
+	}
 	buf := make([]byte, length)
 	return &IOBuffer{
 		reader:        reader,
@@ -51,12 +46,17 @@ func NewIOBuffer(reader io.Reader, length int) *IOBuffer {
 		end:           0,
 		maxLength:     length,
 		defaultLength: length,
-	}
+	}, nil
 }
 
 // SetBanAutoResize 设置缓冲区是否可以根据需求自动调整大小
 func (b *IOBuffer) SetBanAutoResize(value bool) {
 	b.banAutoResize = value
+}
+
+// SetLogger set the IOBuffer logger
+func (b *IOBuffer) SetLogger(l *log.Logger) {
+	b.logger = l
 }
 
 // Len 当前缓冲区内容的长度
@@ -97,8 +97,15 @@ func (b *IOBuffer) RemainSize() int {
 }
 
 // TotalSize 总大小
+// 如果该 IOBuffer 经过了自动扩容, 那么其可能会在将来自动缩容, 这两种行为都会导致 TotalSize 的值发生变化,
+// 如果你希望获得这个 IOBuffer 稳定的大小, 你应该使用 DefaultSize()
 func (b *IOBuffer) TotalSize() int {
 	return b.maxLength
+}
+
+// DefaultSize 创建时的默认大小
+func (b *IOBuffer) DefaultSize() int {
+	return b.defaultLength
 }
 
 // ReadFromReader 从reader里面读取数据，如果reader阻塞，会发生阻塞
@@ -112,7 +119,7 @@ func (b *IOBuffer) ReadFromReader() (int, error) {
 	}
 	// 如果缓冲区空了，需要将扩容的内存还回去
 	if b.end == 0 && b.maxLength >= b.defaultLength*2+1 {
-		b.Syslog("缓冲区扩容恢复 %d->%d", b.maxLength, b.defaultLength)
+		b.logger.Syslog("Buffer expansion recovery %d->%d", b.maxLength, b.defaultLength)
 		b.resize(b.defaultLength)
 	}
 
@@ -126,10 +133,10 @@ func (b *IOBuffer) ReadFromReader() (int, error) {
 		// 缓冲区满，扩容一次，最大容忍超过默认值的16倍
 		targetLength := b.maxLength * 2
 		if targetLength <= b.defaultLength*16 {
-			b.Syslog("缓冲区满，扩容 %d->%d", b.maxLength, targetLength)
+			b.logger.Syslog("Buffer is full, expand %d->%d", b.maxLength, targetLength)
 			b.resize(targetLength)
 		} else {
-			b.Error("缓冲区满，扩容失败！ now[%d] default[%d]",
+			b.logger.Error("The buffer is full and the expansion fails! now[%d] default[%d]",
 				b.maxLength, b.defaultLength)
 		}
 	}
@@ -184,7 +191,7 @@ func (b *IOBuffer) Write(src []byte) error {
 	}
 	// 如果缓冲区空了，需要将扩容的内存还回去
 	if b.end == 0 && b.maxLength >= b.defaultLength*2 {
-		b.Syslog("缓冲区扩容恢复 %d->%d", b.maxLength, b.defaultLength)
+		b.logger.Syslog("Buffer expansion and recovery %d->%d", b.maxLength, b.defaultLength)
 		b.resize(b.defaultLength)
 	}
 
@@ -193,10 +200,10 @@ func (b *IOBuffer) Write(src []byte) error {
 		// 缓冲区满，扩容一次，最大容忍超过默认值的16倍
 		targetLength := b.end + size
 		if targetLength <= b.defaultLength*16 {
-			b.Syslog("缓冲区满，扩容 %d->%d", b.maxLength, targetLength)
+			b.logger.Syslog("Buffer is full, expand %d->%d", b.maxLength, targetLength)
 			b.resize(targetLength)
 		} else {
-			b.Error("缓冲区满，扩容失败！ now[%d] default[%d]",
+			b.logger.Error("The buffer is full and the expansion fails! now[%d] default[%d]",
 				b.maxLength, b.defaultLength)
 		}
 		// return ErrOverSize
@@ -211,13 +218,13 @@ func (b *IOBuffer) Write(src []byte) error {
 	return nil
 }
 
-// MoveStart 修改缓冲区内容起始指针
-func (b *IOBuffer) MoveStart(n int) error {
+// MoveStartPtr 修改缓冲区内容起始指针
+func (b *IOBuffer) MoveStartPtr(n int) error {
 	tmpn := b.start + n
 	if tmpn < 0 {
 		return ErrLess0
 	}
-	if tmpn < b.end {
+	if tmpn > b.end {
 		return ErrOverSize
 	}
 	b.start = tmpn
