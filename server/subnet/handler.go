@@ -96,7 +96,7 @@ func (manager *Manager) onConnectRecv(conn *connect.Server,
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
 		if recvmsg.Loginfailed > 0 {
 			conn.Terminate()
-			if recvmsg.Loginfailed == servercomm.LOGINRETCODE_IDENTICAL {
+			if recvmsg.Loginfailed == servercomm.LoginRetCodeIdentical {
 				conn.IsNormalDisconnect = true
 				manager.Syslog("[Manager.msgParseTCPConn] 重复连接,不必连接 TmpID[%s]", conn.GetTempID())
 			} else {

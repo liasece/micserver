@@ -50,7 +50,7 @@ func (manager *Manager) OnServerLogin(conn *connect.Server,
 		// 如果获取信息不成功
 		manager.Error("[SubNetManager.OnServerLogin] 连接分配异常 未知服务器连接 Addr[%s] Msg[%s]", remoteaddr, tarinfo.GetJSON())
 		retmsg := &servercomm.SLoginRetCommand{}
-		retmsg.Loginfailed = servercomm.LOGINRETCODE_IDENTITY
+		retmsg.Loginfailed = servercomm.LoginRetCodeIdentity
 		conn.SendCmd(retmsg)
 		conn.Terminate()
 		return
