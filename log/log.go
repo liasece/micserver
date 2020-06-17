@@ -23,7 +23,7 @@ import (
 
 // 各个日志等级在一条Log中的日志等级标题
 var (
-	LEVELFLAGS = []string{
+	levelFlags = []string{
 		"[S]",
 		"[D]",
 		"[I]",
@@ -33,14 +33,17 @@ var (
 	}
 )
 
+// Level type of log level
+type Level int
+
 // 日志等级
 const (
-	SYS = iota
-	DEBUG
-	INFO
-	WARNING
-	ERROR
-	FATAL
+	SYS     Level = 0
+	DEBUG   Level = 1
+	INFO    Level = 2
+	WARNING Level = 3
+	ERROR   Level = 4
+	FATAL   Level = 5
 )
 
 // 默认的日志记录器
@@ -109,7 +112,7 @@ func IsFatalEnable() bool {
 }
 
 // SetLogLevel 默认 Logger 设置日志等级
-func SetLogLevel(lvl int32) {
+func SetLogLevel(lvl Level) {
 	defaultLogger.SetLogLevel(lvl)
 }
 
@@ -133,7 +136,7 @@ func GetDefaultLogger() *Logger {
 
 // init 在程序启动时，初始化一个默认 Logger
 func init() {
-	defaultLogger = NewLogger(false, "")
+	defaultLogger = NewLogger(nil)
 	recordPool = &sync.Pool{New: func() interface{} {
 		return &Record{}
 	}}

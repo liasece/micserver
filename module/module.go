@@ -77,8 +77,10 @@ func (bm *BaseModule) InitModule(configer conf.ModuleConfig) {
 	bm.configer = &configer
 	// 初始化logger
 	if bm.configer.ExistInModule(conf.LogWholePath) {
-		bm.Logger = log.NewLogger(bm.configer.GetBool(conf.IsDaemon),
-			bm.configer.GetString(conf.LogWholePath))
+		bm.Logger = log.NewLogger(&log.Options{
+			NoConsole: bm.configer.GetBool(conf.IsDaemon),
+			FilePaths: []string{bm.configer.GetString(conf.LogWholePath)},
+		})
 		bm.SetLogName(bm.moduleID)
 	} else {
 		bm.Logger = log.GetDefaultLogger().Clone()
