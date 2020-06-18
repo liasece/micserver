@@ -1,24 +1,22 @@
 package log
 
 import (
+	syslog "log"
 	"syscall"
 )
 
-const (
-	kernel32dll = "kernel32.dll"
-)
-
-// SysDup 将进程致命错误转储
-func SysDup(fd int) {
-	kernel32 := syscall.NewLazyDLL(kernel32dll)
-	setStdHandle := kernel32.NewProc("SetStdHandle")
-	// 把错误重定向到日志文件来
-	_, _, e1 := setStdHandle.Call(uintptr(1), uintptr(fd))
-	if e1 != nil {
-		// return e1
+// sysDup 将进程致命错误转储
+func sysDup(fd int) error {
+	// Duplicate the stdin/stdout/stderr handles
+	files := []uintptr{uintptr(syscall.Stdin), uintptr(syscall.Stdout), uintptr(syscall.Stderr)}
+	p, _ := syscall.GetCurrentProcess()
+	h := syscall.Handle(fd)
+	for i := range files {
+		err := syscall.DuplicateHandle(p, syscall.Handle(files[i]), p, &h, 0, true, syscall.DUPLICATE_SAME_ACCESS)
+		if err != nil {
+			syslog.Println(err)
+			return err
+		}
 	}
-	_, _, e2 := setStdHandle.Call(uintptr(2), uintptr(fd))
-	if e2 != nil {
-		// return e2
-	}
+	return nil
 }

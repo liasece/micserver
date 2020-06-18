@@ -15,11 +15,14 @@ type Record struct {
 	name     string
 	code     string
 	info     string
-	level    int32
+	level    Level
 	timeUnix int64
 }
 
 // String 格式化该日志记录字符串
 func (r *Record) String() string {
-	return fmt.Sprintf("%s [%s] %s %s\n", r.time, r.name, LEVELFLAGS[r.level], r.info)
+	if r.name == "" {
+		return fmt.Sprintf("%s %s %s\n", r.time, levelFlags[r.level], r.info)
+	}
+	return fmt.Sprintf("%s [%s] %s %s\n", r.time, r.name, levelFlags[r.level], r.info)
 }

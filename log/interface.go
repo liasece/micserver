@@ -27,9 +27,7 @@ type ILogger interface {
 
 // Writer 输出器实现的接口
 type Writer interface {
-	Init() error
 	Write(*Record) error
-	GetType() WriterType
 }
 
 // Rotater 转储器实现的接口

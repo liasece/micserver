@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	syslog "log"
 	"os"
 	"path"
 	"time"
@@ -12,34 +13,29 @@ import (
 
 var pathVariableTable map[byte]func(*time.Time) int
 
-// FileWriter 文件输出器，将日志记录输出到文件中
-type FileWriter struct {
+// fileWriter 文件输出器，将日志记录输出到文件中
+type fileWriter struct {
 	filebasename  string
 	pathFmt       string
 	file          *os.File
 	fileBufWriter *bufio.Writer
 	actions       []func(*time.Time) int
 	variables     []interface{}
-	Redirecterr   bool // 是否重定向错误信息到日志文件
+	RedirectError bool // 是否重定向错误信息到日志文件
 }
 
-// NewFileWriter 构造一个文件输出器
-func NewFileWriter() *FileWriter {
-	return &FileWriter{}
+// newFileWriter 构造一个文件输出器
+func newFileWriter() *fileWriter {
+	return &fileWriter{}
 }
 
 // Init 初始化文件输出器
-func (w *FileWriter) Init() error {
+func (w *fileWriter) Init() error {
 	return w.Rotate()
 }
 
-// GetType 获取输出器类型，返回文件输出器类型 writerTypeFile
-func (w *FileWriter) GetType() WriterType {
-	return writerTypeFile
-}
-
 // SetPathPattern 设置文件路径
-func (w *FileWriter) SetPathPattern(filebasename string, pattern string) error {
+func (w *fileWriter) SetPathPattern(filebasename string, pattern string) error {
 	n := 0
 	for _, c := range pattern {
 		if c == '%' {
@@ -80,7 +76,7 @@ func (w *FileWriter) SetPathPattern(filebasename string, pattern string) error {
 }
 
 // Write 写入一条日志记录
-func (w *FileWriter) Write(r *Record) error {
+func (w *fileWriter) Write(r *Record) error {
 	if w.fileBufWriter == nil {
 		return errors.New("no opened file")
 	}
@@ -91,18 +87,18 @@ func (w *FileWriter) Write(r *Record) error {
 }
 
 // Rotate 尝试转储文件
-func (w *FileWriter) Rotate() error {
+func (w *fileWriter) Rotate() error {
 	now := time.Now()
 	return w.doRotate(&now)
 }
 
 // RotateByTime 尝试小时转储
-func (w *FileWriter) RotateByTime(t *time.Time) error {
+func (w *fileWriter) RotateByTime(t *time.Time) error {
 	return w.doRotate(t)
 }
 
 // doRotate 尝试转储文件，如果不需要进行转储，返回 nil
-func (w *FileWriter) doRotate(t *time.Time) error {
+func (w *fileWriter) doRotate(t *time.Time) error {
 	v := 0
 	rotate := false
 
@@ -147,34 +143,35 @@ func (w *FileWriter) doRotate(t *time.Time) error {
 	}
 	w.file = file
 
-	// 创建一个软链接
-	// 检查文件是存在
-	_, fileerr := os.Stat(w.filebasename)
-	if fileerr != nil && os.IsNotExist(fileerr) { // 文件不存在
-	}
-	os.Remove(w.filebasename)
-	// Create a symlink
-	{
-		err := os.Symlink(path.Base(filePath), w.filebasename)
-		if err != nil {
-			// return err
-		}
-	}
-
-	if w.Redirecterr {
+	if w.RedirectError {
 		// 把错误重定向到日志文件来
-		SysDup(int(w.file.Fd()))
+		sysDup(int(w.file.Fd()))
 	}
 
 	if w.fileBufWriter = bufio.NewWriterSize(w.file, 81920); w.fileBufWriter == nil {
 		return errors.New("new fileBufWriter failed")
 	}
 
+	// 创建一个软链接
+	// 检查文件是存在
+	_, fileerr := os.Stat(w.filebasename)
+	if fileerr == nil { // 文件存在
+		os.Remove(w.filebasename)
+	}
+	// Create a symlink
+	{
+		err := os.Symlink(path.Base(filePath), w.filebasename)
+		if err != nil {
+			syslog.Println(err.Error())
+			// return err
+		}
+	}
+
 	return nil
 }
 
 // Flush 将文件缓冲区中的内容 Flush
-func (w *FileWriter) Flush() error {
+func (w *fileWriter) Flush() error {
 	if w.fileBufWriter != nil {
 		return w.fileBufWriter.Flush()
 	}

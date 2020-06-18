@@ -8,37 +8,74 @@ import (
 
 // Logger 日志实例
 type Logger struct {
-	logWriter   *RecordWriter
-	level       int32
-	logname     string
+	logWriter   *recordWriter
 	lastTime    int64
 	lastTimeStr string
-	layout      string
-	topic       string
+	opt         Options
+}
+
+// Options of log
+type Options struct {
+	// NoConsole while remove console out put, default false.
+	NoConsole bool
+	// NoConsoleColor whil disable console output color, default false.
+	NoConsoleColor bool
+	// FilePaths is the log output file path, default none log file.
+	FilePaths []string
+	// RecordTimeLayout use for (time.Time).Format(layout string) record time field, default "060102-15:04:05",
+	// will not be empty.
+	RecordTimeLayout string
+	// Level log record level limit, only higer thie level log can be get reach Writer, default SYS.
+	Level Level
+	// Name is thie logger name, default "".
+	Name string
+	// Topic is thie logger topic, default "".
+	Topic string
+	// AsyncWrite while asynchronously output the log record to Write, it may be more performance,
+	// but if you exit(e.g. os.Exit(1), main() return) this process, it may be loss some log record,
+	// because they didn't have time to Write and flush to file.
+	AsyncWrite bool
+	// AsyncWriteDuration only effective when AsyncWrite is true, this is time duration of asynchronously
+	// check log output to write default 100ms.
+	AsyncWriteDuration time.Duration
+	// RedirectError duplicate stderr to log file, it will be call syscall.Dup2 in linux or syscall.DuplicateHandle
+	// in windows, default false.
+	RedirectError bool
+}
+
+var defaultOptions = Options{
+	RecordTimeLayout: "060102-15:04:05",
+}
+
+// Check options
+func (o *Options) Check() {
+	if o.RecordTimeLayout == "" {
+		o.RecordTimeLayout = "060102-15:04:05"
+	}
+	if o.AsyncWrite && o.AsyncWriteDuration.Milliseconds() == 0 {
+		o.AsyncWriteDuration = time.Millisecond * 100
+	}
 }
 
 // NewLogger 构造一个日志
-func NewLogger(isDaemon bool, logFilePath string) *Logger {
+func NewLogger(optp *Options) *Logger {
+	opt := defaultOptions
+	if optp != nil {
+		opt = *optp
+		(&opt).Check()
+	}
 	l := new(Logger)
-	l.level = SYS
-	l.layout = "060102-15:04:05"
-	l.logWriter = &RecordWriter{}
-	l.logWriter.Init()
+	l.opt = opt
+	l.logWriter = &recordWriter{}
+	l.logWriter.Init(&l.opt)
 
-	if len(logFilePath) != 0 {
-		if isDaemon {
-			l.logWriter.AddLogFile(logFilePath, true)
-			l.logWriter.RemoveConsoleLog()
-		} else {
-			// 默认走控制台
-			l.logWriter.AddLogFile(logFilePath, false)
-			w := NewConsoleWriter()
-			w.SetColor(true)
-			l.logWriter.registerLogWriter(w)
-		}
-	} else {
-		w := NewConsoleWriter()
-		w.SetColor(true)
+	for _, path := range l.opt.FilePaths {
+		l.logWriter.AddLogFile(path)
+	}
+
+	if !l.opt.NoConsole {
+		w := newConsoleWriter()
+		w.SetColor(!l.opt.NoConsoleColor)
 		l.logWriter.registerLogWriter(w)
 	}
 
@@ -61,23 +98,15 @@ func (l *Logger) SetLogName(logname string) {
 		defaultLogger.SetLogName(logname)
 		return
 	}
-	l.logname = logname
-}
-
-// GetLogWriter 获取日志写入器
-func (l *Logger) GetLogWriter() *RecordWriter {
-	if l == nil && l != defaultLogger {
-		return defaultLogger.GetLogWriter()
-	}
-	return l.logWriter
+	l.opt.Name = logname
 }
 
 // getLogLevel 获取当前日志等级
-func (l *Logger) getLogLevel() int32 {
+func (l *Logger) getLogLevel() Level {
 	if l == nil && l != defaultLogger {
 		return defaultLogger.getLogLevel()
 	}
-	return l.level
+	return l.opt.Level
 }
 
 // IsSyslogEnable 判断 Syslog 日志级别是否开启
@@ -111,12 +140,12 @@ func (l *Logger) IsFatalEnable() bool {
 }
 
 // SetLogLevel 设置日志等级
-func (l *Logger) SetLogLevel(lvl int32) {
+func (l *Logger) SetLogLevel(lvl Level) {
 	if l == nil && l != defaultLogger {
 		defaultLogger.SetLogLevel(lvl)
 		return
 	}
-	l.level = lvl
+	l.opt.Level = lvl
 }
 
 // SetLogLevelByStr 使用等级名设置日志等级
@@ -127,17 +156,17 @@ func (l *Logger) SetLogLevelByStr(lvl string) error {
 	lvlUpper := strings.ToUpper(lvl)
 	switch lvlUpper {
 	case "SYS":
-		l.level = SYS
+		l.opt.Level = SYS
 	case "DEBUG":
-		l.level = DEBUG
+		l.opt.Level = DEBUG
 	case "INFO":
-		l.level = INFO
+		l.opt.Level = INFO
 	case "WARNING":
-		l.level = WARNING
+		l.opt.Level = WARNING
 	case "ERROR":
-		l.level = ERROR
+		l.opt.Level = ERROR
 	case "FATAL":
-		l.level = FATAL
+		l.opt.Level = FATAL
 	default:
 		return ErrUnknownLogLevel
 	}
@@ -150,7 +179,7 @@ func (l *Logger) SetTopic(topic string) error {
 		// nil or default logger can't set topic
 		return ErrNilLogger
 	}
-	l.topic = topic
+	l.opt.Topic = topic
 	return nil
 }
 
@@ -184,19 +213,19 @@ func (l *Logger) Fatal(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(FATAL, fmt, args...)
 }
 
-func (l *Logger) deliverRecordToWriter(level int32, format string, args ...interface{}) {
+func (l *Logger) deliverRecordToWriter(level Level, format string, args ...interface{}) {
 	if l == nil && l != defaultLogger {
 		defaultLogger.deliverRecordToWriter(level, format, args...)
 		return
 	}
 	var inf, code string
 	// 检查日志等级有效性
-	if level < l.level {
+	if level < l.opt.Level {
 		return
 	}
 	// 连接主题
-	if l.topic != "" {
-		inf += l.topic + " "
+	if l.opt.Topic != "" {
+		inf += l.opt.Topic + " "
 	}
 	// 连接格式化内容
 	if format != "" {
@@ -208,7 +237,7 @@ func (l *Logger) deliverRecordToWriter(level int32, format string, args ...inter
 	now := time.Now()
 	if now.Unix() != l.lastTime {
 		l.lastTime = now.Unix()
-		l.lastTimeStr = now.Format(l.layout)
+		l.lastTimeStr = now.Format(l.opt.RecordTimeLayout)
 	}
 	// record to recorder
 	r := recordPool.Get().(*Record)
@@ -216,7 +245,7 @@ func (l *Logger) deliverRecordToWriter(level int32, format string, args ...inter
 	r.code = code
 	r.time = l.lastTimeStr
 	r.level = level
-	r.name = l.logname
+	r.name = l.opt.Name
 	r.timeUnix = l.lastTime
 
 	l.logWriter.write(r)
