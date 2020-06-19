@@ -34,7 +34,6 @@ type Writer interface {
 type Rotater interface {
 	Rotate() error
 	RotateByTime(*time.Time) error
-	SetPathPattern(string, string) error
 }
 
 // Flusher 刷新输出

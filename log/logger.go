@@ -1,60 +1,13 @@
 package log
 
 import (
-	"fmt"
 	"strings"
-	"time"
 )
 
 // Logger 日志实例
 type Logger struct {
-	logWriter   *recordWriter
-	lastTime    int64
-	lastTimeStr string
-	opt         Options
-}
-
-// Options of log
-type Options struct {
-	// NoConsole while remove console out put, default false.
-	NoConsole bool
-	// NoConsoleColor whil disable console output color, default false.
-	NoConsoleColor bool
-	// FilePaths is the log output file path, default none log file.
-	FilePaths []string
-	// RecordTimeLayout use for (time.Time).Format(layout string) record time field, default "060102-15:04:05",
-	// will not be empty.
-	RecordTimeLayout string
-	// Level log record level limit, only higer thie level log can be get reach Writer, default SYS.
-	Level Level
-	// Name is thie logger name, default "".
-	Name string
-	// Topic is thie logger topic, default "".
-	Topic string
-	// AsyncWrite while asynchronously output the log record to Write, it may be more performance,
-	// but if you exit(e.g. os.Exit(1), main() return) this process, it may be loss some log record,
-	// because they didn't have time to Write and flush to file.
-	AsyncWrite bool
-	// AsyncWriteDuration only effective when AsyncWrite is true, this is time duration of asynchronously
-	// check log output to write default 100ms.
-	AsyncWriteDuration time.Duration
-	// RedirectError duplicate stderr to log file, it will be call syscall.Dup2 in linux or syscall.DuplicateHandle
-	// in windows, default false.
-	RedirectError bool
-}
-
-var defaultOptions = Options{
-	RecordTimeLayout: "060102-15:04:05",
-}
-
-// Check options
-func (o *Options) Check() {
-	if o.RecordTimeLayout == "" {
-		o.RecordTimeLayout = "060102-15:04:05"
-	}
-	if o.AsyncWrite && o.AsyncWriteDuration.Milliseconds() == 0 {
-		o.AsyncWriteDuration = time.Millisecond * 100
-	}
+	logWriter *recordWriter
+	opt       Options
 }
 
 // NewLogger 构造一个日志
@@ -70,7 +23,7 @@ func NewLogger(optp *Options) *Logger {
 	l.logWriter.Init(&l.opt)
 
 	for _, path := range l.opt.FilePaths {
-		l.logWriter.AddLogFile(path)
+		l.logWriter.AddLogFile(path, &l.opt)
 	}
 
 	if !l.opt.NoConsole {
@@ -218,37 +171,7 @@ func (l *Logger) deliverRecordToWriter(level Level, format string, args ...inter
 		defaultLogger.deliverRecordToWriter(level, format, args...)
 		return
 	}
-	var inf, code string
-	// 检查日志等级有效性
-	if level < l.opt.Level {
-		return
-	}
-	// 连接主题
-	if l.opt.Topic != "" {
-		inf += l.opt.Topic + " "
-	}
-	// 连接格式化内容
-	if format != "" {
-		inf += fmt.Sprintf(format, args...)
-	} else {
-		inf += fmt.Sprint(args...)
-	}
-	// format time
-	now := time.Now()
-	if now.Unix() != l.lastTime {
-		l.lastTime = now.Unix()
-		l.lastTimeStr = now.Format(l.opt.RecordTimeLayout)
-	}
-	// record to recorder
-	r := recordPool.Get().(*Record)
-	r.info = inf
-	r.code = code
-	r.time = l.lastTimeStr
-	r.level = level
-	r.name = l.opt.Name
-	r.timeUnix = l.lastTime
-
-	l.logWriter.write(r)
+	l.logWriter.deliverRecord(&l.opt, level, format, args...)
 }
 
 // GetLogger 获取当前 Logger 的 Logger ，意义在于会进行接收器 Logger 是否为空的判断，
