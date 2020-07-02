@@ -12,7 +12,9 @@ func Test_LogFileFlush(t *testing.T) {
 	log.SetDefaultLogger(log.NewLogger(&log.Options{
 		FilePaths: []string{logPath},
 		// AsyncWrite: true,
+		RotateTimeLayout: "060102",
 	}))
+
 	log.Syslog("test")
 	log.Info("test")
 	log.Debug("test")

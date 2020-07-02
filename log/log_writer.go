@@ -1,10 +1,8 @@
 package log
 
 import (
-	"errors"
+	"fmt"
 	syslog "log"
-	"strings"
-	"sync"
 	"time"
 )
 
@@ -15,174 +13,39 @@ const (
 	writerTypeFile    = 2
 )
 
-// writerCfg config of log writer
-type writerCfg struct {
-	w Writer
-	f Flusher
-}
-
-// writerManager writer manager
-type writerManager struct {
-	ws []*writerCfg
-	l  sync.Mutex
-}
-
-func (wm *writerManager) AddWriter(w Writer) {
-	wm.l.Lock()
-	defer wm.l.Unlock()
-
-	var f Flusher
-	if fi, ok := w.(Flusher); ok {
-		f = fi
-	}
-
-	wm.ws = append(wm.ws, &writerCfg{
-		w: w,
-		f: f,
-	})
-}
-
-func (wm *writerManager) Flush() error {
-	var errs []string
-	for _, w := range wm.ws {
-		if w.f != nil {
-			err := w.f.Flush()
-			if err != nil {
-				errs = append(errs, err.Error())
-			}
-		}
-	}
-	if len(errs) <= 0 {
-		return nil
-	}
-	return errors.New("error list: " + strings.Join(errs, "; "))
-}
-
-func (wm *writerManager) Write(r *Record) error {
-	var errs []string
-	for _, w := range wm.ws {
-		if w.w != nil {
-			err := w.w.Write(r)
-			if err != nil {
-				errs = append(errs, err.Error())
-			}
-		}
-	}
-	if len(errs) <= 0 {
-		return nil
-	}
-	return errors.New("error list: " + strings.Join(errs, "; "))
-}
-
-func (wm *writerManager) RenameFile(filebasename, pattern string) error {
-	wm.l.Lock()
-	defer wm.l.Unlock()
-
-	var errs []string
-	for _, w := range wm.ws {
-		if r, ok := w.w.(Rotater); ok {
-			err := r.SetPathPattern(filebasename, pattern)
-			if err != nil {
-				errs = append(errs, err.Error())
-				continue
-			}
-			err = r.Rotate()
-			if err != nil {
-				errs = append(errs, err.Error())
-				continue
-			}
-		}
-	}
-	if len(errs) <= 0 {
-		return nil
-	}
-	return errors.New("error list: " + strings.Join(errs, "; "))
-}
-
-func (wm *writerManager) RotateByTime(t *time.Time) error {
-	wm.l.Lock()
-	defer wm.l.Unlock()
-
-	var errs []string
-	for _, w := range wm.ws {
-		if r, ok := w.w.(Rotater); ok {
-			if err := r.RotateByTime(t); err != nil {
-				errs = append(errs, err.Error())
-				continue
-			}
-		}
-	}
-	if len(errs) <= 0 {
-		return nil
-	}
-	return errors.New("error list: " + strings.Join(errs, "; "))
-}
-
-func (wm *writerManager) Rotate() error {
-	wm.l.Lock()
-	defer wm.l.Unlock()
-
-	var errs []string
-	for _, w := range wm.ws {
-		if r, ok := w.w.(Rotater); ok {
-			if err := r.Rotate(); err != nil {
-				errs = append(errs, err.Error())
-				continue
-			}
-		}
-	}
-	if len(errs) <= 0 {
-		return nil
-	}
-	return errors.New("error list: " + strings.Join(errs, "; "))
-}
-
 // recordWriter log写入器
 type recordWriter struct {
 	wm                   *writerManager
 	tunnel               chan *Record
 	c                    chan bool
 	stopchan             chan struct{}
-	opt                  *Options
 	lastRecordTimeUnix60 int64
 	lastRecordTime       time.Time
+	lastTime             int64
+	lastTimeStr          string
 }
 
 // Init 初始化log写入器
 func (rec *recordWriter) Init(opt *Options) {
-	rec.opt = opt
 	rec.wm = &writerManager{}
 	rec.tunnel = make(chan *Record, tunnelSizeDefault)
 	rec.stopchan = make(chan struct{})
 	rec.c = make(chan bool, 1)
 
-	go rec.boostrapLogWriter()
+	go rec.boostrapLogWriter(opt)
 }
 
 // AddLogFile 增加一个文件输出器
-func (rec *recordWriter) AddLogFile(filename string) error {
-	//	fmt.Printf("log filename,%s \n", filename)
-	filebasename := filename
-	filename += ".%Y%M%D-%H"
-	w := newFileWriter()
-	w.RedirectError = rec.opt.RedirectError
-	err := w.SetPathPattern(filebasename, filename)
+func (rec *recordWriter) AddLogFile(filePath string, opt *Options) error {
+	w := newFileWriter(filePath, opt.RotateTimeLayout)
+	w.redirectError = opt.RedirectError
+	err := w.Init()
 	if err != nil {
-		return err
-	}
-	err = w.Init()
-	if err != nil {
+		syslog.Println(err)
 		return err
 	}
 	rec.registerLogWriter(w)
 	return nil
-}
-
-// ChangeLogFile 修改所有的文件输出器的目标文件
-func (rec *recordWriter) ChangeLogFile(filename string) {
-	filebasename := filename
-	filename += ".%Y%M%D-%H"
-	rec.wm.RenameFile(filebasename, filename)
 }
 
 // registerLogWriter 注册一个文件输出器到该 log 写入器中
@@ -197,7 +60,6 @@ func (rec *recordWriter) Close() {
 		return
 	default:
 		close(rec.stopchan)
-		// close(rec.tunnel)
 		break
 	}
 	select {
@@ -210,8 +72,42 @@ func (rec *recordWriter) Close() {
 	}
 }
 
+func (rec *recordWriter) deliverRecord(opt *Options, level Level, format string, args ...interface{}) {
+	var inf, code string
+	// 检查日志等级有效性
+	if level < opt.Level {
+		return
+	}
+	// 连接主题
+	if opt.Topic != "" {
+		inf += opt.Topic + " "
+	}
+	// 连接格式化内容
+	if format != "" {
+		inf += fmt.Sprintf(format, args...)
+	} else {
+		inf += fmt.Sprint(args...)
+	}
+	// format time
+	now := time.Now()
+	if now.Unix() != rec.lastTime {
+		rec.lastTime = now.Unix()
+		rec.lastTimeStr = now.Format(opt.RecordTimeLayout)
+	}
+	// record to recorder
+	r := recordPool.Get().(*Record)
+	r.info = inf
+	r.code = code
+	r.time = rec.lastTimeStr
+	r.level = level
+	r.name = opt.Name
+	r.timeUnix = rec.lastTime
+
+	rec.write(r, opt)
+}
+
 // write 写入一条日志记录，等待后续异步处理
-func (rec *recordWriter) write(r *Record) {
+func (rec *recordWriter) write(r *Record, opt *Options) {
 	select {
 	case <-rec.stopchan:
 		return
@@ -219,8 +115,8 @@ func (rec *recordWriter) write(r *Record) {
 	}
 
 	// no async
-	if !rec.opt.AsyncWrite {
-		rec.doWriteRecord(r)
+	if !opt.AsyncWrite {
+		rec.doWriteRecord(r, opt)
 		return
 	}
 
@@ -233,24 +129,14 @@ func (rec *recordWriter) write(r *Record) {
 }
 
 // boostrapLogWriter 日志写入线程
-func (rec *recordWriter) boostrapLogWriter() {
+func (rec *recordWriter) boostrapLogWriter(opt *Options) {
 	var (
 		r  *Record
 		ok bool
 	)
 
-	if r, ok = <-rec.tunnel; !ok {
-		rec.c <- true
-		return
-	}
-
-	if err := rec.wm.Write(r); err != nil {
-		syslog.Println("boostrapLogWriter w.Write error", err)
-	}
-
-	flushTimer := time.NewTimer(time.Millisecond * 500)
+	flushTimer := time.NewTimer(opt.AsyncWriteDuration)
 	rotateTimer := time.NewTimer(time.Millisecond * 100)
-	//	rotateTimer := time.NewTimer(time.Second * 10)
 	for {
 		select {
 		case r, ok = <-rec.tunnel:
@@ -258,28 +144,26 @@ func (rec *recordWriter) boostrapLogWriter() {
 				rec.c <- true
 				return
 			}
-			rec.doWriteRecord(r)
+			rec.doWriteRecord(r, opt)
 		case <-rec.stopchan:
 			rec.c <- true
 			return
 		case <-flushTimer.C:
-			// for _, w := range rec.writers {
-			// 	if f, ok := w.(Flusher); ok {
-			// 		if err := f.Flush(); err != nil {
-			// 			syslog.Println("boostrapLogWriter f.Flush error", err)
-			// 		}
-			// 	}
-			// }
-			// flushTimer.Reset(time.Millisecond * 500)
+			if opt.AsyncWrite {
+				err := rec.wm.Flush()
+				if err != nil {
+					syslog.Println(err)
+				}
+				flushTimer.Reset(opt.AsyncWriteDuration)
+			}
 		case <-rotateTimer.C:
-			//	fmt.Printf("start rotate file,actions, 1111\n")
 			rec.tryRotate()
 			rotateTimer.Reset(time.Second * 60)
 		}
 	}
 }
 
-func (rec *recordWriter) doWriteRecord(r *Record) error {
+func (rec *recordWriter) doWriteRecord(r *Record, opt *Options) error {
 	needTryRotate := false
 	// 如果上一条记录的时间和这条记录的时间不是同一分钟，需要尝试增加log文件
 	nowTimeUnix60 := r.timeUnix / 60
@@ -298,13 +182,17 @@ func (rec *recordWriter) doWriteRecord(r *Record) error {
 	}
 	// 写入log
 	if err := rec.wm.Write(r); err != nil {
-		syslog.Println("boostrapLogWriter for w.Write error", err)
+		syslog.Println("doWriteRecord for w.Write error", err)
 		return err
 	}
 	recordPool.Put(r)
-	if err := rec.wm.Flush(); err != nil {
-		syslog.Println("boostrapLogWriter f.Flush error", err)
-		return err
+
+	// flush
+	if !opt.AsyncWrite {
+		if err := rec.wm.Flush(); err != nil {
+			syslog.Println("doWriteRecord f.Flush error", err)
+			return err
+		}
 	}
 	return nil
 }
