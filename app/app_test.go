@@ -24,7 +24,6 @@ func TestApp_App(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		modules = append(modules, &module.BaseModule{})
 	}
-
 	app.Init(modules)
 	go app.RunAndBlock(modules)
 	app.Stop()
