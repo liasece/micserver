@@ -32,6 +32,11 @@ type TopConfig struct {
 	mutex          sync.Mutex
 }
 
+// Default config
+func Default() *TopConfig {
+	return &TopConfig{}
+}
+
 // LoadConfig 从配置文件以及命令行参数中加载配置
 func LoadConfig(filepath string) (*TopConfig, error) {
 	res := &TopConfig{}
@@ -169,7 +174,7 @@ func (tc *TopConfig) InitParse() {
 var cmdLineArgv map[string]string
 
 // init 读取命令行参数
-func init() {
+func init1() {
 	if cmdLineArgv == nil {
 		cmdLineArgv = make(map[string]string)
 	}
