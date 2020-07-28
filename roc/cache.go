@@ -41,7 +41,7 @@ func (c *Cache) catchGetTypeMust(objType ObjType) objIDToServerMap {
 		c.catchType[objType] = v
 		return v
 	}
-	return nil
+	return c.catchType[objType]
 }
 
 func (c *Cache) catchGetServerMust(moduleid string) *catchServerInfo {
