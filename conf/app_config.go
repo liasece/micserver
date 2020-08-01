@@ -26,11 +26,14 @@ func (a *AppConfig) buildModuleIDFromMapkey() {
 // 调用方不允许使用代码修改 ModuleConfig 的内容，
 // 你应该修改配置文件而不是用代码设置配置值。
 func (a *AppConfig) GetModuleConfig(moduleid string) *ModuleConfig {
+	if a == nil {
+		return &ModuleConfig{}
+	}
 	var res *ModuleConfig
 	if v, ok := a.Modules[moduleid]; ok {
 		res = v
 	} else {
-		return nil
+		res = &ModuleConfig{}
 	}
 	return res
 }

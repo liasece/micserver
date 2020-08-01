@@ -40,7 +40,7 @@ import (
 // IModule 一个模块应具备的接口
 type IModule interface {
 	base.IModule
-	InitModule(conf.ModuleConfig)
+	InitModule(conf.ModuleConfig) error
 	BindSubnet(map[string]string)
 	AfterInitModule()
 	TopRunner()
@@ -73,7 +73,17 @@ type BaseModule struct {
 }
 
 // InitModule 初始化模块
-func (bm *BaseModule) InitModule(configer conf.ModuleConfig) {
+func (bm *BaseModule) InitModule(configer conf.ModuleConfig) error {
+	{
+		// check module state
+		if bm.GetModuleID() == "" {
+			uid, err := uid.GenUniqueID(0)
+			if err != nil {
+				return err
+			}
+			bm.SetModuleID(uid)
+		}
+	}
 	bm.configer = &configer
 	// 初始化logger
 	if bm.configer.ExistInModule(conf.LogWholePath) {
@@ -97,6 +107,7 @@ func (bm *BaseModule) InitModule(configer conf.ModuleConfig) {
 	}
 
 	bm.TimerManager.RegTimer(time.Second*5, 0, false, bm.watchLoadToLog)
+	return nil
 }
 
 // AfterInitModule 在初始化完成后调用

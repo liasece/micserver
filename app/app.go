@@ -41,6 +41,13 @@ type App struct {
 
 // Setup 初始化App的设置
 func (a *App) Setup(configer *conf.TopConfig) {
+	{
+		// check parameters
+		if configer == nil {
+			configer = conf.Default()
+		}
+	}
+
 	process.AddApp(a)
 	a.isStoped = make(chan struct{})
 	a.Configer = configer
@@ -67,22 +74,33 @@ func (a *App) Setup(configer *conf.TopConfig) {
 	a.Info("APP setup secess!!!")
 }
 
-// tryInit func
-func (a *App) tryInit(modules []module.IModule) {
+// Init this app
+func (a *App) Init(modules []module.IModule) (err error) {
+	return a.tryInit(modules)
+}
+
+// tryInit if this app has not init
+func (a *App) tryInit(modules []module.IModule) (err error) {
 	a.initOnce.Do(func() {
-		a.init(modules)
+		err = a.init(modules)
 	})
+	return
 }
 
 // init func
-func (a *App) init(modules []module.IModule) {
+func (a *App) init(modules []module.IModule) error {
 	a.modules = modules
 	// create all module
 	for _, m := range a.modules {
 		process.AddModule(m)
-		a.Syslog("[App.Init] init module:%s (%s:%d:%d)", m.GetModuleID(),
+		{
+			err := m.InitModule(*a.Configer.AppConfig.GetModuleConfig(m.GetModuleID()))
+			if err != nil {
+				return err
+			}
+		}
+		a.Syslog("[App.Init] init moduleID[%s] (%s:%d:%d)", m.GetModuleID(),
 			m.GetModuleType(), m.GetModuleNum(), m.GetModuleIDHash())
-		m.InitModule(*a.Configer.AppConfig.GetModuleConfig(m.GetModuleID()))
 		m.AfterInitModule()
 		go m.TopRunner()
 	}
@@ -94,6 +112,7 @@ func (a *App) init(modules []module.IModule) {
 
 	a.Syslog("[App.Init] App 初始化成功！")
 	a.Syslog("[App.Init] App 初始化 Module 数量：%d", len(a.modules))
+	return nil
 }
 
 // startTestCPUProfile cpu性能测试
@@ -161,4 +180,9 @@ func (a *App) RunAndBlock(modules []module.IModule) {
 // Run 运行，默认执行 RunAndBlock ，阻塞
 func (a *App) Run(modules []module.IModule) {
 	a.RunAndBlock(modules)
+}
+
+// Stop the app
+func (a *App) Stop() {
+	a.isStoped <- struct{}{}
 }

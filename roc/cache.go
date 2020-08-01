@@ -2,6 +2,7 @@
 package roc
 
 import (
+	"errors"
 	"math/rand"
 	"sync"
 )
@@ -12,7 +13,7 @@ const (
 )
 
 type catchServerInfo struct {
-	moduleid string
+	moduleID string
 }
 
 type serverInfoMap map[string]*catchServerInfo
@@ -40,68 +41,90 @@ func (c *Cache) catchGetTypeMust(objType ObjType) objIDToServerMap {
 		v = make(objIDToServerMap)
 		c.catchType[objType] = v
 		return v
+	} else {
+		return v
 	}
-	return nil
 }
 
-func (c *Cache) catchGetServerMust(moduleid string) *catchServerInfo {
+func (c *Cache) catchGetServerMust(moduleID string) *catchServerInfo {
 	if c.catchServer == nil {
 		c.catchServer = make(serverInfoMap)
 	}
-	if v, ok := c.catchServer[moduleid]; !ok {
+	if v, ok := c.catchServer[moduleID]; !ok {
 		v = &catchServerInfo{
-			moduleid: moduleid,
+			moduleID: moduleID,
 		}
-		c.catchServer[moduleid] = v
+		c.catchServer[moduleID] = v
 		return v
+	} else {
+		return v
+	}
+}
+
+// Set 添加目标对象
+func (c *Cache) Set(objType ObjType, objID string, moduleID string) error {
+	if objType == "" || objID == "" || moduleID == "" {
+		return errors.New("objType or objID or moduleID can't be empty")
+	}
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	m := c.catchGetTypeMust(objType)
+	server := c.catchGetServerMust(moduleID)
+	m[objID] = server
+	return nil
+}
+
+// SetM 同时添加多个
+func (c *Cache) SetM(objType ObjType, objIDs []string, moduleID string) error {
+	if objType == "" || moduleID == "" {
+		return errors.New("objType or objID or moduleID can't be empty")
+	}
+	for _, v := range objIDs {
+		if v == "" {
+			return errors.New("objType or objID or moduleID can't be empty")
+		}
+	}
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	m := c.catchGetTypeMust(objType)
+	server := c.catchGetServerMust(moduleID)
+	for _, v := range objIDs {
+		m[v] = server
 	}
 	return nil
 }
 
-// Set 添加目标对象
-func (c *Cache) Set(objType ObjType, objID string, moduleid string) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	m := c.catchGetTypeMust(objType)
-	server := c.catchGetServerMust(moduleid)
-	m[objID] = server
-}
-
-// SetM 同时添加多个
-func (c *Cache) SetM(objType ObjType, objIDs []string, moduleid string) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	m := c.catchGetTypeMust(objType)
-	server := c.catchGetServerMust(moduleid)
-	for _, v := range objIDs {
-		m[v] = server
-	}
-}
-
 // Del 删除目标对象
-func (c *Cache) Del(objType ObjType, objID string, moduleid string) {
+func (c *Cache) Del(objType ObjType, objID string, moduleID string) bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	m := c.catchGetTypeMust(objType)
-	if info, ok := m[objID]; ok && info.moduleid == moduleid {
+	if info, ok := m[objID]; ok && info.moduleID == moduleID {
 		delete(m, objID)
+		return true
 	}
+	return false
 }
 
 // DelM 同时删除多个
-func (c *Cache) DelM(objType ObjType, objIDs []string, moduleid string) {
+// 返回成功删除的数量
+func (c *Cache) DelM(objType ObjType, objIDs []string, moduleID string) int {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
+	res := 0
 	m := c.catchGetTypeMust(objType)
 	for _, v := range objIDs {
-		if info, ok := m[v]; ok && info.moduleid == moduleid {
+		if info, ok := m[v]; ok && info.moduleID == moduleID {
 			delete(m, v)
+			res++
 		}
 	}
+	return res
 }
 
 // Get 获取缓存的目标对象在哪个模块上
@@ -111,29 +134,27 @@ func (c *Cache) Get(objType ObjType, objID string) string {
 
 	m := c.catchGetTypeMust(objType)
 	if v, ok := m[objID]; ok && v != nil {
-		return v.moduleid
+		return v.moduleID
 	}
 	return ""
 }
 
 // RangeByType 遍历指定类型的ROC对象
-func (c *Cache) RangeByType(objType ObjType,
-	f func(id string, location string) bool,
-	limitModuleIDs map[string]bool) {
+func (c *Cache) RangeByType(objType ObjType, f func(id string, location string) bool, limitModuleIDs map[string]bool) {
 	// 防止 f 中调用其他加锁函数导致死锁，需要备份map
 	back := make(objIDToServerMap)
 
 	c.mutex.Lock()
 	m := c.catchGetTypeMust(objType)
 	for id, v := range m {
-		if limitModuleIDs == nil || limitModuleIDs[v.moduleid] == true {
+		if limitModuleIDs == nil || limitModuleIDs[v.moduleID] == true {
 			back[id] = v
 		}
 	}
 	c.mutex.Unlock()
 
 	for id, v := range back {
-		if !f(id, v.moduleid) {
+		if !f(id, v.moduleID) {
 			break
 		}
 	}
@@ -141,15 +162,14 @@ func (c *Cache) RangeByType(objType ObjType,
 }
 
 // RandomObjIDByType 随机获取一个目标类型的缓存对象ID
-func (c *Cache) RandomObjIDByType(objType ObjType,
-	limitModuleIDs map[string]bool) string {
+func (c *Cache) RandomObjIDByType(objType ObjType, limitModuleIDs map[string]bool) string {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	m := c.catchGetTypeMust(objType)
 	tmplist := make([]string, 0)
 	for id, v := range m {
-		if limitModuleIDs == nil || limitModuleIDs[v.moduleid] == true {
+		if limitModuleIDs == nil || limitModuleIDs[v.moduleID] == true {
 			tmplist = append(tmplist, id)
 		}
 	}

@@ -32,6 +32,11 @@ type TopConfig struct {
 	mutex          sync.Mutex
 }
 
+// Default config
+func Default() *TopConfig {
+	return &TopConfig{}
+}
+
 // LoadConfig 从配置文件以及命令行参数中加载配置
 func LoadConfig(filepath string) (*TopConfig, error) {
 	res := &TopConfig{}
@@ -40,7 +45,7 @@ func LoadConfig(filepath string) (*TopConfig, error) {
 		log.Error("loadJSONConfigFile(filepath) err:%v", err)
 		return nil, err
 	}
-	res.InitParse()
+	res.InitFlag()
 	res.AppConfig.buildModuleIDFromMapkey()
 	return res, nil
 }
@@ -130,8 +135,9 @@ func (tc *TopConfig) getPropBool(propname string) bool {
 	return false
 }
 
-// InitParse 初始化命令行参数
-func (tc *TopConfig) InitParse() {
+// InitFlag 初始化命令行参数
+func (tc *TopConfig) InitFlag() {
+	cmdLineArgv := initFlag()
 	if tc.globalProp == nil {
 		tc.globalProp = make(map[string]string)
 	}
@@ -165,44 +171,42 @@ func (tc *TopConfig) InitParse() {
 	}
 }
 
-// 命令行参数列表
-var cmdLineArgv map[string]string
-
 // init 读取命令行参数
-func init() {
-	if cmdLineArgv == nil {
-		cmdLineArgv = make(map[string]string)
-	}
-	var daemonflag string
-	flag.StringVar(&daemonflag, "d", "", "as a daemon true or false")
+func initFlag() map[string]string {
+	cmdLineArgv := make(map[string]string)
+	if !flag.Parsed() {
+		var daemonflag string
+		flag.StringVar(&daemonflag, "d", "", "as a daemon true or false")
 
-	var processflag string
-	flag.StringVar(&processflag, "p", "", "process id as gate001")
+		var processflag string
+		flag.StringVar(&processflag, "p", "", "process id as gate001")
 
-	var logpathflag string
-	flag.StringVar(&logpathflag, "l", "", "log path as /log/")
+		var logpathflag string
+		flag.StringVar(&logpathflag, "l", "", "log path as /log/")
 
-	var serverversion string
-	flag.StringVar(&serverversion, "v", "", "server version as [0-9]{14}")
+		var serverversion string
+		flag.StringVar(&serverversion, "v", "", "server version as [0-9]{14}")
 
-	flag.Parse()
+		flag.Parse()
 
-	if len(daemonflag) > 0 {
-		if daemonflag == "true" {
-			cmdLineArgv["isdaemon"] = "true"
+		if len(daemonflag) > 0 {
+			if daemonflag == "true" {
+				cmdLineArgv["isdaemon"] = "true"
+			} else {
+				cmdLineArgv["isdaemon"] = "false"
+			}
+		}
+		if len(processflag) > 0 {
+			cmdLineArgv["processid"] = processflag
 		} else {
-			cmdLineArgv["isdaemon"] = "false"
+			cmdLineArgv["processid"] = "development"
+		}
+		if len(logpathflag) > 0 {
+			cmdLineArgv["logpath"] = logpathflag
+		}
+		if len(serverversion) > 0 {
+			cmdLineArgv["version"] = serverversion
 		}
 	}
-	if len(processflag) > 0 {
-		cmdLineArgv["processid"] = processflag
-	} else {
-		cmdLineArgv["processid"] = "development"
-	}
-	if len(logpathflag) > 0 {
-		cmdLineArgv["logpath"] = logpathflag
-	}
-	if len(serverversion) > 0 {
-		cmdLineArgv["version"] = serverversion
-	}
+	return cmdLineArgv
 }
