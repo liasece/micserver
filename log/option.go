@@ -44,6 +44,8 @@ type options struct {
 	AddStack core.LevelEnabler
 	// CallerSkip, default 2
 	CallerSkip int
+	// ErrorOutput, default nil
+	ErrorOutput core.WriteSyncer
 }
 
 var _defaultoptions = options{

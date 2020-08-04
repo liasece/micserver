@@ -1,35 +1,62 @@
 package log
 
 import (
+	"fmt"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/liasece/micserver/log/core"
+	"github.com/liasece/micserver/log/internal/exit"
 )
 
 // Logger 日志实例
 type Logger struct {
 	options
 	logWriter *recordWriter
+	core      core.Core
 }
 
 // NewLogger 构造一个日志
-func NewLogger(core core.Core, optps ...Option) *Logger {
+func NewLogger(c core.Core, optps ...Option) *Logger {
 	l := new(Logger)
-	l.options = _defaultoptions
-	for _, opt := range optps {
-		opt.apply(l)
-	}
-	l.logWriter = &recordWriter{}
-	l.logWriter.Init(&l.options)
 
-	for _, path := range l.options.FilePaths {
-		l.logWriter.AddLogFile(path, &l.options)
+	{
+		// init c
+		if c == nil {
+			c = core.NewNopCore()
+		}
+		l.core = c
 	}
 
-	if !l.options.NoConsole {
-		w := newConsoleWriter()
-		w.SetColor(!l.options.NoConsoleColor)
-		l.logWriter.registerLogWriter(w)
+	{
+		// init option
+		l.options = _defaultoptions
+		for _, opt := range optps {
+			opt.apply(l)
+		}
+	}
+
+	{
+		// init writer
+		l.logWriter = &recordWriter{}
+		l.logWriter.Init(&l.options)
+	}
+
+	{
+		// init log files path
+		for _, path := range l.options.FilePaths {
+			l.logWriter.AddLogFile(path, &l.options)
+		}
+	}
+
+	{
+		// init console
+		if !l.options.NoConsole {
+			w := newConsoleWriter()
+			w.SetColor(!l.options.NoConsoleColor)
+			l.logWriter.registerLogWriter(w)
+		}
 	}
 
 	return l
@@ -185,12 +212,46 @@ func (l *Logger) Panic(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(PanicLevel, fmt, args...)
 }
 
-func (l *Logger) deliverRecordToWriter(level Level, format string, args ...interface{}) {
+func (l *Logger) deliverRecordToWriter(level Level, format string, originArgs ...interface{}) {
 	if l == nil && l != defaultLogger {
-		defaultLogger.deliverRecordToWriter(level, format, args...)
+		defaultLogger.deliverRecordToWriter(level, format, originArgs...)
 		return
 	}
-	l.logWriter.deliverRecord(&l.options, level, format, args...)
+	var fields []Field
+	var args []interface{}
+	for _, vi := range originArgs {
+		if v, ok := vi.(Field); ok {
+			fields = append(fields, v)
+		} else {
+			args = append(args, vi)
+		}
+	}
+
+	after := false
+	{
+		if l.logWriter.deliverRecord(&l.options, level, format, args, fields) {
+			after = true
+		}
+	}
+	if l.core != nil {
+		if ce := l.check(DPanicLevel, format); ce != nil {
+			ce.Write(fields...)
+			after = false
+		}
+	}
+	if after {
+		// Set up any required terminal behavior.
+		switch level {
+		case core.PanicLevel:
+			panic(fmt.Sprintf(format, args...))
+		case core.FatalLevel:
+			exit.Exit()
+		case core.DPanicLevel:
+			if l.Development {
+				panic(fmt.Sprintf(format, args...))
+			}
+		}
+	}
 }
 
 // GetLogger 获取当前 Logger 的 Logger ，意义在于会进行接收器 Logger 是否为空的判断，
@@ -211,4 +272,61 @@ func (l *Logger) With(fields ...Field) *Logger {
 	res := l.Clone()
 	// res.core = l.core.With(fields)
 	return res
+}
+
+func (l *Logger) check(lvl core.Level, msg string) *core.CheckedEntry {
+	// check must always be called directly by a method in the Logger interface
+	// (e.g., Check, Info, Fatal).
+	const callerSkipOffset = 2
+
+	// Check the level first to reduce the cost of disabled l calls.
+	// Since Panic and higher may exit, we skip the optimization for those levels.
+	if lvl < core.DPanicLevel && !l.core.Enabled(lvl) {
+		return nil
+	}
+
+	// Create basic checked entry thru the core; this will be non-nil if the
+	// l message will actually be written somewhere.
+	ent := core.Entry{
+		LoggerName: l.options.Name,
+		Time:       time.Now(),
+		Level:      lvl,
+		Message:    msg,
+	}
+	ce := l.core.Check(ent, nil)
+	willWrite := ce != nil
+
+	// Set up any required terminal behavior.
+	switch ent.Level {
+	case core.PanicLevel:
+		ce = ce.Should(ent, core.WriteThenPanic)
+	case core.FatalLevel:
+		ce = ce.Should(ent, core.WriteThenFatal)
+	case core.DPanicLevel:
+		if l.Development {
+			ce = ce.Should(ent, core.WriteThenPanic)
+		}
+	}
+
+	// Only do further annotation if we're going to write this message; checked
+	// entries that exist only for terminal behavior don't benefit from
+	// annotation.
+	if !willWrite {
+		return ce
+	}
+
+	// Thread the error output through to the CheckedEntry.
+	ce.ErrorOutput = l.options.ErrorOutput
+	if l.options.AddCaller {
+		ce.Entry.Caller = core.NewEntryCaller(runtime.Caller(l.options.CallerSkip + callerSkipOffset))
+		if !ce.Entry.Caller.Defined {
+			fmt.Fprintf(l.ErrorOutput, "%v Logger.check error: failed to get caller\n", time.Now().UTC())
+			l.ErrorOutput.Sync()
+		}
+	}
+	if l.AddStack.Enabled(ce.Entry.Level) {
+		ce.Entry.Stack = Stack("").String
+	}
+
+	return ce
 }

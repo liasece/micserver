@@ -3,8 +3,9 @@ package log
 import (
 	"fmt"
 	syslog "log"
-	"os"
 	"time"
+
+	"github.com/liasece/micserver/log/core"
 )
 
 const tunnelSizeDefault = 1024
@@ -73,25 +74,15 @@ func (rec *recordWriter) Close() {
 	}
 }
 
-func (rec *recordWriter) deliverRecord(opt *options, level Level, format string, originArgs ...interface{}) {
+func (rec *recordWriter) deliverRecord(opt *options, level Level, format string, args []interface{}, fields []core.Field) bool {
 	var inf, code string
 	// 检查日志等级有效性
 	if level < opt.Level {
-		return
+		return false
 	}
 	// 连接主题
 	if opt.Topic != "" {
 		inf += opt.Topic + " "
-	}
-
-	var fields []Field
-	var args []interface{}
-	for _, vi := range originArgs {
-		if v, ok := vi.(Field); ok {
-			fields = append(fields, v)
-		} else {
-			args = append(args, vi)
-		}
 	}
 
 	// 连接格式化内容
@@ -117,15 +108,7 @@ func (rec *recordWriter) deliverRecord(opt *options, level Level, format string,
 	r.fields = fields
 
 	rec.write(r, opt)
-	if level == PanicLevel || level == DPanicLevel {
-		panic(r)
-	} else if level == DPanicLevel {
-		if opt.Development {
-			panic(r)
-		}
-	} else if level == FatalLevel {
-		os.Exit(1)
-	}
+	return true
 }
 
 // write 写入一条日志记录，等待后续异步处理
