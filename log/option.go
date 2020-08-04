@@ -36,16 +36,21 @@ type options struct {
 	// RotateTimeLayout use of (time.Time).Format(layout string) to check if a roteta file is required.
 	// default "", will disable rotate. Highest accuracy is minutes.
 	RotateTimeLayout string
-
+	// Development use of DPanicLevel panic, default false
 	Development bool
-	AddCaller   bool
-	AddStack    core.LevelEnabler
-	CallerSkip  int
+	// AddCaller, default false
+	AddCaller bool
+	// AddStack, default nil
+	AddStack core.LevelEnabler
+	// CallerSkip, default 2
+	CallerSkip int
 }
 
 var _defaultoptions = options{
+	Level:              SysLevel,
 	RecordTimeLayout:   "060102-15:04:05",
 	AsyncWriteDuration: time.Millisecond * 100,
+	CallerSkip:         2,
 }
 
 // TOptions type of options

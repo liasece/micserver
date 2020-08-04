@@ -21,33 +21,6 @@ import (
 	"sync"
 )
 
-// 各个日志等级在一条Log中的日志等级标题
-var (
-	levelFlags = []string{
-		"[S]",
-		"[D]",
-		"[I]",
-		"[WARNING]",
-		"[ERROR]",
-		"[FATALERROR]",
-		"[PANICERROR]",
-	}
-)
-
-// Level type of log level
-type Level int
-
-// 日志等级
-const (
-	SYS     Level = 0
-	DEBUG   Level = 1
-	INFO    Level = 2
-	WARNING Level = 3
-	ERROR   Level = 4
-	FATAL   Level = 5
-	PANIC   Level = 6
-)
-
 // 默认的日志记录器
 var (
 	defaultLogger *Logger
@@ -55,37 +28,42 @@ var (
 
 // Syslog 默认 Logger 异步输出一条 Syslog 级别的日志
 func Syslog(fmt string, args ...interface{}) {
-	defaultLogger.deliverRecordToWriter(SYS, fmt, args...)
+	defaultLogger.deliverRecordToWriter(SysLevel, fmt, args...)
 }
 
 // Debug 默认 Logger 异步输出一条 Debug 级别的日志
 func Debug(fmt string, args ...interface{}) {
-	defaultLogger.deliverRecordToWriter(DEBUG, fmt, args...)
+	defaultLogger.deliverRecordToWriter(DebugLevel, fmt, args...)
 }
 
 // Warn 默认 Logger 异步输出一条 Warn 级别的日志
 func Warn(fmt string, args ...interface{}) {
-	defaultLogger.deliverRecordToWriter(WARNING, fmt, args...)
+	defaultLogger.deliverRecordToWriter(WarnLevel, fmt, args...)
 }
 
 // Info 默认 Logger 异步输出一条 Info 级别的日志
 func Info(fmt string, args ...interface{}) {
-	defaultLogger.deliverRecordToWriter(INFO, fmt, args...)
+	defaultLogger.deliverRecordToWriter(InfoLevel, fmt, args...)
 }
 
 // Error 默认 Logger 异步输出一条 Error 级别的日志
 func Error(fmt string, args ...interface{}) {
-	defaultLogger.deliverRecordToWriter(ERROR, fmt, args...)
+	defaultLogger.deliverRecordToWriter(ErrorLevel, fmt, args...)
 }
 
-// Fatal 默认 Logger 异步输出一条 Fatal 级别的日志
-func Fatal(fmt string, args ...interface{}) {
-	defaultLogger.deliverRecordToWriter(FATAL, fmt, args...)
+// DPanic 默认 Logger 异步输出一条 DPanic 级别的日志
+func DPanic(fmt string, args ...interface{}) {
+	defaultLogger.deliverRecordToWriter(DPanicLevel, fmt, args...)
 }
 
 // Panic 默认 Logger 异步输出一条 Panic 级别的日志
 func Panic(fmt string, args ...interface{}) {
-	defaultLogger.deliverRecordToWriter(PANIC, fmt, args...)
+	defaultLogger.deliverRecordToWriter(PanicLevel, fmt, args...)
+}
+
+// Fatal 默认 Logger 异步输出一条 Fatal 级别的日志
+func Fatal(fmt string, args ...interface{}) {
+	defaultLogger.deliverRecordToWriter(FatalLevel, fmt, args...)
 }
 
 // IsSyslogEnable 默认 Logger 判断 Syslog 日志级别是否开启
@@ -111,6 +89,16 @@ func IsWarnEnable() bool {
 // IsErrorEnable 默认 Logger 判断 Error 日志级别是否开启
 func IsErrorEnable() bool {
 	return defaultLogger.IsErrorEnable()
+}
+
+// IsPanicEnable 默认 Logger 判断 Panic 日志级别是否开启
+func IsPanicEnable() bool {
+	return defaultLogger.IsPanicEnable()
+}
+
+// IsDPanicEnable 默认 Logger 判断 DPanic 日志级别是否开启
+func IsDPanicEnable() bool {
+	return defaultLogger.IsDPanicEnable()
 }
 
 // IsFatalEnable 默认 Logger 判断 Fatal 日志级别是否开启

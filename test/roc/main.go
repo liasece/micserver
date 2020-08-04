@@ -60,7 +60,7 @@ func (m *Model) TopRunner() {
 
 func main() {
 	logPath := filepath.Join("log.log")
-	log.SetDefaultLogger(log.NewLogger(nil, log.Options().FilePaths(logPath).AsyncWrite(true).Level(log.DEBUG).RotateTimeLayout("060102")))
+	log.SetDefaultLogger(log.NewLogger(nil, log.Options().FilePaths(logPath).AsyncWrite(true).Level(log.DebugLevel).RotateTimeLayout("060102")))
 
 	go http.ListenAndServe("localhost:6060", nil)
 

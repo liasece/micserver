@@ -9,31 +9,19 @@ import (
 // 一条日志记录
 type colorRecord Record
 
-var colorProjecting []string = []string{
-	"\033[0m",
-	"\033[34m",
-	"\033[32m",
-	"\033[33m",
-	"\033[31m",
-	"\033[35m",
-	"\033[35m",
-}
-
 // String 获取该记录在控制台中携带颜色的格式化字符串
 func (r *colorRecord) String() string {
-	color := colorProjecting[0]
-	flag := "UNKNOW"
-	if r.level >= 0 && r.level <= PANIC {
-		color = colorProjecting[r.level]
-		flag = levelFlags[r.level]
+	flag := _levelToCapitalColorString[SysLevel]
+	if r.level >= SysLevel && r.level <= FatalLevel {
+		flag = _levelToCapitalColorString[r.level]
 	}
 
 	if r.name == "" {
-		return fmt.Sprintf("\033[36m%s\033[0m "+color+"%s\033[0m %s",
-			r.time, flag, r.info)
+		return fmt.Sprintf("\033[36m%s\033[0m "+flag+"\033[0m %s",
+			r.time, r.info)
 	}
-	return fmt.Sprintf("\033[36m%s\033[0m [%s] "+color+"%s\033[0m %s",
-		r.time, r.name, flag, r.info)
+	return fmt.Sprintf("\033[36m%s\033[0m [%s] "+flag+"\033[0m %s",
+		r.time, r.name, r.info)
 }
 
 // consoleWriter 控制台输出器

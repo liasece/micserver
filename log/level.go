@@ -22,10 +22,54 @@ package log
 
 import (
 	"github.com/liasece/micserver/log/core"
+	"github.com/liasece/micserver/log/internal/color"
 	"github.com/liasece/micserver/util/atomic"
 )
 
+// 各个日志等级在一条Log中的日志等级标题
+var (
+	levelFlags = map[Level]string{
+		SysLevel:    "[S]",
+		DebugLevel:  "[D]",
+		InfoLevel:   "[I]",
+		WarnLevel:   "[WARNING]",
+		ErrorLevel:  "[ERROR]",
+		DPanicLevel: "[DPANICERROR]",
+		PanicLevel:  "[PANICERROR]",
+		FatalLevel:  "[FATALERROR]",
+	}
+)
+
+var (
+	_levelToColor = map[Level]color.Color{
+		SysLevel:    color.White,
+		DebugLevel:  color.Magenta,
+		InfoLevel:   color.Blue,
+		WarnLevel:   color.Yellow,
+		ErrorLevel:  color.Red,
+		DPanicLevel: color.Red,
+		PanicLevel:  color.Red,
+		FatalLevel:  color.Red,
+	}
+	_unknownLevelColor = color.Red
+
+	_levelToLowercaseColorString = make(map[Level]string, len(_levelToColor))
+	_levelToCapitalColorString   = make(map[Level]string, len(_levelToColor))
+)
+
+func init() {
+	for level, color := range _levelToColor {
+		_levelToCapitalColorString[level] = color.Add(levelFlags[level])
+	}
+}
+
+// Level are log core level
+type Level = core.Level
+
 const (
+	// SysLevel logs are typically voluminous, and are usually disabled in
+	// production.
+	SysLevel = core.SysLevel
 	// DebugLevel logs are typically voluminous, and are usually disabled in
 	// production.
 	DebugLevel = core.DebugLevel

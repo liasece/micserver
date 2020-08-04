@@ -64,32 +64,42 @@ func (l *Logger) getLogLevel() Level {
 
 // IsSyslogEnable 判断 Syslog 日志级别是否开启
 func (l *Logger) IsSyslogEnable() bool {
-	return l.getLogLevel() >= SYS
+	return l.getLogLevel() >= SysLevel
 }
 
 // IsDebugEnable 判断 Debug 日志级别是否开启
 func (l *Logger) IsDebugEnable() bool {
-	return l.getLogLevel() >= DEBUG
+	return l.getLogLevel() >= DebugLevel
 }
 
 // IsInfoEnable 判断 Warn 日志级别是否开启
 func (l *Logger) IsInfoEnable() bool {
-	return l.getLogLevel() >= DEBUG
+	return l.getLogLevel() >= DebugLevel
 }
 
 // IsWarnEnable 判断 Info 日志级别是否开启
 func (l *Logger) IsWarnEnable() bool {
-	return l.getLogLevel() >= WARNING
+	return l.getLogLevel() >= WarnLevel
 }
 
 // IsErrorEnable 判断 Error 日志级别是否开启
 func (l *Logger) IsErrorEnable() bool {
-	return l.getLogLevel() >= ERROR
+	return l.getLogLevel() >= ErrorLevel
+}
+
+// IsDPanicEnable 判断 DPanic 日志级别是否开启
+func (l *Logger) IsDPanicEnable() bool {
+	return l.getLogLevel() >= DPanicLevel
+}
+
+// IsPanicEnable 判断 Panic 日志级别是否开启
+func (l *Logger) IsPanicEnable() bool {
+	return l.getLogLevel() >= PanicLevel
 }
 
 // IsFatalEnable 判断 Fatal 日志级别是否开启
 func (l *Logger) IsFatalEnable() bool {
-	return l.getLogLevel() >= FATAL
+	return l.getLogLevel() >= FatalLevel
 }
 
 // SetLogLevel 设置日志等级
@@ -109,17 +119,21 @@ func (l *Logger) SetLogLevelByStr(lvl string) error {
 	lvlUpper := strings.ToUpper(lvl)
 	switch lvlUpper {
 	case "SYS":
-		l.options.Level = SYS
+		l.options.Level = SysLevel
 	case "DEBUG":
-		l.options.Level = DEBUG
+		l.options.Level = DebugLevel
 	case "INFO":
-		l.options.Level = INFO
+		l.options.Level = InfoLevel
 	case "WARNING":
-		l.options.Level = WARNING
+		l.options.Level = WarnLevel
 	case "ERROR":
-		l.options.Level = ERROR
+		l.options.Level = ErrorLevel
+	case "DPANIC":
+		l.options.Level = DPanicLevel
+	case "PANIC":
+		l.options.Level = PanicLevel
 	case "FATAL":
-		l.options.Level = FATAL
+		l.options.Level = FatalLevel
 	default:
 		return ErrUnknownLogLevel
 	}
@@ -138,37 +152,37 @@ func (l *Logger) SetTopic(topic string) error {
 
 // Syslog 异步输出一条 Syslog 级别的日志
 func (l *Logger) Syslog(fmt string, args ...interface{}) {
-	l.deliverRecordToWriter(SYS, fmt, args...)
+	l.deliverRecordToWriter(SysLevel, fmt, args...)
 }
 
 // Debug 异步输出一条 Debug 级别的日志
 func (l *Logger) Debug(fmt string, args ...interface{}) {
-	l.deliverRecordToWriter(DEBUG, fmt, args...)
+	l.deliverRecordToWriter(DebugLevel, fmt, args...)
 }
 
 // Warn 异步输出一条 Warn 级别的日志
 func (l *Logger) Warn(fmt string, args ...interface{}) {
-	l.deliverRecordToWriter(WARNING, fmt, args...)
+	l.deliverRecordToWriter(WarnLevel, fmt, args...)
 }
 
 // Info 异步输出一条 Info 级别的日志
 func (l *Logger) Info(fmt string, args ...interface{}) {
-	l.deliverRecordToWriter(INFO, fmt, args...)
+	l.deliverRecordToWriter(InfoLevel, fmt, args...)
 }
 
 // Error 异步输出一条 Error 级别的日志
 func (l *Logger) Error(fmt string, args ...interface{}) {
-	l.deliverRecordToWriter(ERROR, fmt, args...)
+	l.deliverRecordToWriter(ErrorLevel, fmt, args...)
 }
 
 // Fatal 异步输出一条 Fatal 级别的日志
 func (l *Logger) Fatal(fmt string, args ...interface{}) {
-	l.deliverRecordToWriter(FATAL, fmt, args...)
+	l.deliverRecordToWriter(FatalLevel, fmt, args...)
 }
 
 // Panic 异步输出一条 Panic 级别的日志
 func (l *Logger) Panic(fmt string, args ...interface{}) {
-	l.deliverRecordToWriter(PANIC, fmt, args...)
+	l.deliverRecordToWriter(PanicLevel, fmt, args...)
 }
 
 func (l *Logger) deliverRecordToWriter(level Level, format string, args ...interface{}) {

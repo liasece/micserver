@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	syslog "log"
+	"os"
 	"time"
 )
 
@@ -116,8 +117,14 @@ func (rec *recordWriter) deliverRecord(opt *options, level Level, format string,
 	r.fields = fields
 
 	rec.write(r, opt)
-	if level >= PANIC {
+	if level == PanicLevel || level == DPanicLevel {
 		panic(r)
+	} else if level == DPanicLevel {
+		if opt.Development {
+			panic(r)
+		}
+	} else if level == FatalLevel {
+		os.Exit(1)
 	}
 }
 
