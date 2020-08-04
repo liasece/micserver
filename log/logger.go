@@ -2,33 +2,33 @@ package log
 
 import (
 	"strings"
+
+	"github.com/liasece/micserver/log/core"
 )
 
 // Logger 日志实例
 type Logger struct {
+	options
 	logWriter *recordWriter
-	opt       Options
 }
 
 // NewLogger 构造一个日志
-func NewLogger(optp *Options) *Logger {
-	opt := defaultOptions
-	if optp != nil {
-		opt = *optp
-		(&opt).Check()
-	}
+func NewLogger(core core.Core, optps ...Option) *Logger {
 	l := new(Logger)
-	l.opt = opt
+	l.options = _defaultoptions
+	for _, opt := range optps {
+		opt.apply(l)
+	}
 	l.logWriter = &recordWriter{}
-	l.logWriter.Init(&l.opt)
+	l.logWriter.Init(&l.options)
 
-	for _, path := range l.opt.FilePaths {
-		l.logWriter.AddLogFile(path, &l.opt)
+	for _, path := range l.options.FilePaths {
+		l.logWriter.AddLogFile(path, &l.options)
 	}
 
-	if !l.opt.NoConsole {
+	if !l.options.NoConsole {
 		w := newConsoleWriter()
-		w.SetColor(!l.opt.NoConsoleColor)
+		w.SetColor(!l.options.NoConsoleColor)
 		l.logWriter.registerLogWriter(w)
 	}
 
@@ -51,7 +51,7 @@ func (l *Logger) SetLogName(logname string) {
 		defaultLogger.SetLogName(logname)
 		return
 	}
-	l.opt.Name = logname
+	l.options.Name = logname
 }
 
 // getLogLevel 获取当前日志等级
@@ -59,7 +59,7 @@ func (l *Logger) getLogLevel() Level {
 	if l == nil && l != defaultLogger {
 		return defaultLogger.getLogLevel()
 	}
-	return l.opt.Level
+	return l.options.Level
 }
 
 // IsSyslogEnable 判断 Syslog 日志级别是否开启
@@ -98,7 +98,7 @@ func (l *Logger) SetLogLevel(lvl Level) {
 		defaultLogger.SetLogLevel(lvl)
 		return
 	}
-	l.opt.Level = lvl
+	l.options.Level = lvl
 }
 
 // SetLogLevelByStr 使用等级名设置日志等级
@@ -109,17 +109,17 @@ func (l *Logger) SetLogLevelByStr(lvl string) error {
 	lvlUpper := strings.ToUpper(lvl)
 	switch lvlUpper {
 	case "SYS":
-		l.opt.Level = SYS
+		l.options.Level = SYS
 	case "DEBUG":
-		l.opt.Level = DEBUG
+		l.options.Level = DEBUG
 	case "INFO":
-		l.opt.Level = INFO
+		l.options.Level = INFO
 	case "WARNING":
-		l.opt.Level = WARNING
+		l.options.Level = WARNING
 	case "ERROR":
-		l.opt.Level = ERROR
+		l.options.Level = ERROR
 	case "FATAL":
-		l.opt.Level = FATAL
+		l.options.Level = FATAL
 	default:
 		return ErrUnknownLogLevel
 	}
@@ -132,7 +132,7 @@ func (l *Logger) SetTopic(topic string) error {
 		// nil or default logger can't set topic
 		return ErrNilLogger
 	}
-	l.opt.Topic = topic
+	l.options.Topic = topic
 	return nil
 }
 
@@ -166,12 +166,17 @@ func (l *Logger) Fatal(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(FATAL, fmt, args...)
 }
 
+// Panic 异步输出一条 Panic 级别的日志
+func (l *Logger) Panic(fmt string, args ...interface{}) {
+	l.deliverRecordToWriter(PANIC, fmt, args...)
+}
+
 func (l *Logger) deliverRecordToWriter(level Level, format string, args ...interface{}) {
 	if l == nil && l != defaultLogger {
 		defaultLogger.deliverRecordToWriter(level, format, args...)
 		return
 	}
-	l.logWriter.deliverRecord(&l.opt, level, format, args...)
+	l.logWriter.deliverRecord(&l.options, level, format, args...)
 }
 
 // GetLogger 获取当前 Logger 的 Logger ，意义在于会进行接收器 Logger 是否为空的判断，
@@ -181,4 +186,15 @@ func (l *Logger) GetLogger() *Logger {
 		return defaultLogger.GetLogger()
 	}
 	return l
+}
+
+// With creates a child logger and adds structured context to it. Fields added
+// to the child don't affect the parent, and vice versa.
+func (l *Logger) With(fields ...Field) *Logger {
+	if len(fields) == 0 {
+		return l
+	}
+	res := l.Clone()
+	// res.core = l.core.With(fields)
+	return res
 }

@@ -30,6 +30,7 @@ var (
 		"[WARNING]",
 		"[ERROR]",
 		"[FATALERROR]",
+		"[PANICERROR]",
 	}
 )
 
@@ -44,6 +45,7 @@ const (
 	WARNING Level = 3
 	ERROR   Level = 4
 	FATAL   Level = 5
+	PANIC   Level = 6
 )
 
 // 默认的日志记录器
@@ -79,6 +81,11 @@ func Error(fmt string, args ...interface{}) {
 // Fatal 默认 Logger 异步输出一条 Fatal 级别的日志
 func Fatal(fmt string, args ...interface{}) {
 	defaultLogger.deliverRecordToWriter(FATAL, fmt, args...)
+}
+
+// Panic 默认 Logger 异步输出一条 Panic 级别的日志
+func Panic(fmt string, args ...interface{}) {
+	defaultLogger.deliverRecordToWriter(PANIC, fmt, args...)
 }
 
 // IsSyslogEnable 默认 Logger 判断 Syslog 日志级别是否开启

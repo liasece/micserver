@@ -15,7 +15,7 @@ import (
 )
 
 func TestApp_App(t *testing.T) {
-	log.SetDefaultLogger(log.NewLogger(&log.Options{NoConsoleColor: true}))
+	log.SetDefaultLogger(log.NewLogger(nil, log.Options().NoConsoleColor(true)))
 
 	app := &App{}
 	app.Setup(nil)

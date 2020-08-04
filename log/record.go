@@ -3,6 +3,8 @@ package log
 import (
 	"fmt"
 	"sync"
+
+	"github.com/liasece/micserver/log/core"
 )
 
 var (
@@ -17,12 +19,13 @@ type Record struct {
 	info     string
 	level    Level
 	timeUnix int64
+	fields   []core.Field
 }
 
 // String 格式化该日志记录字符串
 func (r *Record) String() string {
 	if r.name == "" {
-		return fmt.Sprintf("%s %s %s\n", r.time, levelFlags[r.level], r.info)
+		return fmt.Sprintf("%s %s %s", r.time, levelFlags[r.level], r.info)
 	}
-	return fmt.Sprintf("%s [%s] %s %s\n", r.time, r.name, levelFlags[r.level], r.info)
+	return fmt.Sprintf("%s [%s] %s %s", r.time, r.name, levelFlags[r.level], r.info)
 }

@@ -26,7 +26,7 @@ type recordWriter struct {
 }
 
 // Init 初始化log写入器
-func (rec *recordWriter) Init(opt *Options) {
+func (rec *recordWriter) Init(opt *options) {
 	rec.wm = &writerManager{}
 	rec.tunnel = make(chan *Record, tunnelSizeDefault)
 	rec.stopchan = make(chan struct{})
@@ -36,7 +36,7 @@ func (rec *recordWriter) Init(opt *Options) {
 }
 
 // AddLogFile 增加一个文件输出器
-func (rec *recordWriter) AddLogFile(filePath string, opt *Options) error {
+func (rec *recordWriter) AddLogFile(filePath string, opt *options) error {
 	w := newFileWriter(filePath, opt.RotateTimeLayout)
 	w.redirectError = opt.RedirectError
 	err := w.Init()
@@ -72,7 +72,7 @@ func (rec *recordWriter) Close() {
 	}
 }
 
-func (rec *recordWriter) deliverRecord(opt *Options, level Level, format string, args ...interface{}) {
+func (rec *recordWriter) deliverRecord(opt *options, level Level, format string, originArgs ...interface{}) {
 	var inf, code string
 	// 检查日志等级有效性
 	if level < opt.Level {
@@ -82,6 +82,17 @@ func (rec *recordWriter) deliverRecord(opt *Options, level Level, format string,
 	if opt.Topic != "" {
 		inf += opt.Topic + " "
 	}
+
+	var fields []Field
+	var args []interface{}
+	for _, vi := range originArgs {
+		if v, ok := vi.(Field); ok {
+			fields = append(fields, v)
+		} else {
+			args = append(args, vi)
+		}
+	}
+
 	// 连接格式化内容
 	if format != "" {
 		inf += fmt.Sprintf(format, args...)
@@ -102,12 +113,16 @@ func (rec *recordWriter) deliverRecord(opt *Options, level Level, format string,
 	r.level = level
 	r.name = opt.Name
 	r.timeUnix = rec.lastTime
+	r.fields = fields
 
 	rec.write(r, opt)
+	if level >= PANIC {
+		panic(r)
+	}
 }
 
 // write 写入一条日志记录，等待后续异步处理
-func (rec *recordWriter) write(r *Record, opt *Options) {
+func (rec *recordWriter) write(r *Record, opt *options) {
 	select {
 	case <-rec.stopchan:
 		return
@@ -129,7 +144,7 @@ func (rec *recordWriter) write(r *Record, opt *Options) {
 }
 
 // boostrapLogWriter 日志写入线程
-func (rec *recordWriter) boostrapLogWriter(opt *Options) {
+func (rec *recordWriter) boostrapLogWriter(opt *options) {
 	var (
 		r  *Record
 		ok bool
@@ -163,7 +178,7 @@ func (rec *recordWriter) boostrapLogWriter(opt *Options) {
 	}
 }
 
-func (rec *recordWriter) doWriteRecord(r *Record, opt *Options) error {
+func (rec *recordWriter) doWriteRecord(r *Record, opt *options) error {
 	needTryRotate := false
 	// 如果上一条记录的时间和这条记录的时间不是同一分钟，需要尝试增加log文件
 	nowTimeUnix60 := r.timeUnix / 60
