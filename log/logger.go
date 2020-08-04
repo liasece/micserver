@@ -227,14 +227,26 @@ func (l *Logger) deliverRecordToWriter(level Level, format string, originArgs ..
 		}
 	}
 
+	inf := ""
+	// 连接主题
+	if l.options.Topic != "" {
+		inf += l.options.Topic + " "
+	}
+	// 连接格式化内容
+	if format != "" {
+		inf += fmt.Sprintf(format, args...)
+	} else {
+		inf += fmt.Sprint(args...)
+	}
+
 	after := false
 	{
-		if l.logWriter.deliverRecord(&l.options, level, format, args, fields) {
+		if l.logWriter.deliverRecord(&l.options, level, inf, fields) {
 			after = true
 		}
 	}
 	if l.core != nil {
-		if ce := l.check(DPanicLevel, format); ce != nil {
+		if ce := l.check(DPanicLevel, inf); ce != nil {
 			ce.Write(fields...)
 			after = false
 		}
@@ -243,12 +255,12 @@ func (l *Logger) deliverRecordToWriter(level Level, format string, originArgs ..
 		// Set up any required terminal behavior.
 		switch level {
 		case core.PanicLevel:
-			panic(fmt.Sprintf(format, args...))
+			panic(inf)
 		case core.FatalLevel:
 			exit.Exit()
 		case core.DPanicLevel:
 			if l.Development {
-				panic(fmt.Sprintf(format, args...))
+				panic(inf)
 			}
 		}
 	}
@@ -324,7 +336,7 @@ func (l *Logger) check(lvl core.Level, msg string) *core.CheckedEntry {
 			l.ErrorOutput.Sync()
 		}
 	}
-	if l.AddStack.Enabled(ce.Entry.Level) {
+	if l.options.AddStack != nil && l.options.AddStack.Enabled(ce.Entry.Level) {
 		ce.Entry.Stack = Stack("").String
 	}
 

@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	syslog "log"
 	"time"
 
@@ -74,22 +73,11 @@ func (rec *recordWriter) Close() {
 	}
 }
 
-func (rec *recordWriter) deliverRecord(opt *options, level Level, format string, args []interface{}, fields []core.Field) bool {
-	var inf, code string
+func (rec *recordWriter) deliverRecord(opt *options, level Level, inf string, fields []core.Field) bool {
+	var code string
 	// 检查日志等级有效性
 	if level < opt.Level {
 		return false
-	}
-	// 连接主题
-	if opt.Topic != "" {
-		inf += opt.Topic + " "
-	}
-
-	// 连接格式化内容
-	if format != "" {
-		inf += fmt.Sprintf(format, args...)
-	} else {
-		inf += fmt.Sprint(args...)
 	}
 	// format time
 	now := time.Now()
