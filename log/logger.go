@@ -177,37 +177,37 @@ func (l *Logger) SetTopic(topic string) error {
 	return nil
 }
 
-// Syslog 异步输出一条 Syslog 级别的日志
+// Syslog level log record
 func (l *Logger) Syslog(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(SysLevel, fmt, args...)
 }
 
-// Debug 异步输出一条 Debug 级别的日志
+// Debug level log record
 func (l *Logger) Debug(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(DebugLevel, fmt, args...)
 }
 
-// Warn 异步输出一条 Warn 级别的日志
+// Warn level log record
 func (l *Logger) Warn(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(WarnLevel, fmt, args...)
 }
 
-// Info 异步输出一条 Info 级别的日志
+// Info level log record
 func (l *Logger) Info(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(InfoLevel, fmt, args...)
 }
 
-// Error 异步输出一条 Error 级别的日志
+// Error level log record
 func (l *Logger) Error(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(ErrorLevel, fmt, args...)
 }
 
-// Fatal 异步输出一条 Fatal 级别的日志
+// Fatal level log record
 func (l *Logger) Fatal(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(FatalLevel, fmt, args...)
 }
 
-// Panic 异步输出一条 Panic 级别的日志
+// Panic level log record
 func (l *Logger) Panic(fmt string, args ...interface{}) {
 	l.deliverRecordToWriter(PanicLevel, fmt, args...)
 }
@@ -254,8 +254,8 @@ func (l *Logger) deliverRecordToWriter(level Level, format string, originArgs ..
 	}
 }
 
-// GetLogger 获取当前 Logger 的 Logger ，意义在于会进行接收器 Logger 是否为空的判断，
-// 如果为空，底层默认会使用 defaultLogger 操作，因此返回 defaultLogger 。
+// GetLogger get current Logger's Logger, mening Logger isn't nil,
+// if nil, will be called defaultLogger to opration, so return defaultLogger.
 func (l *Logger) GetLogger() *Logger {
 	if l == nil && l != defaultLogger {
 		return defaultLogger.GetLogger()
