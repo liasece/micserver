@@ -54,10 +54,7 @@ func (a *App) Setup(configer *conf.TopConfig) {
 	// 初始化Log
 	if a.Configer.AppConfig.Exist(conf.LogWholePath) {
 		setting := a.Configer.AppConfig
-		a.Logger = log.NewLogger(&log.Options{
-			NoConsole: setting.GetBool(conf.IsDaemon),
-			FilePaths: []string{setting.GetString(conf.LogWholePath)},
-		})
+		a.Logger = log.NewLogger(nil, log.Options().NoConsole(setting.GetBool(conf.IsDaemon)).FilePaths(setting.GetString(conf.LogWholePath)))
 		log.SetDefaultLogger(a.Logger)
 		a.Logger.SetLogName("app")
 	} else {

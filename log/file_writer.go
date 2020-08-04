@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 	"time"
+
+	"github.com/liasece/micserver/log/core"
 )
 
 // fileWriter 文件输出器，将日志记录输出到文件中
@@ -19,6 +21,7 @@ type fileWriter struct {
 	fileBufWriter    *bufio.Writer
 	variables        []interface{}
 	redirectError    bool // 是否重定向错误信息到日志文件
+	encoder          core.Encoder
 }
 
 // newFileWriter 构造一个文件输出器
@@ -26,6 +29,7 @@ func newFileWriter(filePath string, rotateTimeLayout string) *fileWriter {
 	return &fileWriter{
 		filePath:         filePath,
 		rotateTimeLayout: rotateTimeLayout,
+		encoder:          core.NewJSONEncoder(core.EncoderConfig{}),
 	}
 }
 
@@ -36,10 +40,16 @@ func (w *fileWriter) Init() error {
 
 // Write 写入一条日志记录
 func (w *fileWriter) Write(r *Record) error {
+	fieldStr := ""
+	if len(r.fields) > 0 {
+		buf, _ := w.encoder.EncodeEntry(nil, r.fields)
+		fieldStr = fmt.Sprintf(" %s", buf.String())
+	}
+
 	if w.fileBufWriter == nil {
 		return errors.New("no opened file")
 	}
-	if _, err := w.fileBufWriter.WriteString(r.String()); err != nil {
+	if _, err := w.fileBufWriter.WriteString(r.String() + fieldStr + "\n"); err != nil {
 		return err
 	}
 	return nil
