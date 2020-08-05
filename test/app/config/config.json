@@ -1,0 +1,44 @@
+{
+	"//": "app 的配置会被 App 读取，你应该在这之中配置 App 强相关的内容，不应跟你的业务挂钩。",
+	"app": {
+		"//": "app 全局配置。如果 module 的配置中没有对应配置项，会读取 app.settings 的内容。",
+		"//": "配置的优先级为: module > app。",
+		"settings": {
+			"//logpath": "/home/jansen/logs/",
+			"//": "isdaemon 用来告诉日志系统你是否需要在控制台显示log内容。",
+			"//": "如果你希望直接在终端运行并且希望日志显示在终端上，isdaemon 应为 false",
+			"//isdaemon": true,
+			"msgthreadnum": 12,
+			"database": "micworld",
+			"userinfos_collection": "userinfos",
+			"mongodb": "mongodb://127.0.0.1:27017",
+			"subnetnochan": true,
+			"loglevel": "sys"
+		},
+		"modules": {
+			"gate001": {
+				"settings": {
+					"//": "subnettcpaddr 是用于组网的内部端口。",
+					"//": "必要时，你应配置你的防火墙来达到服务器集群成员身份验证的需求。",
+					"subnettcpaddr": ":11001",
+					"//": "如果一个 module 具备 gatetcpaddr 配置项，",
+					"//": "那么这个 module 会初始化出 gateway 提供给外部客户端连接。",
+					"gatetcpaddr": ":11002",
+					"msgthreadnum": 10
+				}
+			},
+			"player001": {
+				"settings": {
+					"subnettcpaddr": ":13001",
+					"mongodb": "mongodb://127.0.0.1:27017"
+				}
+			},
+			"login001": {
+				"settings": {
+					"subnettcpaddr": ":14001",
+					"mongodb": "mongodb://127.0.0.1:27017"
+				}
+			}
+		}
+	}
+}
