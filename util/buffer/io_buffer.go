@@ -119,7 +119,7 @@ func (b *IOBuffer) ReadFromReader() (int, error) {
 	}
 	// 如果缓冲区空了，需要将扩容的内存还回去
 	if b.end == 0 && b.maxLength >= b.defaultLength*2+1 {
-		b.logger.Syslog("Buffer expansion recovery %d->%d", b.maxLength, b.defaultLength)
+		b.logger.Syslog("[IOBuffer.ReadFromReader] Buffer expansion recovery %d->%d", b.maxLength, b.defaultLength)
 		b.resize(b.defaultLength)
 	}
 
@@ -133,11 +133,11 @@ func (b *IOBuffer) ReadFromReader() (int, error) {
 		// 缓冲区满，扩容一次，最大容忍超过默认值的16倍
 		targetLength := b.maxLength * 2
 		if targetLength <= b.defaultLength*16 {
-			b.logger.Syslog("Buffer is full, expand %d->%d", b.maxLength, targetLength)
+			b.logger.Syslog("[IOBuffer.ReadFromReader] Buffer is full, expand %d->%d", b.maxLength, targetLength)
 			b.resize(targetLength)
 		} else {
-			b.logger.Error("The buffer is full and the expansion fails! now[%d] default[%d]",
-				b.maxLength, b.defaultLength)
+			b.logger.Error("[IOBuffer.ReadFromReader] The buffer is full and the expansion fails!",
+				log.Int("NowLength", b.maxLength), log.Int("DefaultLength", b.defaultLength))
 		}
 	}
 	return n, nil
@@ -203,8 +203,8 @@ func (b *IOBuffer) Write(src []byte) error {
 			b.logger.Syslog("Buffer is full, expand %d->%d", b.maxLength, targetLength)
 			b.resize(targetLength)
 		} else {
-			b.logger.Error("The buffer is full and the expansion fails! now[%d] default[%d]",
-				b.maxLength, b.defaultLength)
+			b.logger.Error("The buffer is full and the expansion fails!",
+				log.Int("NowLength", b.maxLength), log.Int("DefaultLength", b.defaultLength))
 		}
 		// return ErrOverSize
 	}

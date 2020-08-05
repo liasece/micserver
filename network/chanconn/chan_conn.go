@@ -143,8 +143,7 @@ func (cc *ChanConn) Shutdown() error {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			cc.Warn("[ChanConn.shutdownThread] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+			cc.Warn("[ChanConn.shutdownThread] Panic", log.ErrorField(err), log.String("Stack", stackInfo))
 		}
 	}()
 	if cc.state != TCPConnStateLinked {
@@ -176,7 +175,7 @@ func (cc *ChanConn) Write(data []byte) (int, error) {
 func (cc *ChanConn) SendBytes(
 	cmdid uint16, protodata []byte) error {
 	if cc.state >= TCPConnStateHold {
-		cc.Warn("[ChanConn.SendBytes] 连接已失效，取消发送")
+		cc.Warn("[ChanConn.SendBytes] Connection disabled, cancel transmission")
 		return ErrCloseed
 	}
 	msgbinary := msg.DefaultEncodeBytes(cmdid, protodata)
@@ -190,25 +189,24 @@ func (cc *ChanConn) SendMessageBinary(
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			cc.Warn("[ChanConn.SendMessageBinary] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+			cc.Warn("[ChanConn.SendMessageBinary] Panic", log.ErrorField(err), log.String("Stack", stackInfo))
 		}
 	}()
 	// 检查连接是否已死亡
 	if cc.state >= TCPConnStateHold {
-		cc.Warn("[ChanConn.SendMessageBinary] 连接已失效，取消发送")
+		cc.Warn("[ChanConn.SendMessageBinary] Connection disabled, cancel transmission")
 		return ErrCloseed
 	}
 	// 如果发送数据为空
 	if msgbinary == nil {
-		cc.Debug("[ChanConn.SendMessageBinary] 发送消息为空，取消发送")
+		cc.Debug("[ChanConn.SendMessageBinary] Send message is empty, cancel sending")
 		return ErrSendNilData
 	}
 
 	// 检查发送channel是否已经关闭
 	select {
 	case <-cc.shutdownChan:
-		cc.Warn("[ChanConn.SendMessageBinary] 发送Channel已关闭，取消发送")
+		cc.Warn("[ChanConn.SendMessageBinary] Send Channel is off, cancel sending")
 		return ErrCloseed
 	default:
 	}
@@ -216,14 +214,14 @@ func (cc *ChanConn) SendMessageBinary(
 	// 确认发送channel是否已经关闭
 	select {
 	case <-cc.shutdownChan:
-		cc.Warn("[ChanConn.SendMessageBinary] 发送Channel已关闭，取消发送")
+		cc.Warn("[ChanConn.SendMessageBinary] Send Channel is off, cancel sending")
 		return ErrCloseed
 	case cc.sendChan <- msgbinary:
 		// 遍历已经发送的消息
 		// 调用发送回调函数
 		msgbinary.OnSendFinish()
 		// default:
-		// 	cc.Warn("[ChanConn.SendMessageBinary] 发送Channel缓冲区满，阻塞超时")
+		// 	cc.Warn("[ChanConn.SendMessageBinary] Send channel buffer full, blocking timeout")
 		// 	return ErrBufferFull
 	}
 	return nil
@@ -240,8 +238,7 @@ func (cc *ChanConn) recvThread() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			cc.Error("[ChanConn.recvThread] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+			cc.Error("[ChanConn.recvThread] Panic", log.ErrorField(err), log.String("Stack", stackInfo))
 		}
 		close(cc.recvmsgchan)
 	}()
@@ -257,7 +254,7 @@ func (cc *ChanConn) recvThread() {
 				return
 			}
 			cc.recvmsgchan <- msgbinary
-			// cc.Debug("ChanConn 接收消息 %d", msgbinary.CmdID)
+			// cc.Debug("ChanConn Receive messages", log.Uint16("MsgID", msgbinary.GetMsgID()))
 		}
 	}
 }

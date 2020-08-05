@@ -101,8 +101,8 @@ func (rocServer *ROCServer) ROCCallNR(callpath *roc.Path, callarg []byte) error 
 	objType := callpath.GetObjType()
 	objID := callpath.GetObjID()
 	moduleid := roc.GetCache().Get(objType, objID)
-	rocServer.Syslog("ROCCallNR {%s:%s(%s:%s):%X}",
-		moduleid, callpath, objType, objID, callarg)
+	rocServer.Syslog("[ROCServer.ROCCallNR] ROCCallNR", log.String("TargetModuleID", moduleid), log.String("CallPath", callpath.String()),
+		log.String("ObjType", string(objType)), log.String("ObjID", objID), log.Reflect("CallArg", callarg))
 	// 构造消息
 	sendmsg := &servercomm.SROCRequest{
 		FromModuleID: rocServer.server.moduleid,
@@ -119,10 +119,8 @@ func (rocServer *ROCServer) ROCCallNR(callpath *roc.Path, callarg []byte) error 
 			sendmsg.ToModuleID = moduleid
 			server.SendCmd(sendmsg)
 		} else {
-			rocServer.Warn("Can't find roc object location %s",
-				callpath.String())
-			return fmt.Errorf("Can't find roc object location %s",
-				callpath.String())
+			rocServer.Warn("[ROCServer.ROCCallNR] Can't find roc object location", log.String("CallPath", callpath.String()))
+			return fmt.Errorf("Can't find roc object location %s", callpath.String())
 		}
 	}
 	return nil
@@ -130,15 +128,13 @@ func (rocServer *ROCServer) ROCCallNR(callpath *roc.Path, callarg []byte) error 
 
 // GetROCCachedLocation 获取ROC缓存中的位置信息
 // 返回目标ROC对象所在的moduleid
-func (rocServer *ROCServer) GetROCCachedLocation(objType roc.ObjType,
-	objID string) string {
+func (rocServer *ROCServer) GetROCCachedLocation(objType roc.ObjType, objID string) string {
 	moduleid := roc.GetCache().Get(objType, objID)
 	return moduleid
 }
 
 // RangeROCCachedByType 遍历指定类型的ROC缓存，限制目标对象必须本module可以访问
-func (rocServer *ROCServer) RangeROCCachedByType(objType roc.ObjType,
-	f func(id string, location string) bool) {
+func (rocServer *ROCServer) RangeROCCachedByType(objType roc.ObjType, f func(id string, location string) bool) {
 	connecedModuleIDs := make(map[string]bool)
 	rocServer.server.subnetManager.RangeServer(func(server *connect.Server) bool {
 		if server.ModuleInfo != nil {
@@ -169,14 +165,12 @@ func (rocServer *ROCServer) addBlockChan(seq int64) chan *responseAgent {
 }
 
 // ROCCallBlock 有返回值的RPC调用
-func (rocServer *ROCServer) ROCCallBlock(callpath *roc.Path,
-	callarg []byte) ([]byte, error) {
+func (rocServer *ROCServer) ROCCallBlock(callpath *roc.Path, callarg []byte) ([]byte, error) {
 	objType := callpath.GetObjType()
 	objID := callpath.GetObjID()
 	moduleid := roc.GetCache().Get(objType, objID)
-	rocServer.Syslog("ROCCallBlock {%s:%s(%s:%s:%d):%X}",
-		moduleid, callpath, objType, objID, hash.GetStringHash(string(objID)),
-		callarg)
+	rocServer.Syslog("[ROCServer.ROCCallBlock] ROCCallBlock", log.String("TargetModuleID", moduleid), log.String("CallPath", callpath.String()),
+		log.String("ObjType", string(objType)), log.String("ObjID", objID), log.Uint32("ObjIDHash", hash.GetStringHash(string(objID))), log.Reflect("CallArg", callarg))
 	// 构造消息
 	sendmsg := &servercomm.SROCRequest{
 		FromModuleID: rocServer.server.moduleid,
@@ -238,14 +232,13 @@ func (rocServer *ROCServer) rocRequestProcess() {
 			break
 		case agent := <-rocServer.rocRequestChan:
 			// 处理ROC请求
-			rocServer.Syslog("ROC Request[%s]", agent.callpath)
+			rocServer.Syslog("[ROCServer.rocRequestProcess] ROC Request", log.String("CallPath", agent.callpath))
 			res, err := rocServer._ROCManager.Call(agent.callpath, agent.callarg)
 			if err != nil {
 				if err != roc.ErrUnknowObj {
-					rocServer.Error("Manager.Call err:%s", err.Error())
+					rocServer.Error("[ROCServer.rocRequestProcess] Manager.Call", log.ErrorField(err))
 				} else {
-					rocServer.Syslog("Manager.Call Path[%s] Err[%s]",
-						agent.callpath, err.Error())
+					rocServer.Syslog("[ROCServer.rocRequestProcess] Manager.Call", log.String("CallPath", agent.callpath), log.ErrorField(err))
 				}
 			} else {
 				// rocServer.Debug("ROC调用成功 res:%+v", res)
@@ -255,8 +248,7 @@ func (rocServer *ROCServer) rocRequestProcess() {
 					// 本地服务器调用结果
 
 				} else {
-					server := rocServer.server.subnetManager.GetServer(
-						agent.fromModuleID)
+					server := rocServer.server.subnetManager.GetServer(agent.fromModuleID)
 					if server != nil {
 						// 返回执行结果
 						sendmsg := &servercomm.SROCResponse{
@@ -286,17 +278,17 @@ func (rocServer *ROCServer) rocResponseProcess() {
 			break
 		case agent := <-rocServer.rocResponseChan:
 			// 处理ROC相应
-			rocServer.Syslog("rocResponseProcess %+v", agent)
+			rocServer.Syslog("[ROCServer.rocResponseProcess] rocResponseProcess", log.Reflect("Agent", agent))
 			chi, ok := rocServer.rocBlockChanMap.Load(agent.seq)
 			if ok {
 				if ch, ok := chi.(chan *responseAgent); ok {
 					// 写入返回值
 					ch <- agent
 				} else {
-					rocServer.Error("ROC返回 chi.(chan *responseAgent) 错误")
+					rocServer.Error("[ROCServer.rocResponseProcess] ROC returns chi.(chan *responseAgent) error", log.Reflect("Agent", agent))
 				}
 			} else {
-				rocServer.Error("ROC返回 不存在目标ROC请求 %+v", agent)
+				rocServer.Error("[ROCServer.rocResponseProcess] ROC return No target ROC request exists error", log.Reflect("Agent", agent))
 			}
 		case <-tm.C:
 			tm.Reset(time.Millisecond * 300)
@@ -379,9 +371,8 @@ func (rocServer *ROCServer) OnROCObjAdd(obj roc.IObj) {
 	// 保存本地映射缓存
 	roc.GetCache().Set(obj.GetROCObjType(), obj.GetROCObjID(),
 		rocServer.server.moduleid)
-	rocServer.Syslog("OnROCObjAdd roc cache set type[%s] "+
-		"id[%s] host[%s]",
-		obj.GetROCObjType(), obj.GetROCObjID(), rocServer.server.moduleid)
+	rocServer.Syslog("[ROCServer.OnROCObjAdd] Roc cache set", log.String("ObjType", string(obj.GetROCObjType())), log.String("ObjID", obj.GetROCObjID()),
+		log.String("HostModuleID", rocServer.server.moduleid))
 
 	// 由于ROC绑定消息与ROC调用之间存在异步问题，除非经过设置，
 	// 否则使用同步方式同步ROC对象绑定
@@ -396,18 +387,15 @@ func (rocServer *ROCServer) OnROCObjAdd(obj roc.IObj) {
 		}
 		rocServer.sendROCBindMsg(sendmsg)
 	}
-	rocServer.recordLocalObj(string(obj.GetROCObjType()), obj.GetROCObjID(),
-		false)
+	rocServer.recordLocalObj(string(obj.GetROCObjType()), obj.GetROCObjID(), false)
 }
 
 // OnROCObjDel 当ROC对象发生注册行为时
 func (rocServer *ROCServer) OnROCObjDel(obj roc.IObj) {
 	// 保存本地映射缓存
-	roc.GetCache().Del(obj.GetROCObjType(), obj.GetROCObjID(),
-		rocServer.server.moduleid)
-	rocServer.Syslog("OnROCObjDel roc cache del type[%s] "+
-		"id[%s] host[%s]",
-		obj.GetROCObjType(), obj.GetROCObjID(), rocServer.server.moduleid)
+	roc.GetCache().Del(obj.GetROCObjType(), obj.GetROCObjID(), rocServer.server.moduleid)
+	rocServer.Syslog("[ROCServer.OnROCObjDel] Roc cache del", log.String("ObjType", string(obj.GetROCObjType())), log.String("ObjID", obj.GetROCObjID()),
+		log.String("HostModuleID", rocServer.server.moduleid))
 
 	// 由于ROC绑定消息与ROC调用之间存在异步问题，除非经过设置，
 	// 否则使用同步方式同步ROC对象绑定
@@ -422,13 +410,11 @@ func (rocServer *ROCServer) OnROCObjDel(obj roc.IObj) {
 		}
 		rocServer.sendROCBindMsg(sendmsg)
 	}
-	rocServer.recordLocalObj(string(obj.GetROCObjType()), obj.GetROCObjID(),
-		true)
+	rocServer.recordLocalObj(string(obj.GetROCObjType()), obj.GetROCObjID(), true)
 }
 
 // rocObjNoticeProcess 向其他模块通知ROC注册信息的线程
-func (rocServer *ROCServer) rocObjNoticeProcess(rocCacheChan chan roc.IObj,
-	isDelete bool) {
+func (rocServer *ROCServer) rocObjNoticeProcess(rocCacheChan chan roc.IObj, isDelete bool) {
 	tm := time.NewTimer(time.Millisecond * 300)
 	tmpList := make([]roc.IObj, 100)
 	lenTmpList := len(tmpList)
@@ -504,7 +490,6 @@ func (rocServer *ROCServer) onMsgROCBind(msg *servercomm.SROCBind) {
 	} else {
 		roc.GetCache().DelM(roc.ObjType(msg.ObjType), msg.ObjIDs, msg.HostModuleID)
 	}
-	rocServer.Syslog("onMsgROCBind roc cache setm type[%s] "+
-		"ids%+v host[%s]",
-		msg.ObjType, msg.ObjIDs, msg.HostModuleID)
+	rocServer.Syslog("[ROCServer.onMsgROCBind] Roc cache setm", log.String("ObjType", string(msg.ObjType)), log.Reflect("ObjIDs", msg.ObjIDs),
+		log.String("HostModuleID", msg.HostModuleID))
 }

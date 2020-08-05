@@ -17,6 +17,7 @@ import (
 
 	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/connect"
+	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/process"
 	"github.com/liasece/micserver/servercomm"
@@ -28,7 +29,7 @@ func (manager *Manager) tryConnectServerThread(id string, addr string) {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			manager.Error("[tryConnectServerThread] Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+			manager.Error("[tryConnectServerThread] Panic", log.ErrorField(err), log.String("Stack", stackInfo))
 		}
 	}()
 
@@ -38,9 +39,9 @@ func (manager *Manager) tryConnectServerThread(id string, addr string) {
 		manager.connectMutex.Unlock()
 		select {
 		case <-c:
-			manager.Syslog("[Manager.tryConnectServerThread] 正在连接 ModuleID[%s] IPPort[%s]", id, addr)
+			manager.Syslog("[Manager.tryConnectServerThread] Connecting", log.String("ModuleID", id), log.String("IPPort", addr))
 			err := manager.ConnectServer(id, addr)
-			if err != nil && err.Error() != "重复连接" {
+			if err != nil && err.Error() != "duplicate connection" {
 				time.Sleep(2 * time.Second) // 2秒重连一次
 				c <- true
 			} else {
@@ -60,7 +61,7 @@ func (manager *Manager) TryConnectServer(id string, addr string) {
 	if _, finded := manager.serverexitchan[id]; !finded {
 		manager.serverexitchan[id] = make(chan bool, 100)
 	} else {
-		manager.Syslog("[Manager.TryConnectServer] ModuleID[%s] 守护线程已启动，不再重复启动", id)
+		manager.Syslog("[Manager.TryConnectServer] The daemon thread has been started and will not be started again", log.String("ModuleID", id))
 		return
 	}
 	manager.serverexitchan[id] <- true
@@ -74,8 +75,8 @@ func (manager *Manager) ConnectServer(id string, addr string) error {
 	oldconn := manager.GetServer(id)
 	// 重复连接
 	if oldconn != nil {
-		manager.Syslog("[Manager.ConnectServer] ModuleID[%s] 重复的连接", id)
-		return errors.New("重复连接")
+		manager.Syslog("[Manager.ConnectServer] Duplicate connection", log.String("ModuleID", id))
+		return errors.New("duplicate connection")
 	}
 	if chanServer := process.GetServerChan(id); chanServer != nil {
 		newMsgChan := make(chan *msg.MessageBinary, 1000)
@@ -88,12 +89,12 @@ func (manager *Manager) ConnectServer(id string, addr string) error {
 	} else {
 		tcpaddr, err := net.ResolveTCPAddr("tcp4", addr)
 		if err != nil {
-			manager.Syslog("[Manager.ConnectServer] 服务器连接创建地址失败 ServerIPPort[%s] Err[%s]", addr, err.Error())
+			manager.Syslog("[Manager.ConnectServer] Server connection address creation failed", log.String("ServerIPPort", addr), log.ErrorField(err))
 			return err
 		}
 		netconn, err := net.DialTCP("tcp", nil, tcpaddr)
 		if err != nil {
-			manager.Error("[Manager.ConnectServer] 服务器连接失败 ServerIPPort[%s] Err[%s]", addr, err.Error())
+			manager.Error("[Manager.ConnectServer] Server connection failure", log.String("ServerIPPort", addr), log.ErrorField(err))
 			return err
 		}
 		manager.doConnectTCPServer(netconn, id)
@@ -104,7 +105,7 @@ func (manager *Manager) ConnectServer(id string, addr string) error {
 
 // doConnectTCPServer 使用一个TCP连接实际连接一个服务器
 func (manager *Manager) doConnectTCPServer(netconn net.Conn, id string) {
-	manager.Syslog("开始登陆TCP服务器 Server:%s", id)
+	manager.Syslog("Start logging into the TCP server", log.String("ServerID", id))
 	conn := manager.NewTCPServer(connect.ServerSCTypeClient, netconn, id, manager.onConnectRecv, manager.onConnectClose)
 	conn.Logger = manager.Logger
 	manager.OnCreateNewServer(conn)
@@ -115,7 +116,7 @@ func (manager *Manager) doConnectTCPServer(netconn net.Conn, id string) {
 // doConnectChanServer 使用一个本地连接实际连接一个服务器
 func (manager *Manager) doConnectChanServer(
 	sendchan, recvchan chan *msg.MessageBinary, id string) {
-	manager.Syslog("开始登陆Chan服务器 Server:%s", id)
+	manager.Syslog("Start logging into the Chan server", log.String("ServerID", id))
 	conn := manager.NewChanServer(connect.ServerSCTypeClient, sendchan, recvchan, id, manager.onConnectRecv, manager.onConnectClose)
 	conn.Logger = manager.Logger
 	manager.OnCreateNewServer(conn)
@@ -133,7 +134,7 @@ func (manager *Manager) onClientConnected(conn *connect.Server) {
 	sendmsg.ConnectPriority = conn.ConnectPriority
 	// 发送登陆请求
 	conn.SendCmd(sendmsg)
-	manager.Syslog("请求登陆 Server:%s", conn.GetTempID())
+	manager.Syslog("Request login", log.String("ServerTempID", conn.GetTempID()))
 }
 
 // onClientDisconnected 当与本服务器的连接断开时
@@ -147,9 +148,9 @@ func (manager *Manager) onClientDisconnected(conn *connect.Server) {
 		defer manager.connectMutex.Unlock()
 		if manager.serverexitchan[fmt.Sprint(conn.ModuleInfo.ModuleID)] != nil {
 			manager.serverexitchan[fmt.Sprint(conn.ModuleInfo.ModuleID)] <- true
-			manager.Warn("[onClientDisconnected] 服务服务器断开连接,准备重新连接 ModuleID[%s]", conn.ModuleInfo.ModuleID)
+			manager.Warn("[onClientDisconnected] Service server disconnected and ready to reconnect", log.String("ModuleID", conn.ModuleInfo.ModuleID))
 		} else {
-			manager.Syslog("[onClientDisconnected] 服务器重连管道已关闭,取消重连 ModuleID[%s]", fmt.Sprint(conn.ModuleInfo.ModuleID))
+			manager.Syslog("[onClientDisconnected] The server reconnection pipeline has been closed and the reconnection cancelled", log.String("ModuleID", conn.ModuleInfo.ModuleID))
 		}
 	}
 }

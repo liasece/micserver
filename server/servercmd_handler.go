@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/liasece/micserver/connect"
+	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
 	"github.com/liasece/micserver/server/base"
 	"github.com/liasece/micserver/servercomm"
@@ -21,8 +22,7 @@ func (handler *serverCmdHandler) HookServer(serverHook base.ServerHook) {
 }
 
 // onForwardToModule 当需要将一个消息转发到其他服务器中时调用
-func (handler *serverCmdHandler) onForwardToModule(conn *connect.Server,
-	smsg *servercomm.SForwardToModule) {
+func (handler *serverCmdHandler) onForwardToModule(conn *connect.Server, smsg *servercomm.SForwardToModule) {
 	if handler.serverHook != nil {
 		msg := &servercomm.ModuleMessage{
 			FromModule: conn.ModuleInfo,
@@ -34,8 +34,7 @@ func (handler *serverCmdHandler) onForwardToModule(conn *connect.Server,
 }
 
 // onForwardFromGate 当收到一个从网关转发过来的消息时调用
-func (handler *serverCmdHandler) onForwardFromGate(conn *connect.Server,
-	smsg *servercomm.SForwardFromGate) {
+func (handler *serverCmdHandler) onForwardFromGate(conn *connect.Server, smsg *servercomm.SForwardFromGate) {
 	if handler.serverHook != nil {
 		msg := &servercomm.ClientMessage{
 			FromModule:   conn.ModuleInfo,
@@ -61,15 +60,13 @@ func (handler *serverCmdHandler) onForwardToClient(smsg *servercomm.SForwardToCl
 		smsg.ToClientID, smsg.MsgID, smsg.Data)
 	if err != nil {
 		if err == ErrTargetClientDontExist {
-			handler.server.Debug("serverCmdHandler.onForwardToClient Err[%s] "+
-				"FromModuleID[%s] ToGateID[%s] ToClientID[%s] MsgID[%d] Data[%X]",
-				err.Error(), smsg.FromModuleID, smsg.ToGateID,
-				smsg.ToClientID, smsg.MsgID, smsg.Data)
+			handler.server.Debug("[serverCmdHandler.onForwardToClient] ErrTargetClientDontExist", log.ErrorField(err),
+				log.String("FromModuleID", smsg.FromModuleID), log.String("ToGateID", smsg.ToGateID), log.String("ToClientID", smsg.ToClientID),
+				log.Uint16("MsgID", smsg.MsgID), log.ByteString("Data", smsg.Data))
 		} else {
-			handler.server.Error("serverCmdHandler.onForwardToClient Err[%s] "+
-				"FromModuleID[%s] ToGateID[%s] ToClientID[%s] MsgID[%d] Data[%X]",
-				err.Error(), smsg.FromModuleID, smsg.ToGateID,
-				smsg.ToClientID, smsg.MsgID, smsg.Data)
+			handler.server.Error("[serverCmdHandler.onForwardToClient] error", log.ErrorField(err),
+				log.String("FromModuleID", smsg.FromModuleID), log.String("ToGateID", smsg.ToGateID), log.String("ToClientID", smsg.ToClientID),
+				log.Uint16("MsgID", smsg.MsgID), log.ByteString("Data", smsg.Data))
 		}
 	}
 }
@@ -107,16 +104,15 @@ func (handler *serverCmdHandler) onUpdateSession(smsg *servercomm.SUpdateSession
 			handler.server.sessionManager.UpdateSessionUUID(smsg.SessionUUID, s)
 		}
 		handler.server.sessionManager.MustUpdateFromMap(s, smsg.Session)
-		handler.server.Syslog("[onUpdateSession] Session Manager Update: %+v From:%s To:%s",
-			smsg.Session, smsg.FromModuleID, smsg.ToModuleID)
+		handler.server.Syslog("[serverCmdHandler.onUpdateSession] Session Manager Update: %+v From:%s To:%s", log.Reflect("Session", smsg.Session),
+			log.String("FromModuleID", smsg.FromModuleID), log.String("ToModuleID", smsg.ToModuleID))
 	}
 }
 
 // onReqCloseConnect 当收到一个关闭客户端连接的请求时调用
 func (handler *serverCmdHandler) onReqCloseConnect(smsg *servercomm.SReqCloseConnect) {
-	handler.server.Syslog("serverCmdHandler.onReqCloseConnect "+
-		"request close client connect FromModule[%s] ToModuleID[%s] ClientID[%s]",
-		smsg.FromModuleID, smsg.ToModuleID, smsg.ClientConnID)
+	handler.server.Syslog("[serverCmdHandler.onReqCloseConnect] Request close client connect", log.String("FromModule", smsg.FromModuleID),
+		log.String("ToModuleID", smsg.ToModuleID), log.String("ClientID", smsg.ClientConnID))
 	handler.server.ReqCloseConnect(smsg.ToModuleID, smsg.ClientConnID)
 }
 
@@ -126,8 +122,7 @@ func (handler *serverCmdHandler) OnServerJoinSubnet(server *connect.Server) {
 }
 
 // OnRecvSubnetMsg 当收到一个其他服务发过来的消息时调用
-func (handler *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
-	msgbinary *msg.MessageBinary) {
+func (handler *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server, msgbinary *msg.MessageBinary) {
 	switch msgbinary.GetMsgID() {
 	case servercomm.SForwardToModuleID:
 		// 服务器间用户空间消息转发
@@ -183,7 +178,6 @@ func (handler *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server,
 	default:
 		msgid := msgbinary.GetMsgID()
 		msgname := servercomm.MsgIdToString(msgid)
-		handler.server.Error("[SubnetManager.OnRecvTCPMsg] 未知消息 %d:%s",
-			msgid, msgname)
+		handler.server.Error("[SubnetManager.OnRecvTCPMsg] Unknow message", log.Uint16("MsgID", msgid), log.String("MsgName", msgname))
 	}
 }

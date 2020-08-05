@@ -102,9 +102,7 @@ func (cp *ClientPool) Remove(tempid string) {
 		client.Shutdown()
 		// 删除连接
 		cp.remove(tempid)
-		client.Debug("[ClientPool.Remove] 断开连接 TmpID[%s] 当前连接数量"+
-			" Len[%d]",
-			tempid, cp.Len())
+		client.Debug("[ClientPool.Remove] Disconnect client", log.String("TmpID", tempid), log.Uint32("CurrentNum", cp.Len()))
 		return
 	}
 }

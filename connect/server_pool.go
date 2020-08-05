@@ -27,10 +27,7 @@ func (sp *ServerPool) Init(groupID uint16) {
 }
 
 // NewTCPServer 使用 TCP 创建一个服务器连接
-func (sp *ServerPool) NewTCPServer(sctype TServerSCType,
-	conn net.Conn, moduleid string,
-	onRecv func(*Server, *msg.MessageBinary),
-	onClose func(*Server)) *Server {
+func (sp *ServerPool) NewTCPServer(sctype TServerSCType, conn net.Conn, moduleid string, onRecv func(*Server, *msg.MessageBinary), onClose func(*Server)) *Server {
 	tcptask := &Server{}
 	tcptask.SetLogger(sp.Logger)
 	tcptask.InitTCP(sctype, conn, onRecv, onClose)
@@ -44,10 +41,7 @@ func (sp *ServerPool) NewTCPServer(sctype TServerSCType,
 }
 
 // NewChanServer 使用 chan 创建一个服务器连接
-func (sp *ServerPool) NewChanServer(sctype TServerSCType,
-	sendChan chan *msg.MessageBinary, recvChan chan *msg.MessageBinary,
-	moduleid string, onRecv func(*Server, *msg.MessageBinary),
-	onClose func(*Server)) *Server {
+func (sp *ServerPool) NewChanServer(sctype TServerSCType, sendChan chan *msg.MessageBinary, recvChan chan *msg.MessageBinary, moduleid string, onRecv func(*Server, *msg.MessageBinary), onClose func(*Server)) *Server {
 	tcptask := &Server{}
 	tcptask.SetLogger(sp.Logger)
 	tcptask.InitChan(sctype, sendChan, recvChan, onRecv, onClose)
@@ -70,8 +64,7 @@ func (sp *ServerPool) RangeServer(
 }
 
 // BroadcastByType 将一条消息广播至指定类型的所有连接
-func (sp *ServerPool) BroadcastByType(servertype string,
-	v msg.IMsgStruct) {
+func (sp *ServerPool) BroadcastByType(servertype string, v msg.IMsgStruct) {
 	sp.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
@@ -115,8 +108,7 @@ func (sp *ServerPool) GetLatestVersionByType(servertype string) uint64 {
 	sp.allSockets.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*Server)
-		if util.GetModuleIDType(value.ModuleInfo.ModuleID) == servertype &&
-			value.ModuleInfo.Version > latestVersion {
+		if util.GetModuleIDType(value.ModuleInfo.ModuleID) == servertype && value.ModuleInfo.Version > latestVersion {
 			latestVersion = value.ModuleInfo.Version
 		}
 		return true
@@ -125,19 +117,16 @@ func (sp *ServerPool) GetLatestVersionByType(servertype string) uint64 {
 }
 
 // GetMinLoadServerLatestVersion 获取指定类型服务器的最新版本负载最小的一个连接
-func (sp *ServerPool) GetMinLoadServerLatestVersion(
-	servertype string) *Server {
+func (sp *ServerPool) GetMinLoadServerLatestVersion(servertype string) *Server {
 	var jobnum uint32 = 0xFFFFFFFF
 	var moduleid uint64 = 0
 
 	latestVersion := sp.GetLatestVersionByType(servertype)
 
-	sp.allSockets.Range(func(tkey interface{},
-		tvalue interface{}) bool {
+	sp.allSockets.Range(func(tkey interface{}, tvalue interface{}) bool {
 		value := tvalue.(*Server)
 		key := tkey.(uint64)
-		if util.GetModuleIDType(value.ModuleInfo.ModuleID) == servertype &&
-			value.ModuleInfo.Version == latestVersion {
+		if util.GetModuleIDType(value.ModuleInfo.ModuleID) == servertype && value.ModuleInfo.Version == latestVersion {
 			if jobnum >= value.GetJobNum() {
 				jobnum = value.GetJobNum()
 				moduleid = key
@@ -196,9 +185,7 @@ func (sp *ServerPool) RemoveServer(tmpid string) {
 		value.Shutdown()
 		// 删除连接
 		sp.remove(tmpid)
-		sp.Syslog("[ServerPool] 断开连接 TmpID[%s] 当前连接数量"+
-			" LinkSum[%d] ModuleID[%s]",
-			tmpid, sp.Len(), value.ModuleInfo.ModuleID)
+		sp.Syslog("[ServerPool] RemoveServer connection", log.String("TmpID", tmpid), log.String("ModuleID", value.ModuleInfo.ModuleID), log.Int("CurrentNum", sp.Len()))
 		return
 	}
 }
@@ -207,17 +194,13 @@ func (sp *ServerPool) RemoveServer(tmpid string) {
 func (sp *ServerPool) AddServer(connct *Server, tmpid string) {
 	connct.setTempID(tmpid)
 	sp.add(tmpid, connct)
-	sp.Syslog("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
-		" LinkSum[%d] ModuleID[%s]",
-		connct.GetTempID(), sp.Len(), connct.ModuleInfo.ModuleID)
+	sp.Syslog("[ServerPool] AddServer connection", log.String("TmpID", connct.GetTempID()), log.String("ModuleID", connct.ModuleInfo.ModuleID), log.Int("CurrentNum", sp.Len()))
 }
 
 // AddServerAuto 在本连接池中新增一个服务器连接
 func (sp *ServerPool) AddServerAuto(connct *Server) {
 	sp.add(connct.GetTempID(), connct)
-	sp.Syslog("[ServerPool] 增加连接 TmpID[%s] 当前连接数量"+
-		" LinkSum[%d] ModuleID[%s]",
-		connct.GetTempID(), sp.Len(), connct.ModuleInfo.ModuleID)
+	sp.Syslog("[ServerPool] AddServerAuto connection", log.String("TmpID", connct.GetTempID()), log.String("ModuleID", connct.ModuleInfo.ModuleID), log.Int("CurrentNum", sp.Len()))
 }
 
 // ChangeServerTempid 修改链接的 TmpID ，目标 TmpID 不可已存在于该连接池，否则返回 error
@@ -225,7 +208,7 @@ func (sp *ServerPool) ChangeServerTempid(tcptask *Server,
 	newTmpID string) error {
 	afterI, isLoad := sp.allSockets.LoadOrStore(newTmpID, tcptask)
 	if isLoad {
-		return fmt.Errorf("目标连接已存在:%s", newTmpID)
+		return fmt.Errorf("Target connection tmpid already exists:%s", newTmpID)
 	}
 	after := afterI.(*Server)
 	oldTmpID := after.GetTempID()
@@ -234,8 +217,7 @@ func (sp *ServerPool) ChangeServerTempid(tcptask *Server,
 	// 删除旧ID的索引，注意，如果你的ID生成规则不是唯一的，这里会有并发问题
 	sp.remove(oldTmpID)
 	sp.linkSum++
-	sp.Syslog("[ServerPool]修改连接tmpid Old[%s] -->> New[%s]",
-		oldTmpID, newTmpID)
+	sp.Syslog("[ServerPool] Change target server tempid", log.String("Old", oldTmpID), log.String("New", newTmpID))
 	return nil
 }
 

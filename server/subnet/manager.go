@@ -77,7 +77,7 @@ func (manager *Manager) NotifyAllServerInfo(server *connect.Server) {
 		return true
 	})
 	if len(retmsg.ServerInfos) > 0 {
-		manager.Debug("[NotifyAllServerInfo] 发送所有服务器列表信息 Msg[%s]", retmsg.GetJSON())
+		manager.Debug("[Manager.NotifyAllServerInfo] Send all server list information", log.Reflect("Msg", retmsg))
 		server.SendCmd(retmsg)
 	}
 }

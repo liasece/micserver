@@ -43,8 +43,7 @@ func (bc *BaseConnect) Init() {
 	if err == nil {
 		bc.setTempID(tmpid)
 	} else {
-		bc.Error("[BaseConnect.Init] 生成UUID出错 Error[%s]",
-			err.Error())
+		bc.Error("[BaseConnect.Init] GenUniqueID error", log.ErrorField(err))
 	}
 }
 
@@ -83,7 +82,7 @@ func (bc *BaseConnect) IsTerminateTimeout(curtime int64) bool {
 
 // Terminate 强制终止该连接
 func (bc *BaseConnect) Terminate() {
-	bc.Debug("[BaseConnect.Terminate] 连接停止 tempID[%s]", bc.tempID)
+	bc.Debug("[BaseConnect.Terminate] Connect terminate", log.String("tempID", bc.tempID))
 	bc.terminateForce = true
 }
 
@@ -150,13 +149,12 @@ func (bc *BaseConnect) SetJobNum(jnum uint32) {
 // SendCmd 异步发送一条消息
 func (bc *BaseConnect) SendCmd(v msg.IMsgStruct) error {
 	if !bc.IConnection.IsAlive() {
-		bc.Warn("[BaseConnect.SendCmd] 连接已被关闭，取消发送 Msg[%s]",
-			v.GetMsgName())
+		bc.Warn("[BaseConnect.SendCmd] Connection !IsAlive, send cancel", log.String("MsgName", v.GetMsgName()))
 		return fmt.Errorf("link has been closed")
 	}
 	msg := bc.IConnection.GetMsgCodec().EncodeObj(v)
 	if msg == nil {
-		bc.Error("[BaseConnect.SendCmd] msg==nil")
+		bc.Error("[BaseConnect.SendCmd] msg==nil", log.Reflect("v", v))
 		return fmt.Errorf("can't get message binary")
 	}
 	return bc.IConnection.SendMessageBinary(msg)
@@ -167,13 +165,12 @@ func (bc *BaseConnect) SendCmd(v msg.IMsgStruct) error {
 func (bc *BaseConnect) SendCmdWithCallback(v msg.IMsgStruct,
 	cb func(interface{}), cbarg interface{}) error {
 	if !bc.IConnection.IsAlive() {
-		bc.Warn("[BaseConnect.SendCmdWithCallback] 连接已被关闭，取消发送 Msg[%s]",
-			v.GetMsgName())
+		bc.Warn("[BaseConnect.SendCmdWithCallback] Connection !IsAlive, send cancel", log.String("MsgName", v.GetMsgName()))
 		return fmt.Errorf("link has been closed")
 	}
 	msg := bc.IConnection.GetMsgCodec().EncodeObj(v)
 	if msg == nil {
-		bc.Error("[BaseConnect.SendCmd] msg==nil")
+		bc.Error("[BaseConnect.SendCmdWithCallback] msg==nil", log.Reflect("v", v))
 		return fmt.Errorf("can't get message binary")
 	}
 	msg.RegSendFinish(cb, cbarg)

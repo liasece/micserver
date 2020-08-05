@@ -5,6 +5,8 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+
+	"github.com/liasece/micserver/log"
 )
 
 // SignalListen 监听系统消息
@@ -13,8 +15,7 @@ func (a *App) SignalListen() {
 	signal.Notify(c, syscall.SIGINT, syscall.SIGQUIT)
 	for {
 		s := <-c
-		a.Debug("[App] "+
-			"Get signal Signal[%d]", s)
+		a.Debug("[App] Received os signal", log.Reflect("Signal", s))
 		// manager.OnSignal(s)
 		switch s {
 		case syscall.SIGINT:
@@ -25,8 +26,7 @@ func (a *App) SignalListen() {
 			// 捕捉到就退不出了
 			buf := make([]byte, 1<<20)
 			stacklen := runtime.Stack(buf, true)
-			a.Debug("[App] "+
-				"Received SIGQUIT, \n: Stack[%s]", buf[:stacklen])
+			a.Debug("[App] Received SIGQUIT", log.ByteString("Stack", buf[:stacklen]))
 		}
 	}
 }

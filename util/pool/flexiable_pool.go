@@ -85,8 +85,7 @@ func (fp *FlexiblePool) Put(data interface{}, size int) error {
 }
 
 // NewFlexiblePool func
-func NewFlexiblePool(sizeControler []int,
-	Newer func(int) interface{}) *FlexiblePool {
+func NewFlexiblePool(sizeControler []int, Newer func(int) interface{}) *FlexiblePool {
 	if sizeControler == nil {
 		sizeControler = sizeControl
 	}

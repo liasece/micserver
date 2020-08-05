@@ -27,8 +27,7 @@ func (builder *uniqueIDBuilder) GenUniqueID(heightlevelID uint16) (string, error
 	defer builder.mutex.Unlock()
 	nowtime := time.Now().Unix() - 1514736000
 	if nowtime <= 0 {
-		return "",
-			errors.New("Server time error!!! Must late than 2018/1/1 00:00:00")
+		return "", errors.New("Server time error!!! Must late than 2018/1/1 00:00:00")
 	}
 	now := uint32(nowtime & 0x0ffffffff)
 	if now > builder.lastMidlevelID {
