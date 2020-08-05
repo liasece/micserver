@@ -41,7 +41,7 @@ func (gateBase *Base) BindOuterTCP(addr string) {
 		gateBase.Error("[Base.BindOuterTCP] net.Listen error", log.ErrorField(err))
 		return
 	}
-	gateBase.Syslog("[Base.BindOuterTCP] Gateway Client TCP service started successfully", log.String("IPPort[%s]", addr))
+	gateBase.Syslog("[Base.BindOuterTCP] Gateway Client TCP service started successfully", log.String("IPPort", addr))
 	go func() {
 		for {
 			// 接受连接

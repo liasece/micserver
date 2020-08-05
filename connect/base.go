@@ -82,7 +82,7 @@ func (bc *BaseConnect) IsTerminateTimeout(curtime int64) bool {
 
 // Terminate 强制终止该连接
 func (bc *BaseConnect) Terminate() {
-	bc.Debug("[BaseConnect.Terminate] Connect terminate", log.String("tempID", bc.tempID))
+	bc.Syslog("[BaseConnect.Terminate] Connect terminate", log.String("tempID", bc.tempID))
 	bc.terminateForce = true
 }
 
