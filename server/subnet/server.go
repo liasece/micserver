@@ -19,7 +19,7 @@ func (manager *Manager) OnServerLogin(conn *connect.Server, tarinfo *servercomm.
 	manager.connectMutex.Lock()
 	defer manager.connectMutex.Unlock()
 
-	manager.Syslog("收到登陆请求 Server:%s", tarinfo.ModuleID)
+	manager.Syslog("[Manager.OnServerLogin] Login request received", log.String("Server", tarinfo.ModuleID))
 
 	// 来源服务器请求登陆本服务器
 	myconn := manager.GetServer(fmt.Sprint(tarinfo.ModuleID))

@@ -171,9 +171,10 @@ func (tc *TopConfig) InitFlag() {
 	}
 }
 
+var mCmdLineArgv = make(map[string]string)
+
 // init 读取命令行参数
 func initFlag() map[string]string {
-	cmdLineArgv := make(map[string]string)
 	if !flag.Parsed() {
 		var daemonflag string
 		flag.StringVar(&daemonflag, "d", "", "as a daemon true or false")
@@ -191,22 +192,22 @@ func initFlag() map[string]string {
 
 		if len(daemonflag) > 0 {
 			if daemonflag == "true" {
-				cmdLineArgv["isdaemon"] = "true"
+				mCmdLineArgv["isdaemon"] = "true"
 			} else {
-				cmdLineArgv["isdaemon"] = "false"
+				mCmdLineArgv["isdaemon"] = "false"
 			}
 		}
 		if len(processflag) > 0 {
-			cmdLineArgv["processid"] = processflag
+			mCmdLineArgv["processid"] = processflag
 		} else {
-			cmdLineArgv["processid"] = "development"
+			mCmdLineArgv["processid"] = "development"
 		}
 		if len(logpathflag) > 0 {
-			cmdLineArgv["logpath"] = logpathflag
+			mCmdLineArgv["logpath"] = logpathflag
 		}
 		if len(serverversion) > 0 {
-			cmdLineArgv["version"] = serverversion
+			mCmdLineArgv["version"] = serverversion
 		}
 	}
-	return cmdLineArgv
+	return mCmdLineArgv
 }

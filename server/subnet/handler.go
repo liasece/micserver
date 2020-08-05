@@ -62,8 +62,7 @@ func (manager *Manager) OnCreateNewServer(conn *connect.Server) {
 }
 
 // onConnectRecv 当收到了一个服务器消息时调用
-func (manager *Manager) onConnectRecv(conn *connect.Server,
-	msgbin *msg.MessageBinary) {
+func (manager *Manager) onConnectRecv(conn *connect.Server, msgbin *msg.MessageBinary) {
 	if conn.GetSCType() == connect.ServerSCTypeTask {
 		curtime := time.Now().Unix()
 		if conn.IsTerminateTimeout(curtime) {
