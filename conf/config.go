@@ -42,7 +42,7 @@ func LoadConfig(filepath string) (*TopConfig, error) {
 	res := &TopConfig{}
 	err := res.loadJSONConfigFile(filepath)
 	if err != nil {
-		log.Error("loadJSONConfigFile(filepath) err:%v", err)
+		log.Error("loadJSONConfigFile(filepath) error", log.String("filepath", filepath), log.ErrorField(err))
 		return nil, err
 	}
 	res.InitFlag()

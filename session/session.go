@@ -32,8 +32,7 @@ const (
 type IModuleSessionOptions interface {
 	GetModuleID() string
 	SInnerSendModuleMsg(gate string, msg msg.IMsgStruct)
-	SInnerSendClientMsg(gateid string, connectid string, msgid uint16,
-		data []byte)
+	SInnerSendClientMsg(gateid string, connectid string, msgid uint16, data []byte)
 	SInnerCloseSessionConnect(gateid string, connectid string)
 }
 
@@ -58,8 +57,7 @@ func GetUUIDFromMap(session map[string]string) string {
 }
 
 // GetBindFromMap 以session的格式从一个Map结构中获取绑定的服务器
-func GetBindFromMap(session map[string]string,
-	moduleType string) string {
+func GetBindFromMap(session map[string]string, moduleType string) string {
 	return getFromMap(session, SessionKeyBindHead+TKey(moduleType))
 }
 
@@ -226,17 +224,13 @@ func (s *Session) SyncToBindedModule(mod IModuleSessionOptions) {
 }
 
 // SendMsg 向该Session指定的客户端发送一个消息
-func (s *Session) SendMsg(mod IModuleSessionOptions, gatemoduletype string,
-	msgid uint16, data []byte) {
-	mod.SInnerSendClientMsg(s.GetBind(gatemoduletype),
-		s.GetConnectID(), msgid, data)
+func (s *Session) SendMsg(mod IModuleSessionOptions, gatemoduletype string, msgid uint16, data []byte) {
+	mod.SInnerSendClientMsg(s.GetBind(gatemoduletype), s.GetConnectID(), msgid, data)
 }
 
 // CloseSessionConnect 请求管理该Session的网关关闭该Session的连接
-func (s *Session) CloseSessionConnect(mod IModuleSessionOptions,
-	gatemoduletype string) {
-	mod.SInnerCloseSessionConnect(s.GetBind(gatemoduletype),
-		s.GetConnectID())
+func (s *Session) CloseSessionConnect(mod IModuleSessionOptions, gatemoduletype string) {
+	mod.SInnerCloseSessionConnect(s.GetBind(gatemoduletype), s.GetConnectID())
 }
 
 // ToMap 将当前Session的键值到处成为 map[string]string 的类型

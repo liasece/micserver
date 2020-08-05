@@ -23,9 +23,7 @@ func DefaultEncodeObj(v IMsgStruct) *MessageBinary {
 	totalLength := DEFAULTMSGHEADSIZE + datalen
 	// 判断数据合法性
 	if totalLength >= MessageMaxSize {
-		log.Error("[EncodeObj] "+
-			"[缓冲区溢出] 发送消息数据过大 MsgID[%d] TotalLen[%d] MaxSize[%d]",
-			cmdid, totalLength, MessageMaxSize)
+		log.Error("[DefaultEncodeObj] Buffer overflow, sending message data too large", log.Uint16("MsgID", cmdid), log.Int("TotalLen", totalLength), log.Int32("MaxSize", MessageMaxSize))
 		// 返回一个没有内容的消息
 		msgbinary := GetMessageBinary(0)
 		msgbinary.Reset()
@@ -34,9 +32,7 @@ func DefaultEncodeObj(v IMsgStruct) *MessageBinary {
 	// 从对象池获取消息对象
 	msgbinary := GetMessageBinary(totalLength)
 	if msgbinary == nil {
-		log.Error("[GetByObj] "+
-			"无法分配MsgBinary的内存！！！ TotalLen[%d] DataLen[%d]",
-			totalLength, datalen)
+		log.Error("[DefaultEncodeObj] Unable to allocate MsgBinary's memory!!!!", log.Int("TotalLen", totalLength), log.Int("DataLen", datalen))
 		return nil
 	}
 
@@ -65,9 +61,7 @@ func DefaultEncodeBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	totalLength := DEFAULTMSGHEADSIZE + datalen
 	// 判断数据合法性
 	if totalLength >= MessageMaxSize {
-		log.Error("[EncodeObj] "+
-			"[缓冲区溢出] 发送消息数据过大 MsgID[%d] TotalLen[%d] MaxSize[%d]",
-			cmdid, totalLength, MessageMaxSize)
+		log.Error("[DefaultEncodeBytes] Buffer overflow, sending message data too large", log.Uint16("MsgID", cmdid), log.Int("TotalLen", totalLength), log.Int32("MaxSize", MessageMaxSize))
 		// 返回一个没有内容的消息
 		msgbinary := GetMessageBinary(0)
 		msgbinary.Reset()
@@ -76,9 +70,7 @@ func DefaultEncodeBytes(cmdid uint16, protodata []byte) *MessageBinary {
 	// 从对象池获取消息对象
 	msgbinary := GetMessageBinary(totalLength)
 	if msgbinary == nil {
-		log.Error("[GetByObj] "+
-			"无法分配MsgBinary的内存！！！ TotalLen[%d] DataLen[%d]",
-			totalLength, datalen)
+		log.Error("[DefaultEncodeBytes] Unable to allocate MsgBinary's memory!!!!", log.Int("TotalLen", totalLength), log.Int("DataLen", datalen))
 		return nil
 	}
 
@@ -124,8 +116,7 @@ func (defaultCodec *DefaultCodec) RangeMsgBinary(
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			log.Error("[DefaultCodec.RangeMsgBinary] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+			log.Error("[DefaultCodec.RangeMsgBinary] Panic", log.ErrorField(err), log.String("Stack", stackInfo))
 			reerr = err
 		}
 	}()
@@ -143,8 +134,7 @@ func (defaultCodec *DefaultCodec) RangeMsgBinary(
 			}
 			_, err = defaultCodec.readHead(headData)
 			if err != nil {
-				return fmt.Errorf("Head dec err:%s. headdata:%#v",
-					err.Error(), headData)
+				return fmt.Errorf("Head dec err:%s. headdata:%#v", err.Error(), headData)
 			}
 
 			// 进入消息处理逻辑
@@ -167,18 +157,15 @@ func (defaultCodec *DefaultCodec) RangeMsgBinary(
 				err := msgbinary.Read(DEFAULTMSGHEADSIZE, cmdbuff, 0,
 					defaultCodec.protoLen)
 				if err != nil {
-					log.Error("[DefaultCodec.RangeMsgBinary] "+
-						"解析消息错误 Err[%s]", err.Error())
+					log.Error("[DefaultCodec.RangeMsgBinary] Parse message error", log.ErrorField(err))
 					return err
 				}
 				// 设置内容边界
-				msgbinary.SetProtoDataBound(DEFAULTMSGHEADSIZE,
-					defaultCodec.protoLen)
+				msgbinary.SetProtoDataBound(DEFAULTMSGHEADSIZE, defaultCodec.protoLen)
 				// 调用回调函数处理消息
 				cb(msgbinary)
 			} else {
-				log.Error("[DefaultCodec.RangeMsgBinary] "+
-					"无法分配MsgBinary的内存！！！ TotalLen[%d]", defaultCodec.totalLen)
+				log.Error("[DefaultCodec.RangeMsgBinary] Unable to allocate MsgBinary's memory!!!!", log.Int("TotalLen", defaultCodec.totalLen))
 			}
 			// 退出消息处理状态
 			defaultCodec.inMsg = false

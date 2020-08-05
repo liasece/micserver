@@ -10,14 +10,12 @@ import (
 func LoadJSONFromFile(filename string, v interface{}) error {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return fmt.Errorf("[LoadJSONFromFile] Load %s failed \n%s ",
-			filename, err.Error())
+		return fmt.Errorf("[LoadJSONFromFile] Load %s failed \n%s ", filename, err.Error())
 	}
 	err = json.Unmarshal([]byte(content), v)
 	if err != nil {
 		return fmt.Errorf(
-			"[LoadJSONFromFile] Load %s failed, Unmarshal failed :\n%s ",
-			filename, err.Error())
+			"[LoadJSONFromFile] Load %s failed, Unmarshal failed :\n%s ", filename, err.Error())
 	}
 	return nil
 }

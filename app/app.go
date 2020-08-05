@@ -65,7 +65,7 @@ func (a *App) Setup(configer *conf.TopConfig) {
 		err := a.Logger.SetLogLevelByStr(
 			a.Configer.AppConfig.GetString(conf.LogLevel))
 		if err != nil {
-			a.Error("Set log level err: %s", err.Error())
+			a.Error("Set log level error", log.ErrorField(err))
 		}
 	}
 	a.Info("APP setup secess!!!")
@@ -90,15 +90,15 @@ func (a *App) init(modules []module.IModule) error {
 	// create all module
 	for _, m := range a.modules {
 		process.AddModule(m)
+		a.Syslog("[App.Init] Initing module", log.String("ModuleID", m.GetModuleID()), log.String("ModuleType", m.GetModuleType()), log.Int("ModuleNum", m.GetModuleNum()), log.Uint32("ModuleIDHash", m.GetModuleIDHash()))
 		{
 			err := m.InitModule(*a.Configer.AppConfig.GetModuleConfig(m.GetModuleID()))
 			if err != nil {
 				return err
 			}
 		}
-		a.Syslog("[App.Init] init moduleID[%s] (%s:%d:%d)", m.GetModuleID(),
-			m.GetModuleType(), m.GetModuleNum(), m.GetModuleIDHash())
 		m.AfterInitModule()
+		a.Syslog("[App.Init] Init module finish", log.String("ModuleID", m.GetModuleID()), log.String("ModuleType", m.GetModuleType()), log.Int("ModuleNum", m.GetModuleNum()), log.Uint32("ModuleIDHash", m.GetModuleIDHash()))
 		go m.TopRunner()
 	}
 
@@ -107,8 +107,7 @@ func (a *App) init(modules []module.IModule) error {
 		m.BindSubnet(subnetTCPAddrMap)
 	}
 
-	a.Syslog("[App.Init] App 初始化成功！")
-	a.Syslog("[App.Init] App 初始化 Module 数量：%d", len(a.modules))
+	a.Syslog("[App.Init] App init finish!", log.Int("ModuleNum", len(a.modules)))
 	return nil
 }
 
@@ -117,12 +116,10 @@ func (a *App) startTestCPUProfile() {
 	defer func() {
 		// 必须要先声明defer，否则不能捕获到panic异常
 		if stackInfo, err := sysutil.GetPanicInfo(recover()); err != nil {
-			a.Error("[startTestCPUProfile] "+
-				"Panic: Err[%v] \n Stack[%s]", err, stackInfo)
+			a.Error("[startTestCPUProfile] Panic", log.String("stackInfo", stackInfo), log.ErrorField(err))
 		}
 	}()
-	a.Debug("[SubNetManager.startTestCPUProfile] " +
-		"[性能分析] StartTestCpuProfile start")
+	a.Debug("[SubNetManager.startTestCPUProfile] Cpu profile start")
 	filename := a.Configer.GetProp("profile_filename")
 	testtime := a.Configer.GetPropInt64("profile_time")
 	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
@@ -131,8 +128,7 @@ func (a *App) startTestCPUProfile() {
 	}
 	err = pprof.StartCPUProfile(f)
 	if err != nil {
-		a.Error("[startTestCPUProfile] pprof.StartCPUProfile Err[%s]",
-			err.Error())
+		a.Error("[startTestCPUProfile] pprof.StartCPUProfile error", log.ErrorField(err))
 		return
 	}
 	for i := 0; i < int(testtime); i++ {
@@ -140,14 +136,13 @@ func (a *App) startTestCPUProfile() {
 	}
 	pprof.StopCPUProfile()
 	f.Close()
-	a.Debug("[SubNetManager.startTestCPUProfile] " +
-		"[性能分析] StartTestCpuProfile end")
+	a.Debug("[SubNetManager.startTestCPUProfile] Cpu profile finish")
 }
 
 // RunAndBlock 运行并阻塞本App，直到程序主动退出
 func (a *App) RunAndBlock(modules []module.IModule) {
 	a.tryInit(modules)
-	a.Syslog("[App.Run] ----- Main has started ----- ")
+	a.Syslog("[App.Run] ----- App has started ----- ")
 
 	// 监听系统Signal
 	go a.SignalListen()
@@ -167,9 +162,9 @@ func (a *App) RunAndBlock(modules []module.IModule) {
 	}
 
 	// 当程序即将结束时
-	a.Syslog("[App.RunAndBlock] All server is over add save datas")
+	a.Syslog("[App.RunAndBlock] All modules is stopped")
 
-	a.Debug("[App.RunAndBlock] ----- Main has stopped ----- ")
+	a.Debug("[App.RunAndBlock] ----- App has stopped ----- ")
 	// 等日志打完
 	time.Sleep(500 * time.Millisecond)
 }

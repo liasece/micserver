@@ -38,21 +38,17 @@ func (gateBase *Base) BindOuterTCP(addr string) {
 	// 由于部分 NAT 主机没有网卡概念，需要自己配置IP
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		gateBase.Error("[Base.StartAddClientTcpSocketHandle] %s",
-			err.Error())
+		gateBase.Error("[Base.BindOuterTCP] net.Listen error", log.ErrorField(err))
 		return
 	}
-	gateBase.Syslog("[Base.StartAddClientTcpSocketHandle] "+
-		"Gateway Client TCP服务启动成功 IPPort[%s]", addr)
+	gateBase.Syslog("[Base.BindOuterTCP] Gateway Client TCP service started successfully", log.String("IPPort[%s]", addr))
 	go func() {
 		for {
 			// 接受连接
 			netConn, err := ln.Accept()
 			if err != nil {
 				// handle error
-				gateBase.Error("[Base.StartAddClientTcpSocketHandle] "+
-					"Accept() ERR:%q",
-					err.Error())
+				gateBase.Error("[Base.BindOuterTCP] ln.Accept error", log.ErrorField(err))
 				continue
 			}
 			gateBase.OnAcceptClientConnect(netConn)
@@ -66,60 +62,51 @@ func (gateBase *Base) OnConnectClose(client *connect.Client) {
 	gateBase.remove(client.GetConnectID())
 
 	if gateBase.gateHook != nil {
-		client.Syslog("[OnClose] 关闭Client对象")
+		client.Syslog("[OnConnectClose] Close the Client object")
 		gateBase.gateHook.OnCloseClient(client)
 	} else {
-		client.Debug("[OnNewClient] 关闭Client对象但未处理，缺少GateHook")
+		client.Debug("[OnConnectClose] Close Client object but not processed, missing GateHook")
 	}
 }
 
 // OnRecvConnectMessage 由Client调用，当Client收到消息时
-func (gateBase *Base) OnRecvConnectMessage(client *connect.Client,
-	msgbin *msg.MessageBinary) {
+func (gateBase *Base) OnRecvConnectMessage(client *connect.Client, msgbin *msg.MessageBinary) {
 	cmdname := servercomm.MsgIdToString(msgbin.GetMsgID())
 	defer msgbin.Free()
 
 	// 检查链接是否已被断开，如果已断开则不处理
 	if !client.Check() {
 		client.Shutdown()
-		client.Debug("[ParseClientJSONMsg] 客户端连接已关闭，丢弃消息 "+
-			"MsgID[%d] MsgName[%s] Data[%s]",
-			msgbin.GetMsgID(), cmdname, msgbin.String())
+		client.Debug("[OnRecvConnectMessage] Client connection closed, discard message", log.Uint16("MsgID", msgbin.GetMsgID()), log.String("MsgName", cmdname), log.String("Data", msgbin.String()))
 		return
 	}
 	// 接收到有效消息，开始处理
 	if gateBase.gateHook != nil {
-		client.Syslog("[ParseClientJSONMsg] 收到客户端消息 "+
-			"MsgID[%d] Msgname[%s] MsgLen[%d] DataLen[%d]",
-			msgbin.GetMsgID(), cmdname, msgbin.GetTotalLength(),
-			msgbin.GetProtoLength())
+		client.Syslog("[OnRecvConnectMessage] Receive a client message", log.Uint16("MsgID", msgbin.GetMsgID()), log.String("Msgname", cmdname), log.Int("MsgLen", msgbin.GetTotalLength()), log.Int("DataLen", msgbin.GetProtoLength()))
 		gateBase.gateHook.OnRecvClientMsg(client, msgbin)
 	} else {
-		client.Debug("[ParseClientJSONMsg] 收到客户端消息但未处理，缺少GateHook"+
-			"MsgID[%d] Msgname[%s] MsgLen[%d] DataLen[%d]",
-			msgbin.GetMsgID(), cmdname, msgbin.GetTotalLength(),
-			msgbin.GetProtoLength())
+		client.Debug("[OnRecvConnectMessage] A client message was received but not processed, missing GateHook",
+			log.Uint16("MsgID", msgbin.GetMsgID()), log.String("Msgname", cmdname), log.Int("MsgLen", msgbin.GetTotalLength()), log.Int("DataLen", msgbin.GetProtoLength()))
 	}
 }
 
 // OnNewClient 当新建一个Client对象时
 func (gateBase *Base) OnNewClient(client *connect.Client) {
 	if gateBase.gateHook != nil {
-		client.Syslog("[OnNewClient] 创建Client对象")
+		client.Syslog("[OnNewClient] Creating a Client Object")
 		gateBase.gateHook.OnNewClient(client)
 	} else {
-		client.Debug("[OnNewClient] 创建Client对象但未处理，缺少GateHook")
+		client.Debug("[OnNewClient] Client object created but not processed, missing GateHook")
 	}
 }
 
 // OnAcceptClientConnect 当收到一个客户端net连接时
 func (gateBase *Base) OnAcceptClientConnect(conn net.Conn) {
 	if gateBase.gateHook != nil {
-		gateBase.Syslog("收到Net连接 RemoteAddr[%s]", conn.RemoteAddr().String())
+		gateBase.Syslog("Net connection received", log.String("RemoteAddr", conn.RemoteAddr().String()))
 		gateBase.gateHook.OnAcceptClientConnect(conn)
 	} else {
-		gateBase.Debug("收到Net连接但未处理，缺少GateHook RemoteAddr[%s]",
-			conn.RemoteAddr().String())
+		gateBase.Debug("Net connection received but not processed, missing GateHook", log.String("RemoteAddr", conn.RemoteAddr().String()))
 	}
 }
 
@@ -144,16 +131,14 @@ func (gateBase *Base) remove(connectid string) {
 }
 
 // Range 遍历所有连接到本模块的客户端
-func (gateBase *Base) Range(
-	callback func(string, *connect.Client) bool) {
+func (gateBase *Base) Range(callback func(string, *connect.Client) bool) {
 	gateBase.connPool.Range(func(value *connect.Client) bool {
 		return callback(value.GetConnectID(), value)
 	})
 }
 
 // RangeRemove 遍历所有的连接，检查需要移除的连接
-func (gateBase *Base) RangeRemove(
-	callback func(*connect.Client) bool) {
+func (gateBase *Base) RangeRemove(callback func(*connect.Client) bool) {
 	removelist := make([]string, 0)
 	gateBase.connPool.Range(func(value *connect.Client) bool {
 		// 遍历所有的连接
@@ -168,13 +153,10 @@ func (gateBase *Base) RangeRemove(
 		gateBase.remove(v)
 	}
 
-	gateBase.Syslog("[Base.RangeRemove] "+
-		"遍历删除连接数 RemoveSum[%d] NowLinkSum[%d]",
-		len(removelist), gateBase.GetClientCount())
+	gateBase.Syslog("[Base.RangeRemove] Iterate the number of deleted connections", log.Int("RemoveSum", len(removelist)), log.Uint32("NowLinkSum", gateBase.GetClientCount()))
 }
 
-func (gateBase *Base) addTCPClient(
-	netConn net.Conn) (*connect.Client, error) {
+func (gateBase *Base) addTCPClient(netConn net.Conn) (*connect.Client, error) {
 	conn, err := gateBase.connPool.NewTCPClient(netConn, gateBase)
 	if err != nil {
 		return nil, err
@@ -183,8 +165,7 @@ func (gateBase *Base) addTCPClient(
 	// 当创建一个Client对象时调用
 	gateBase.OnNewClient(conn)
 
-	conn.Syslog("[Base.addTCPClient] 新增客户端连接 NowLinkSum[%d]",
-		gateBase.GetClientCount())
+	conn.Syslog("[Base.addTCPClient] Adding a client connection", log.Uint32("NowLinkSum", gateBase.GetClientCount()))
 	// 开始接收数据
 	conn.StartRecv()
 	return conn, nil

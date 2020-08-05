@@ -28,10 +28,10 @@ func (connInfosManager *ConnInfosManager) Get(moduleid string) *servercomm.Modul
 // Add 增加一个连接的配置信息
 func (connInfosManager *ConnInfosManager) Add(newinfo *servercomm.ModuleInfo) {
 	if newinfo.ModuleID == "" {
-		log.Error("[ConnInfosManager.AddConnInfo] 尝试添加一个ID为空的服务器 拒绝 Info[%s]", newinfo.GetJSON())
+		log.Error("[ConnInfosManager.AddConnInfo] Try to add a server with an empty ID, denied", log.Reflect("Info", newinfo))
 		return
 	}
-	log.Debug("[ConnInfosManager.AddConnInfo] 添加服务器信息 Info[%s]", newinfo.GetJSON())
+	log.Debug("[ConnInfosManager.AddConnInfo] Adding server information", log.Reflect("Info", newinfo))
 	if _, finded := connInfosManager.ConnInfos.Load(newinfo.ModuleID); !finded {
 		connInfosManager.ConnInfoSum++
 	}
@@ -44,8 +44,7 @@ func (connInfosManager *ConnInfosManager) Delete(moduleid string) {
 }
 
 // Range 遍历所有连接的配置信息
-func (connInfosManager *ConnInfosManager) Range(
-	callback func(*servercomm.ModuleInfo) bool) {
+func (connInfosManager *ConnInfosManager) Range(callback func(*servercomm.ModuleInfo) bool) {
 	connInfosManager.ConnInfos.Range(func(tkey interface{},
 		tvalue interface{}) bool {
 		value := tvalue.(*servercomm.ModuleInfo)
@@ -54,8 +53,7 @@ func (connInfosManager *ConnInfosManager) Range(
 }
 
 // Exist 判断目标信息是否存在
-func (connInfosManager *ConnInfosManager) Exist(
-	info *servercomm.ModuleInfo) bool {
+func (connInfosManager *ConnInfosManager) Exist(info *servercomm.ModuleInfo) bool {
 	tconfig, finded := connInfosManager.ConnInfos.Load(info.ModuleID)
 	config := tconfig.(*servercomm.ModuleInfo)
 	if !finded {

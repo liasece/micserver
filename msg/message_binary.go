@@ -35,8 +35,7 @@ func (mb *MessageBinary) Free() {
 	size := len(mb.buffer)
 	err := pools.Put(mb, size)
 	if err != nil {
-		log.Error("[MessageBinary.Free] pools.Put Err[%s]",
-			err.Error())
+		log.Error("[MessageBinary.Free] pools.Put error", log.ErrorField(err))
 	}
 }
 
@@ -90,18 +89,16 @@ func (mb *MessageBinary) Read(soffset int,
 	dataLen := len(data)
 	// 消息结构错误
 	if doffset+bytenum > dataLen {
-		log.Error("[Read] 缓冲区溢出 DOffset[%d] ByteNum[%d] DataLen[%d]",
-			doffset, bytenum, dataLen)
-		return errors.New("源数据越界")
+		log.Error("[MessageBinary.Read] Buffer overflow", log.Int("DOffset", doffset), log.Int("ByteNum", bytenum), log.Int("DataLen", dataLen))
+		return errors.New("buffer overflow")
 	}
 	// 检查 buffer
 	if mb.buffer == nil ||
 		len(mb.buffer) < soffset+bytenum {
 		tmpmsg := GetMessageBinary(soffset + bytenum)
 		if tmpmsg == nil {
-			log.Error("[Read] 无法分配MsgBinary的内存！！！ Size[%d]",
-				soffset+bytenum)
-			return errors.New("分配内存失败")
+			log.Error("[MessageBinary.Read] Unable to allocate MsgBinary's memory!!!!", log.Int("Size", soffset+bytenum))
+			return errors.New("unable to allocate MsgBinary's memory")
 		}
 		// 重新构建合理的 buffer
 		mb.buffer = tmpmsg.buffer
@@ -120,9 +117,8 @@ func (mb *MessageBinary) GetBuffer() []byte {
 // SetProtoDataBound 设置消息内容数据域
 func (mb *MessageBinary) SetProtoDataBound(offset int, bytenum int) error {
 	if len(mb.buffer) < offset+bytenum || offset+bytenum < 0 {
-		log.Error("[MessageBinary.SetProtoDataBound] 缓冲区越界 Len[%d] Need[%d]",
-			len(mb.buffer), offset+bytenum)
-		return errors.New("缓冲区越界")
+		log.Error("[MessageBinary.SetProtoDataBound] Buffer overflow", log.Int("Len", len(mb.buffer)), log.Int("Need", offset+bytenum))
+		return errors.New("buffer overflow")
 	}
 	mb.ProtoData = mb.buffer[offset : offset+bytenum]
 	mb.SetProtoLength(bytenum)

@@ -32,13 +32,11 @@ func newMsgBinaryBySize(size int) interface{} {
 func GetMessageBinary(totalLength int) *MessageBinary {
 	msg, err := pools.Get(totalLength)
 	if err != nil {
-		log.Error("[GetMessageBinary] TotalLen[%d] Err[%s]",
-			totalLength, err.Error())
+		log.Error("[GetMessageBinary] pools.Get error", log.Int("TotalLen", totalLength), log.ErrorField(err))
 		return nil
 	}
 	if msg == nil {
-		log.Error("[GetMessageBinary] nil return!!! TotalLen[%d]",
-			totalLength)
+		log.Error("[GetMessageBinary] msg==nil return!!!", log.Int("TotalLen", totalLength))
 		return nil
 	}
 	return msg.(*MessageBinary)

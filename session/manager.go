@@ -35,8 +35,7 @@ func (sessionManager *Manager) Store(session *Session) {
 	sessionManager.store(session)
 }
 
-func (sessionManager *Manager) loadOrStore(uuid string,
-	session *Session) (*Session, bool) {
+func (sessionManager *Manager) loadOrStore(uuid string, session *Session) (*Session, bool) {
 	vi, isload := sessionManager.sessions.LoadOrStore(uuid, session)
 	var v *Session
 	if vi != nil {
@@ -50,8 +49,7 @@ func (sessionManager *Manager) delete(uuid string) {
 }
 
 // LoadOrStore 加载或保存一个Session，返回操作成功的Session以及是否时加载行为
-func (sessionManager *Manager) LoadOrStore(uuid string,
-	session *Session) (*Session, bool) {
+func (sessionManager *Manager) LoadOrStore(uuid string, session *Session) (*Session, bool) {
 	return sessionManager.loadOrStore(uuid, session)
 }
 
@@ -64,8 +62,7 @@ func (sessionManager *Manager) GetSession(uuid string) *Session {
 // targetSession 可以是不在当前管理器中的，但是其必须拥有UUID
 // 如果当前管理器中已存在 targetSession.UUID 指定的session，
 // 且两者不是同一个Session，会用 targetSession 完善当前管理器中已存在的Session
-func (sessionManager *Manager) MustUpdateFromMap(targetSession *Session,
-	data map[string]string) {
+func (sessionManager *Manager) MustUpdateFromMap(targetSession *Session, data map[string]string) {
 	uuid := targetSession.GetUUID()
 	if uuid == "" {
 		panic("targetSession uuid must exist")

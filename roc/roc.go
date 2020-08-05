@@ -105,7 +105,7 @@ func (roc *ROC) RangeObj(f func(obj IObj) bool) {
 	roc.objPool.Range(func(ki, vi interface{}) bool {
 		v, ok := vi.(IObj)
 		if !ok {
-			log.Error("interface conversion: %+v is not roc.IObj", vi)
+			log.Error("RangeObj interface is not roc.IObj", log.Reflect("vi", vi))
 			return true
 		}
 		return f(v)

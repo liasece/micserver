@@ -93,7 +93,7 @@ func (bm *BaseModule) InitModule(configer conf.ModuleConfig) error {
 		bm.Logger = log.GetDefaultLogger().Clone()
 		bm.Logger.SetLogName(bm.moduleID)
 	}
-	bm.Syslog("[BaseModule.InitModule] module initting...")
+	bm.Syslog("[BaseModule.InitModule] Module initializing...")
 	bm.Server.SetLogger(bm.Logger)
 	bm.Server.Init(bm.moduleID)
 	bm.Server.InitSubnet(bm.configer)
@@ -109,8 +109,7 @@ func (bm *BaseModule) InitModule(configer conf.ModuleConfig) error {
 
 // AfterInitModule 在初始化完成后调用
 func (bm *BaseModule) AfterInitModule() {
-	bm.Syslog("[BaseModule.AfterInitModule] 模块 [%s] 初始化完成",
-		bm.GetModuleID())
+	bm.Syslog("[BaseModule.AfterInitModule] Module initialization complete", log.String("ModuleID", bm.GetModuleID()))
 }
 
 // GetConfiger 获取模块的配置
@@ -171,7 +170,7 @@ func (bm *BaseModule) IsStopped() bool {
 // TopRunner 开始运行一个模块
 func (bm *BaseModule) TopRunner() {
 	bm.TimerManager.RegTimer(time.Minute, 0, false, func(t time.Duration) bool {
-		bm.Syslog("[BaseModule] Timer 1 Minute...")
+		bm.Syslog("[BaseModule] Timer 1 minute...")
 		return true
 	})
 }
@@ -180,8 +179,7 @@ func (bm *BaseModule) watchLoadToLog(dt time.Duration) bool {
 	load := bm.load.GetLoad()
 	incValue := load - bm.lastCheckLoad
 	if incValue > 0 {
-		bm.Info("[BaseModule] Within %d sec load:[%d]",
-			int64(dt.Seconds()), incValue)
+		bm.Info("[BaseModule] watchLoadToLog within n sec load", log.Float64("Sec", dt.Seconds()), log.Int64("Load", incValue))
 	}
 	bm.lastCheckLoad = load
 	return true

@@ -31,8 +31,7 @@ func (c *Client) InitTCP(netconn net.Conn, connHook IConnectHook) {
 		ClientConnSendChanSize, ClientConnSendBufferSize,
 		ClientConnRecvChanSize, ClientConnRecvBufferSize)
 	if c.Logger != nil {
-		c.Logger.SetTopic(fmt.Sprintf("Client:%s(%s)",
-			c.IConnection.RemoteAddr(), c.GetTempID()))
+		c.Logger.SetTopic(fmt.Sprintf("Client:%s(%s)", c.IConnection.RemoteAddr(), c.GetTempID()))
 	}
 	// 客户端连接的连接ID就是该连接的TmpID
 	c.Session.SetConnectID(c.GetTempID())
@@ -89,7 +88,7 @@ func (c *Client) Check() bool {
 	// 检查本服务器时候还存活
 	if c.IsTerminateForce() {
 		// 本服务器关闭
-		c.Debug("[Client.Check] 服务器强制断开连接")
+		c.Debug("[Client.Check] We initiated the disconnection")
 		// 强制移除客户端连接
 		return false
 	}
@@ -97,9 +96,9 @@ func (c *Client) Check() bool {
 	if c.IsTerminateTimeout(curtime) {
 		// 客户端超时未通过验证
 		if !c.Session.IsVertify() {
-			c.Debug("[Client.Check] 长时间未通过验证，断开连接")
+			c.Debug("[Client.Check] Prolonged failure to verify, disconnect")
 		} else {
-			c.Debug("[Client.Check] 长时间未活动，断开连接")
+			c.Debug("[Client.Check] Long periods of inactivity, disconnect")
 		}
 		return false
 	}

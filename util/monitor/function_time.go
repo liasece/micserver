@@ -36,7 +36,7 @@ func (ftime *FunctionTime) Stop() {
 	ftime.endtime = uint64(time.Now().UnixNano() / 1000000)
 	usetime := ftime.endtime - ftime.starttime
 	if usetime > 500 {
-		log.Error("[消耗时间统计],消耗时间超时,%s,%d 毫秒", ftime.functionname, usetime)
+		log.Error("[FunctionTime.Stop] Timeout", log.String("FuncName", ftime.functionname), log.Uint64("UsedTimeMs", usetime))
 	}
 }
 
@@ -86,9 +86,10 @@ func (ftime *GBOptimizeAnalysisM) StopCheck() {
 	if usetime > 100 {
 		ftime.mutex.Lock()
 		for _, funcinfo := range ftime.functionmaps {
-			log.Debug("[分时消耗统计],消耗时间,%s,%s,%d 毫秒,调用:%d次", funcinfo.functionname, funcinfo.callname, funcinfo.usetime, funcinfo.callcount)
+			log.Debug("[GBOptimizeAnalysisM.StopCheck] Time consuming", log.String("FuncName", funcinfo.functionname), log.String("CallName", funcinfo.callname),
+				log.Uint64("UsedTimeMs", funcinfo.usetime), log.Uint32("CallCount", funcinfo.callcount))
 		}
-		log.Debug("[分时消耗统计],消耗时间总计:%d毫秒", usetime)
+		log.Debug("[GBOptimizeAnalysisM.StopCheck] Total time consumed", log.Uint64("UsedTimeMs", usetime))
 		ftime.functionmaps = make(map[string]gbFunctionInfo)
 		ftime.mutex.Unlock()
 	} else {

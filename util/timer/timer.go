@@ -89,8 +89,7 @@ type Manager struct {
 // 如果 engross 为 true，那么这个 timer 的执行将独占一个协程
 // 如果一个定时操作很耗时，你应该将它作为一个单独的协程去处理，但是这样你可能
 // 要考虑并行执行带来的问题
-func (tr *Manager) RegTimer(duration time.Duration, limitTimes int64,
-	engross bool, cb func(time.Duration) bool) *Timer {
+func (tr *Manager) RegTimer(duration time.Duration, limitTimes int64, engross bool, cb func(time.Duration) bool) *Timer {
 	timer := &Timer{
 		cb:           cb,
 		timeDuration: duration,
