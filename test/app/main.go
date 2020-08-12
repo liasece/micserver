@@ -28,9 +28,9 @@ type GatewayModule struct {
 }
 
 // NewGatewayModule func
-func NewGatewayModule(moduleid string) *GatewayModule {
+func NewGatewayModule(moduleID string) *GatewayModule {
 	res := &GatewayModule{}
-	res.BaseModule.SetModuleID(moduleid)
+	res.BaseModule.SetModuleID(moduleID)
 	return res
 }
 
@@ -40,9 +40,9 @@ type PlayerModule struct {
 }
 
 // NewPlayerModule func
-func NewPlayerModule(moduleid string) *PlayerModule {
+func NewPlayerModule(moduleID string) *PlayerModule {
 	res := &PlayerModule{}
-	res.BaseModule.SetModuleID(moduleid)
+	res.BaseModule.SetModuleID(moduleID)
 	return res
 }
 
@@ -52,9 +52,9 @@ type LoginModule struct {
 }
 
 // NewLoginModule func
-func NewLoginModule(moduleid string) *LoginModule {
+func NewLoginModule(moduleID string) *LoginModule {
 	res := &LoginModule{}
-	res.BaseModule.SetModuleID(moduleid)
+	res.BaseModule.SetModuleID(moduleID)
 	return res
 }
 
@@ -98,9 +98,9 @@ func (im *InitManager) GetProgramModuleList() []module.IModule {
 				if i != 0 {
 					pid = fmt.Sprint(basepid, "_", i)
 				}
-				stype := util.GetModuleIDType(pid)
-				log.Debug("App initialize ServerType[%s] ServerID[%s]", stype, pid)
-				switch stype {
+				svrType := util.GetModuleIDType(pid)
+				log.Debug("App initialize ServerType[%s] ServerID[%s]", svrType, pid)
+				switch svrType {
 				case "gate":
 					im.addModule(NewGatewayModule(pid))
 				case "player":
@@ -108,7 +108,7 @@ func (im *InitManager) GetProgramModuleList() []module.IModule {
 				case "login":
 					im.addModule(NewLoginModule(pid))
 				default:
-					panic(fmt.Sprintf("无法解析的模块 %s:%s", stype, pid))
+					panic(fmt.Sprintf("无法解析的模块 %s:%s", svrType, pid))
 				}
 			}
 		}

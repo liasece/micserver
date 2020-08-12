@@ -92,10 +92,10 @@ func DefaultEncodeBytes(cmdid uint16, protodata []byte) *MessageBinary {
 
 // DefaultWriteHead 默认写头
 func DefaultWriteHead(data []byte, totalLen int,
-	msgid uint16) (size int) {
+	msgID uint16) (size int) {
 	binary.LittleEndian.PutUint32(data[size:], uint32(totalLen)) // 4
 	size += 4
-	binary.LittleEndian.PutUint16(data[size:], msgid) // 2
+	binary.LittleEndian.PutUint16(data[size:], msgID) // 2
 	size += 2
 
 	return

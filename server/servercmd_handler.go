@@ -59,8 +59,8 @@ func (handler *serverCmdHandler) onForwardToClient(smsg *servercomm.SForwardToCl
 	err := handler.server.DoSendBytesToClient(smsg.FromModuleID, smsg.ToGateID,
 		smsg.ToClientID, smsg.MsgID, smsg.Data)
 	if err != nil {
-		if err == ErrTargetClientDontExist {
-			handler.server.Debug("[serverCmdHandler.onForwardToClient] ErrTargetClientDontExist", log.ErrorField(err),
+		if err == ErrTargetClientNoExist {
+			handler.server.Debug("[serverCmdHandler.onForwardToClient] ErrTargetClientNoExist", log.ErrorField(err),
 				log.String("FromModuleID", smsg.FromModuleID), log.String("ToGateID", smsg.ToGateID), log.String("ToClientID", smsg.ToClientID),
 				log.Uint16("MsgID", smsg.MsgID), log.ByteString("Data", smsg.Data))
 		} else {
@@ -176,8 +176,8 @@ func (handler *serverCmdHandler) OnRecvSubnetMsg(conn *connect.Server, msgbinary
 		layerMsg.ReadBinary(msgbinary.ProtoData)
 		handler.server.ROCServer.onMsgROCResponse(layerMsg)
 	default:
-		msgid := msgbinary.GetMsgID()
-		msgname := servercomm.MsgIdToString(msgid)
-		handler.server.Error("[SubnetManager.OnRecvTCPMsg] Unknow message", log.Uint16("MsgID", msgid), log.String("MsgName", msgname))
+		msgID := msgbinary.GetMsgID()
+		msgname := servercomm.MsgIdToString(msgID)
+		handler.server.Error("[SubnetManager.OnRecvTCPMsg] Unknow message", log.Uint16("MsgID", msgID), log.String("MsgName", msgname))
 	}
 }

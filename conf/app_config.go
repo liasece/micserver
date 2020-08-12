@@ -25,12 +25,12 @@ func (a *AppConfig) buildModuleIDFromMapkey() {
 // 为了性能考虑不进行拷贝，
 // 调用方不允许使用代码修改 ModuleConfig 的内容，
 // 你应该修改配置文件而不是用代码设置配置值。
-func (a *AppConfig) GetModuleConfig(moduleid string) *ModuleConfig {
+func (a *AppConfig) GetModuleConfig(moduleID string) *ModuleConfig {
 	if a == nil {
 		return &ModuleConfig{}
 	}
 	var res *ModuleConfig
-	if v, ok := a.Modules[moduleid]; ok {
+	if v, ok := a.Modules[moduleID]; ok {
 		res = v
 	} else {
 		res = &ModuleConfig{}

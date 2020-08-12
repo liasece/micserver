@@ -30,8 +30,8 @@ func (handler *clientEventHandler) OnAcceptClientConnect(conn net.Conn) {
 
 // OnNewClient 当新增了一个客户端连接时调用
 func (handler *clientEventHandler) OnNewClient(client *connect.Client) {
-	moduleType := util.GetModuleIDType(handler.server.moduleid)
-	client.SetBind(moduleType, handler.server.moduleid)
+	moduleType := util.GetModuleIDType(handler.server.moduleID)
+	client.SetBind(moduleType, handler.server.moduleID)
 
 	if handler.gateHook != nil {
 		handler.gateHook.OnNewClient(client)

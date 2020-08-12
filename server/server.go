@@ -30,15 +30,15 @@ type Server struct {
 	sessionManager     session.Manager
 
 	// server info
-	moduleid     string
+	moduleID     string
 	moduleConfig *conf.ModuleConfig
 	isStop       bool
 	stopChan     chan bool
 }
 
 // Init 初始化本服务
-func (s *Server) Init(moduleid string) {
-	s.moduleid = moduleid
+func (s *Server) Init(moduleID string) {
+	s.moduleID = moduleID
 	s.stopChan = make(chan bool)
 	s.ROCServer.Init(s)
 }
@@ -69,20 +69,20 @@ func (s *Server) HookGate(gateHook gatebase.GateHook) {
 // BindSubnet 尝试连接本服务子网中的其他服务器
 func (s *Server) BindSubnet(subnetAddrMap map[string]string) {
 	for k, addr := range subnetAddrMap {
-		if k != s.moduleid {
+		if k != s.moduleID {
 			s.subnetManager.TryConnectServer(k, addr)
 		}
 	}
 }
 
 // InitGate 初始化本服务的网关部分
-func (s *Server) InitGate(gateaddr string) {
+func (s *Server) InitGate(gateAddr string) {
 	s.gateBase = &gate.Base{
 		Logger: s.Logger,
 	}
 	s.clientEventHandler.server = s
-	s.gateBase.Init(s.moduleid)
-	s.gateBase.BindOuterTCP(gateaddr)
+	s.gateBase.Init(s.moduleID)
+	s.gateBase.BindOuterTCP(gateAddr)
 
 	// 事件监听
 	s.gateBase.HookGate(&s.clientEventHandler)
@@ -98,16 +98,16 @@ func (s *Server) SetLogger(source *log.Logger) {
 }
 
 // GetClient 获取一个客户端连接
-func (s *Server) GetClient(tmpid string) *connect.Client {
+func (s *Server) GetClient(tempID string) *connect.Client {
 	if s.gateBase != nil {
-		return s.gateBase.GetClient(tmpid)
+		return s.gateBase.GetClient(tempID)
 	}
 	return nil
 }
 
 // RangeClient 获取一个客户端连接
 func (s *Server) RangeClient(
-	f func(tmpid string, client *connect.Client) bool) {
+	f func(tempID string, client *connect.Client) bool) {
 	if s.gateBase != nil {
 		s.gateBase.Range(f)
 	}
@@ -129,39 +129,39 @@ func (s *Server) SendModuleMsg(
 }
 
 // SInnerCloseSessionConnect 断开一个客户端连接,仅框架内使用
-func (s *Server) SInnerCloseSessionConnect(gateid string, connectid string) {
-	s.ReqCloseConnect(gateid, connectid)
+func (s *Server) SInnerCloseSessionConnect(gateID string, connectID string) {
+	s.ReqCloseConnect(gateID, connectID)
 }
 
 // ReqCloseConnect 请求关闭远程瞪的目标客户端连接
-func (s *Server) ReqCloseConnect(gateid string, connectid string) {
-	if s.moduleid == gateid {
-		s.doCloseConnect(connectid)
+func (s *Server) ReqCloseConnect(gateID string, connectID string) {
+	if s.moduleID == gateID {
+		s.doCloseConnect(connectID)
 	} else {
 		// 向gate请求
-		conn := s.subnetManager.GetServer(gateid)
+		conn := s.subnetManager.GetServer(gateID)
 		if conn != nil {
 			msg := &servercomm.SReqCloseConnect{
-				FromModuleID: s.moduleid,
-				ToModuleID:   gateid,
-				ClientConnID: connectid,
+				FromModuleID: s.moduleID,
+				ToModuleID:   gateID,
+				ClientConnID: connectID,
 			}
 			conn.SendCmd(msg)
 		} else {
-			s.Error("[Server.ReqCloseConnect] Target module does not exist", log.String("GateID", gateid))
+			s.Error("[Server.ReqCloseConnect] Target module does not exist", log.String("GateID", gateID))
 		}
 	}
 }
 
 // doCloseConnect 关闭本地的目标客户端连接
-func (s *Server) doCloseConnect(connectid string) {
+func (s *Server) doCloseConnect(connectID string) {
 	if s.gateBase == nil {
 		s.Error("Server.doCloseConnect s module isn't gate")
 		return
 	}
-	client := s.gateBase.GetClient(connectid)
+	client := s.gateBase.GetClient(connectID)
 	if client == nil {
-		s.Error("[Server.doCloseConnect] client does not exist", log.String("ConnectID", connectid))
+		s.Error("[Server.doCloseConnect] client does not exist", log.String("ConnectID", connectID))
 		return
 	}
 	client.Terminate()
@@ -178,15 +178,15 @@ func (s *Server) SInnerSendModuleMsg(to string, msgstr msg.IMsgStruct) {
 }
 
 // SInnerSendClientMsg 发送一个服务器消息到另一个服务器,仅框架内使用
-func (s *Server) SInnerSendClientMsg(gateid string, connectid string, msgid uint16, data []byte) {
-	s.SendBytesToClient(gateid, connectid, msgid, data)
+func (s *Server) SInnerSendClientMsg(gateID string, connectID string, msgID uint16, data []byte) {
+	s.SendBytesToClient(gateID, connectID, msgID, data)
 }
 
 // ForwardClientMsgToModule 转发一个客户端消息到另一个服务器
-func (s *Server) ForwardClientMsgToModule(fromconn *connect.Client, to string, msgid uint16, data []byte) {
+func (s *Server) ForwardClientMsgToModule(fromconn *connect.Client, to string, msgID uint16, data []byte) {
 	conn := s.subnetManager.GetServer(to)
 	if conn != nil {
-		conn.SendCmd(s.getFarwardFromGateMsgPack(msgid, data, fromconn, conn))
+		conn.SendCmd(s.getFarwardFromGateMsgPack(msgID, data, fromconn, conn))
 	} else {
 		s.Error("[Server.ForwardClientMsgToModule] conn == nil", log.String("To", to))
 	}
@@ -233,50 +233,50 @@ func (s *Server) UpdateSessionUUID(uuid string, session *session.Session) {
 }
 
 // SendBytesToClient 发送一个消息到客户端
-func (s *Server) SendBytesToClient(gateid string, to string, msgid uint16, data []byte) error {
+func (s *Server) SendBytesToClient(gateID string, to string, msgID uint16, data []byte) error {
 	sec := false
-	if s.moduleid == gateid {
+	if s.moduleID == gateID {
 		if s.DoSendBytesToClient(
-			s.moduleid, gateid, to, msgid, data) == nil {
+			s.moduleID, gateID, to, msgID, data) == nil {
 			sec = true
 		}
 	} else {
-		conn := s.subnetManager.GetServer(gateid)
+		conn := s.subnetManager.GetServer(gateID)
 		if conn != nil {
 			forward := &servercomm.SForwardToClient{}
-			forward.FromModuleID = s.moduleid
-			forward.MsgID = msgid
+			forward.FromModuleID = s.moduleID
+			forward.MsgID = msgID
 			forward.ToClientID = to
-			forward.ToGateID = gateid
+			forward.ToGateID = gateID
 			forward.Data = make([]byte, len(data))
 			copy(forward.Data, data)
 			conn.SendCmd(forward)
 			sec = true
 		} else {
-			s.Error("[Server.SendBytesToClient] Target server connection does not exist", log.String("GateID", gateid))
+			s.Error("[Server.SendBytesToClient] Target server connection does not exist", log.String("GateID", gateID))
 		}
 	}
 	if !sec {
-		return ErrTargetClientDontExist
+		return ErrTargetClientNoExist
 	}
 	return nil
 }
 
 // DoSendBytesToClient 发送一个消息到连接到本服务器的客户端
-func (s *Server) DoSendBytesToClient(fromserver string, gateid string, to string, msgid uint16, data []byte) error {
+func (s *Server) DoSendBytesToClient(fromserver string, gateID string, to string, msgID uint16, data []byte) error {
 	sec := false
 	if s.gateBase != nil {
 		conn := s.gateBase.GetClient(to)
 		if conn != nil {
-			if fromserver != gateid {
+			if fromserver != gateID {
 				conn.Session.SetBind(util.GetModuleIDType(fromserver), fromserver)
 			}
-			conn.SendBytes(msgid, data)
+			conn.SendBytes(msgID, data)
 			sec = true
 		}
 	}
 	if !sec {
-		return ErrTargetClientDontExist
+		return ErrTargetClientNoExist
 	}
 	return nil
 }
@@ -284,7 +284,7 @@ func (s *Server) DoSendBytesToClient(fromserver string, gateid string, to string
 // getModuleMsgPack 获取一个服务器消息的服务器间转发协议
 func (s *Server) getModuleMsgPack(msgstr msg.IMsgStruct, tarconn *connect.Server) msg.IMsgStruct {
 	res := &servercomm.SForwardToModule{}
-	res.FromModuleID = s.moduleid
+	res.FromModuleID = s.moduleID
 	if tarconn != nil {
 		res.ToModuleID = tarconn.ModuleInfo.ModuleID
 	}
@@ -296,9 +296,9 @@ func (s *Server) getModuleMsgPack(msgstr msg.IMsgStruct, tarconn *connect.Server
 }
 
 // getFarwardFromGateMsgPack 获取一个客户端消息到其他服务器间的转发协议
-func (s *Server) getFarwardFromGateMsgPack(msgid uint16, data []byte, fromconn *connect.Client, tarconn *connect.Server) msg.IMsgStruct {
+func (s *Server) getFarwardFromGateMsgPack(msgID uint16, data []byte, fromconn *connect.Client, tarconn *connect.Server) msg.IMsgStruct {
 	res := &servercomm.SForwardFromGate{}
-	res.FromModuleID = s.moduleid
+	res.FromModuleID = s.moduleID
 	if tarconn != nil {
 		res.ToModuleID = tarconn.ModuleInfo.ModuleID
 	}
@@ -306,7 +306,7 @@ func (s *Server) getFarwardFromGateMsgPack(msgid uint16, data []byte, fromconn *
 		res.ClientConnID = fromconn.GetConnectID()
 		res.Session = fromconn.ToMap()
 	}
-	res.MsgID = msgid
+	res.MsgID = msgID
 	size := len(data)
 	res.Data = make([]byte, size)
 	copy(res.Data, data)

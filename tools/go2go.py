@@ -719,7 +719,7 @@ def getgomap(typestr,jsonname,fieldnum):
             getpointerfa = '&'
             getpointerfaref = '*'
         keytypecode,keytypecodesend,keyleng = getgobybasetypesub(keytype)
-        valuetypecode,valuetypecodesend,valueleng = getgobybasetypesub(valuetype)
+        valuetypecode,valuetypecodesend,valueLen = getgobybasetypesub(valuetype)
         if keytypecode == "" or valuetypecode == "":
             print("Error Unknow in go keytypecode:"+keytypecode+";valuetypecode:"+valuetypecode)
             return "","","",""
@@ -749,14 +749,14 @@ def getgomap(typestr,jsonname,fieldnum):
             catkeyvread = ''+jsonname+'_kcatlen := len(key'+jsonname+')'
             keyoffset = 'offset += '+jsonname+'_kcatlen'
             keyoffsetread = 'offset += '+jsonname+'_kcatlen + 4'
-        catvaluev = ''
-        catvaluevread = ''
-        valueoffset = 'offset += '+str(valueleng)
-        valueoffsetread = 'offset += '+str(valueleng)
+        catValueV = ''
+        catValueVRead = ''
+        valueoffset = 'offset += '+str(valueLen)
+        valueoffsetread = 'offset += '+str(valueLen)
         if valuetype == 'string' :
-            valueleng = 2
-            catvaluev = ''+jsonname+'_vcatlen := '
-            catvaluevread = ''+jsonname+'_vcatlen := len(value'+jsonname+')'
+            valueLen = 2
+            catValueV = ''+jsonname+'_vcatlen := '
+            catValueVRead = ''+jsonname+'_vcatlen := len(value'+jsonname+')'
             valueoffset = 'offset += '+jsonname+'_vcatlen'
             valueoffsetread = 'offset += '+jsonname+'_vcatlen + 4'
 
@@ -771,11 +771,11 @@ def getgomap(typestr,jsonname,fieldnum):
                         key'+jsonname+' := '+keytypecode+'\n\
                         '+catkeyvread+'\n\
                         '+keyoffsetread+'\n\
-                        if offset + '+str(valueleng)+' > data__len{\n\
+                        if offset + '+str(valueLen)+' > data__len{\n\
                             return endpos,obj\n\
                         }\n\
                         value'+jsonname+' := '+valuetypecode+'\n\
-                        '+catvaluevread+'\n\
+                        '+catValueVRead+'\n\
                         '+valueoffsetread+'\n\
                         obj.'+jsonname+'[key'+jsonname+'] = '+getpointerst+'value'+jsonname+'\n\
                     }\n\
@@ -785,7 +785,7 @@ def getgomap(typestr,jsonname,fieldnum):
                 for '+jsonname+'key,'+jsonname+'value := range obj.'+jsonname+' {\n\
                     '+catkeyv+keytypecodesend+'(data[offset:],'+jsonname+'key)\n\
                     '+keyoffset+'\n\
-                    '+catvaluev+valuetypecodesend+'(data[offset:],'+jsonname+'value)\n\
+                    '+catValueV+valuetypecodesend+'(data[offset:],'+jsonname+'value)\n\
                     '+valueoffset+'\n\
                 }\n\
                 '
@@ -805,7 +805,7 @@ def getgomap(typestr,jsonname,fieldnum):
                     for '+jsonname+'key,_ := range obj.'+jsonname+' {\n\
                         sizerely'+valuetype+''+str(fieldnum)+' += len('+jsonname+'key) + 4\n\
                     }\n\
-                    sizerely'+valuetype+''+str(fieldnum)+' += len(obj.'+jsonname+') * ('+str(valueleng)+')\n\
+                    sizerely'+valuetype+''+str(fieldnum)+' += len(obj.'+jsonname+') * ('+str(valueLen)+')\n\
                     '
             elif valuetype == 'string' and keytype == 'string' :
                 # 值是string 键是string
@@ -862,7 +862,7 @@ def getgomap(typestr,jsonname,fieldnum):
                     '
         if isbasetype(valuetype) and isbasetype(keytype) and valuetype!='string' and keytype != 'string' :
             # 键值都是可定量大小的类型
-            size += ' + len(obj.'+jsonname+') * ('+str(keyleng)+' + '+str(valueleng)+')'
+            size += ' + len(obj.'+jsonname+') * ('+str(keyleng)+' + '+str(valueLen)+')'
         else :
             # 需要依赖
             size += ' + sizerely'+valuetype+''+str(fieldnum)+''
@@ -914,13 +914,13 @@ def getgomsgcode(content):
     for i in gomsgs:
         # print("    "+i.group(1))
         fieldnum+=1
-        name,code,codesend,tmpsize,tmpsizerely = getgofield(i,fieldnum)
+        name,code,codesend,tempSize,tmpsizerely = getgofield(i,fieldnum)
         if fieldnum > 1:
             if fieldnum % 5 == 0:
                 size += ' + \n'
             else :
                 size += ' + '
-        size += tmpsize
+        size += tempSize
         sizerely += tmpsizerely
         res += code
         ressend += codesend

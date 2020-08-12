@@ -888,7 +888,7 @@ func ReadMsgSTimeTickCommandByBytes(indata []byte, obj *STimeTickCommand) (int, 
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	obj.Testno = binary.LittleEndian.Uint32(data[offset : offset+4])
+	obj.TestNO = binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
 
 	return endpos, obj
@@ -903,7 +903,7 @@ func WriteMsgSTimeTickCommandByObj(data []byte, obj *STimeTickCommand) int {
 	offset := 0
 	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	binary.LittleEndian.PutUint32(data[offset:offset+4], obj.Testno)
+	binary.LittleEndian.PutUint32(data[offset:offset+4], obj.TestNO)
 	offset += 4
 
 	return offset
@@ -940,13 +940,13 @@ func ReadMsgSTestCommandByBytes(indata []byte, obj *STestCommand) (int, *STestCo
 	if offset+4 > data__len {
 		return endpos, obj
 	}
-	obj.Testno = binary.LittleEndian.Uint32(data[offset : offset+4])
+	obj.TestNO = binary.LittleEndian.Uint32(data[offset : offset+4])
 	offset += 4
-	if offset+4+len(obj.Testttring) > data__len {
+	if offset+4+len(obj.TestString) > data__len {
 		return endpos, obj
 	}
-	obj.Testttring = readBinaryString(data[offset:])
-	offset += 4 + len(obj.Testttring)
+	obj.TestString = readBinaryString(data[offset:])
+	offset += 4 + len(obj.TestString)
 
 	return endpos, obj
 }
@@ -960,10 +960,10 @@ func WriteMsgSTestCommandByObj(data []byte, obj *STestCommand) int {
 	offset := 0
 	binary.LittleEndian.PutUint32(data[offset:offset+4], uint32(objsize))
 	offset += 4
-	binary.LittleEndian.PutUint32(data[offset:offset+4], obj.Testno)
+	binary.LittleEndian.PutUint32(data[offset:offset+4], obj.TestNO)
 	offset += 4
-	writeBinaryString(data[offset:], obj.Testttring)
-	offset += 4 + len(obj.Testttring)
+	writeBinaryString(data[offset:], obj.TestString)
+	offset += 4 + len(obj.TestString)
 
 	return offset
 }
@@ -973,7 +973,7 @@ func GetSizeSTestCommand(obj *STestCommand) int {
 		return 4
 	}
 
-	return 4 + 4 + 4 + len(obj.Testttring)
+	return 4 + 4 + 4 + len(obj.TestString)
 }
 
 func ReadMsgSLoginCommandByBytes(indata []byte, obj *SLoginCommand) (int, *SLoginCommand) {

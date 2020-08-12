@@ -6,7 +6,6 @@ package gate
 import (
 	"net"
 
-	"github.com/liasece/micserver/conf"
 	"github.com/liasece/micserver/connect"
 	"github.com/liasece/micserver/log"
 	"github.com/liasece/micserver/msg"
@@ -20,7 +19,6 @@ type Base struct {
 	*log.Logger
 
 	subnetManager *subnet.Manager
-	modleConf     *conf.TopConfig
 
 	gateHook base.GateHook
 	connPool connect.ClientPool
@@ -116,8 +114,8 @@ func (gateBase *Base) HookGate(gateHook base.GateHook) {
 }
 
 // GetClient 根据连接ID获取一个Client
-func (gateBase *Base) GetClient(connectid string) *connect.Client {
-	return gateBase.connPool.Get(connectid)
+func (gateBase *Base) GetClient(connectID string) *connect.Client {
+	return gateBase.connPool.Get(connectID)
 }
 
 // GetClientCount 获取当前已连接的Client数量
@@ -126,8 +124,8 @@ func (gateBase *Base) GetClientCount() uint32 {
 }
 
 // remove 删除已连接的Client
-func (gateBase *Base) remove(connectid string) {
-	gateBase.connPool.Remove(connectid)
+func (gateBase *Base) remove(connectID string) {
+	gateBase.connPool.Remove(connectID)
 }
 
 // Range 遍历所有连接到本模块的客户端

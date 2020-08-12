@@ -29,8 +29,8 @@ type App struct {
 	// 出来，定制化 log 的名字/主题 等，Logger 的底层实现已经帮你处理好了
 	// Clone() 出来的 Logger 指向同一个输出。
 	*log.Logger
-	Configer *conf.TopConfig
-	modules  []module.IModule
+	Config  *conf.TopConfig
+	modules []module.IModule
 
 	initOnce sync.Once
 
@@ -40,20 +40,20 @@ type App struct {
 }
 
 // Setup 初始化App的设置
-func (a *App) Setup(configer *conf.TopConfig) {
+func (a *App) Setup(cfg *conf.TopConfig) {
 	{
 		// check parameters
-		if configer == nil {
-			configer = conf.Default()
+		if cfg == nil {
+			cfg = conf.Default()
 		}
 	}
 
 	process.AddApp(a)
 	a.isStoped = make(chan struct{})
-	a.Configer = configer
+	a.Config = cfg
 	// 初始化Log
-	if a.Configer.AppConfig.Exist(conf.LogWholePath) {
-		setting := a.Configer.AppConfig
+	if a.Config.AppConfig.Exist(conf.LogWholePath) {
+		setting := a.Config.AppConfig
 		a.Logger = log.NewLogger(nil, log.Options().NoConsole(setting.GetBool(conf.IsDaemon)).FilePaths(setting.GetString(conf.LogWholePath)))
 		log.SetDefaultLogger(a.Logger)
 		a.Logger.SetLogName("app")
@@ -61,9 +61,9 @@ func (a *App) Setup(configer *conf.TopConfig) {
 		a.Logger = log.GetDefaultLogger()
 	}
 	// 初始化Log等级
-	if a.Configer.AppConfig.Exist(conf.LogLevel) {
+	if a.Config.AppConfig.Exist(conf.LogLevel) {
 		err := a.Logger.SetLogLevelByStr(
-			a.Configer.AppConfig.GetString(conf.LogLevel))
+			a.Config.AppConfig.GetString(conf.LogLevel))
 		if err != nil {
 			a.Error("Set log level error", log.ErrorField(err))
 		}
@@ -92,7 +92,7 @@ func (a *App) init(modules []module.IModule) error {
 		process.AddModule(m)
 		a.Syslog("[App.Init] Initing module", log.String("ModuleID", m.GetModuleID()), log.String("ModuleType", m.GetModuleType()), log.Int("ModuleNum", m.GetModuleNum()), log.Uint32("ModuleIDHash", m.GetModuleIDHash()))
 		{
-			err := m.InitModule(*a.Configer.AppConfig.GetModuleConfig(m.GetModuleID()))
+			err := m.InitModule(*a.Config.AppConfig.GetModuleConfig(m.GetModuleID()))
 			if err != nil {
 				return err
 			}
@@ -102,7 +102,7 @@ func (a *App) init(modules []module.IModule) error {
 		go m.TopRunner()
 	}
 
-	subnetTCPAddrMap := a.Configer.AppConfig.GetSubnetTCPAddrMap()
+	subnetTCPAddrMap := a.Config.AppConfig.GetSubnetTCPAddrMap()
 	for _, m := range a.modules {
 		m.BindSubnet(subnetTCPAddrMap)
 	}
@@ -120,8 +120,8 @@ func (a *App) startTestCPUProfile() {
 		}
 	}()
 	a.Debug("[SubNetManager.startTestCPUProfile] Cpu profile start")
-	filename := a.Configer.GetProp("profile_filename")
-	testtime := a.Configer.GetPropInt64("profile_time")
+	filename := a.Config.GetProp("profile_filename")
+	testtime := a.Config.GetPropInt64("profile_time")
 	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return

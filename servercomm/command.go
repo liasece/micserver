@@ -15,13 +15,13 @@ type ModuleInfo struct {
 
 // STimeTickCommand 心跳包请求
 type STimeTickCommand struct {
-	Testno uint32
+	TestNO uint32
 }
 
 // STestCommand 测试消息请求
 type STestCommand struct {
-	Testno     uint32
-	Testttring string // IP
+	TestNO     uint32
+	TestString string // IP
 }
 
 // SLoginCommand 模块登陆请求

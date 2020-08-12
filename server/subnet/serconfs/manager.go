@@ -18,8 +18,8 @@ type ConnInfosManager struct {
 }
 
 // Get 获取目标连接的配置信息，这不是由本地配置决定的，而是由目标方更新过来的
-func (connInfosManager *ConnInfosManager) Get(moduleid string) *servercomm.ModuleInfo {
-	if value, found := connInfosManager.ConnInfos.Load(moduleid); found {
+func (connInfosManager *ConnInfosManager) Get(moduleID string) *servercomm.ModuleInfo {
+	if value, found := connInfosManager.ConnInfos.Load(moduleID); found {
 		return value.(*servercomm.ModuleInfo)
 	}
 	return &servercomm.ModuleInfo{}
@@ -32,31 +32,31 @@ func (connInfosManager *ConnInfosManager) Add(newinfo *servercomm.ModuleInfo) {
 		return
 	}
 	log.Debug("[ConnInfosManager.AddConnInfo] Adding server information", log.Reflect("Info", newinfo))
-	if _, finded := connInfosManager.ConnInfos.Load(newinfo.ModuleID); !finded {
+	if _, fined := connInfosManager.ConnInfos.Load(newinfo.ModuleID); !fined {
 		connInfosManager.ConnInfoSum++
 	}
 	connInfosManager.ConnInfos.Store(newinfo.ModuleID, newinfo)
 }
 
 // Delete 删除一个连接的配置信息
-func (connInfosManager *ConnInfosManager) Delete(moduleid string) {
-	connInfosManager.ConnInfos.Delete(moduleid)
+func (connInfosManager *ConnInfosManager) Delete(moduleID string) {
+	connInfosManager.ConnInfos.Delete(moduleID)
 }
 
 // Range 遍历所有连接的配置信息
 func (connInfosManager *ConnInfosManager) Range(callback func(*servercomm.ModuleInfo) bool) {
-	connInfosManager.ConnInfos.Range(func(tkey interface{},
-		tvalue interface{}) bool {
-		value := tvalue.(*servercomm.ModuleInfo)
+	connInfosManager.ConnInfos.Range(func(tKey interface{},
+		tValue interface{}) bool {
+		value := tValue.(*servercomm.ModuleInfo)
 		return callback(value)
 	})
 }
 
 // Exist 判断目标信息是否存在
 func (connInfosManager *ConnInfosManager) Exist(info *servercomm.ModuleInfo) bool {
-	tconfig, finded := connInfosManager.ConnInfos.Load(info.ModuleID)
-	config := tconfig.(*servercomm.ModuleInfo)
-	if !finded {
+	cfgValue, fined := connInfosManager.ConnInfos.Load(info.ModuleID)
+	config := cfgValue.(*servercomm.ModuleInfo)
+	if !fined {
 		return false
 	}
 	if config.ModuleID != info.ModuleID {
