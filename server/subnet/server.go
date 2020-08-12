@@ -22,17 +22,17 @@ func (manager *Manager) OnServerLogin(conn *connect.Server, tarinfo *servercomm.
 	manager.Syslog("[Manager.OnServerLogin] Login request received", log.String("Server", tarinfo.ModuleID))
 
 	// 来源服务器请求登陆本服务器
-	myconn := manager.GetServer(fmt.Sprint(tarinfo.ModuleID))
-	if myconn != nil {
+	myConn := manager.GetServer(fmt.Sprint(tarinfo.ModuleID))
+	if myConn != nil {
 		manager.Syslog("[Manager.OnServerLogin] Duplicate connections", log.String("ModuleID", tarinfo.ModuleID),
-			log.Int64("LocalPriority", myconn.ConnectPriority), log.Int64("IncomePriority", tarinfo.ConnectPriority))
-		if myconn.ConnectPriority < tarinfo.ConnectPriority {
+			log.Int64("LocalPriority", myConn.ConnectPriority), log.Int64("IncomePriority", tarinfo.ConnectPriority))
+		if myConn.ConnectPriority < tarinfo.ConnectPriority {
 			// 对方连接的优先级比较高，删除我方连接
-			myconn.IsNormalDisconnect = true
-			myconn.Terminate()
-			unuseid, _ := uid.GenUniqueID(0)
-			manager.ChangeServerTempid(
-				myconn, myconn.GetTempID()+"unuse"+unuseid)
+			myConn.IsNormalDisconnect = true
+			myConn.Terminate()
+			unusedID, _ := uid.GenUniqueID(0)
+			manager.ChangeServerTempID(
+				myConn, myConn.GetTempID()+"unused"+unusedID)
 		} else {
 			// 我方优先级比较高已经连接成功过了，非法连接
 			manager.Syslog("[Manager.OnServerLogin] Duplicate Server connection requests received", log.Reflect("Msg", tarinfo))
@@ -64,9 +64,9 @@ func (manager *Manager) OnServerLogin(conn *connect.Server, tarinfo *servercomm.
 
 	// 来源服务器检查完毕
 	// 完善来源服务器在本服务器的信息
-	manager.ChangeServerTempid(conn, fmt.Sprint(serverInfo.ModuleID))
+	manager.ChangeServerTempID(conn, fmt.Sprint(serverInfo.ModuleID))
 	conn.ModuleInfo = serverInfo
-	conn.SetVertify(true)
+	conn.SetVerify(true)
 	conn.SetTerminateTime(0) // 清除终止时间状态
 	// 向来源服务器回复登陆成功消息
 	retmsg := &servercomm.SLoginRetCommand{}
@@ -146,8 +146,8 @@ func (manager *Manager) mTCPServerListener(listener net.Listener) {
 
 // BindChanSubnet 绑定本地 chan 连接类型
 func (manager *Manager) BindChanSubnet(settings *conf.ModuleConfig) error {
-	nochan := settings.GetBool(conf.SubnetNoChan)
-	if nochan {
+	noChan := settings.GetBool(conf.SubnetNoChan)
+	if noChan {
 		return nil
 	}
 	serverChan := make(chan *process.ChanServerHandshake, 1000)

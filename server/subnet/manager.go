@@ -22,7 +22,7 @@ type Manager struct {
 	connect.ServerPool
 	// 配置信息
 	connInfos    serconfs.ConnInfosManager // 所有服务器信息
-	moudleConf   *conf.ModuleConfig
+	moduleConf   *conf.ModuleConfig
 	connectMutex sync.Mutex
 	// 服务器重连任务相关
 	serverexitchan map[string]chan bool
@@ -36,18 +36,18 @@ type Manager struct {
 }
 
 // Init 根据模块配置初始化子网连接管理器
-func (manager *Manager) Init(moudleConf *conf.ModuleConfig) {
+func (manager *Manager) Init(moduleConf *conf.ModuleConfig) {
 	manager.myServerInfo = &servercomm.ModuleInfo{}
-	manager.moudleConf = moudleConf
+	manager.moduleConf = moduleConf
 	manager.ServerPool.Logger = manager.Logger
 	// 初始化消息处理队列
-	manager.InitMsgQueue(int32(moudleConf.GetInt64(conf.MsgThreadNum)))
+	manager.InitMsgQueue(int32(moduleConf.GetInt64(conf.MsgThreadNum)))
 	// 我的服务器信息
-	manager.myServerInfo.ModuleID = manager.moudleConf.ID
+	manager.myServerInfo.ModuleID = manager.moduleConf.ID
 	manager.connInfos.Logger = manager.Logger
 	// 初始化连接
-	manager.BindTCPSubnet(manager.moudleConf)
-	manager.BindChanSubnet(manager.moudleConf)
+	manager.BindTCPSubnet(manager.moduleConf)
+	manager.BindChanSubnet(manager.moduleConf)
 }
 
 // HookSubnet 设置子网事件监听者

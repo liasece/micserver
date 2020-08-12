@@ -27,7 +27,7 @@ type BaseConnect struct {
 	// 验证是否成功，没有成功不允许处理后面的消息
 	verifyOk bool
 	// 当前连接上的计算量
-	jobnum uint32
+	jobNum uint32
 	// 是否是正常的断开连接
 	IsNormalDisconnect bool
 	// 连接创建的时间
@@ -39,9 +39,9 @@ type BaseConnect struct {
 // Init 初始化这个基础连接
 func (bc *BaseConnect) Init() {
 	bc.createTime = int64(time.Now().Unix())
-	tmpid, err := uid.GenUniqueID(uint16(time.Now().UnixNano()))
+	tempID, err := uid.GenUniqueID(uint16(time.Now().UnixNano()))
 	if err == nil {
-		bc.setTempID(tmpid)
+		bc.setTempID(tempID)
 	} else {
 		bc.Error("[BaseConnect.Init] GenUniqueID error", log.ErrorField(err))
 	}
@@ -124,26 +124,26 @@ func (bc *BaseConnect) GetRecvMessageChannel() chan *msg.MessageBinary {
 	return bc.IConnection.GetRecvMessageChannel()
 }
 
-// IsVertify 该连接是否通过了验证，如果这是一个 Module 间的连接，需要经过 server.Server
+// IsVerify 该连接是否通过了验证，如果这是一个 Module 间的连接，需要经过 server.Server
 // 的登陆逻辑处理，才会成为一个经过验证的连接。如果是一个客户端连接，
 // 默认该连接不是一个经过验证的连接。
-func (bc *BaseConnect) IsVertify() bool {
+func (bc *BaseConnect) IsVerify() bool {
 	return bc.verifyOk
 }
 
-// SetVertify 设置该连接的验证状态
-func (bc *BaseConnect) SetVertify(value bool) {
+// SetVerify 设置该连接的验证状态
+func (bc *BaseConnect) SetVerify(value bool) {
 	bc.verifyOk = value
 }
 
 // GetJobNum 获取该连接的负载
 func (bc *BaseConnect) GetJobNum() uint32 {
-	return bc.jobnum
+	return bc.jobNum
 }
 
 // SetJobNum 设置该连接的负载
 func (bc *BaseConnect) SetJobNum(jnum uint32) {
-	bc.jobnum = jnum
+	bc.jobNum = jnum
 }
 
 // SendCmd 异步发送一条消息

@@ -12,11 +12,11 @@ import (
 func SetupApp(configpath string) (*app.App, error) {
 	// 初始化随机数种子
 	rand.Seed(time.Now().UnixNano())
-	configer, err := conf.LoadConfig(configpath)
+	cfg, err := conf.LoadConfig(configpath)
 	if err != nil {
 		return nil, err
 	}
 	res := &app.App{}
-	res.Setup(configer)
+	res.Setup(cfg)
 	return res, nil
 }

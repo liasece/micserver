@@ -90,7 +90,7 @@ func (rocManager *Manager) Call(callstr string, arg []byte) ([]byte, error) {
 	obj, ok := rocManager.getObj(path.GetObjType(), path.GetObjID())
 	if !ok || obj == nil {
 		path.Reset()
-		return nil, ErrUnknowObj
+		return nil, ErrUnknownObj
 	}
 	path.Reset()
 	return obj.OnROCCall(path, arg)

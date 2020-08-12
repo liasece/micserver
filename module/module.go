@@ -46,7 +46,7 @@ type IModule interface {
 	TopRunner()
 	KillModule()
 	IsStopped() bool
-	GetConfiger() *conf.ModuleConfig
+	GetConfig() *conf.ModuleConfig
 	ROCCallNR(callpath *roc.Path, callarg []byte) error
 	ROCCallBlock(callpath *roc.Path, callarg []byte) ([]byte, error)
 }
@@ -58,7 +58,7 @@ type BaseModule struct {
 	server.Server
 
 	// 模块配置
-	configer *conf.ModuleConfig
+	cfg *conf.ModuleConfig
 	// 模块的负载
 	load monitor.Load
 
@@ -73,7 +73,7 @@ type BaseModule struct {
 }
 
 // InitModule 初始化模块
-func (bm *BaseModule) InitModule(configer conf.ModuleConfig) error {
+func (bm *BaseModule) InitModule(cfg conf.ModuleConfig) error {
 	{
 		// check module state
 		if bm.GetModuleID() == "" {
@@ -84,10 +84,10 @@ func (bm *BaseModule) InitModule(configer conf.ModuleConfig) error {
 			bm.SetModuleID(uid)
 		}
 	}
-	bm.configer = &configer
+	bm.cfg = &cfg
 	// 初始化logger
-	if bm.configer.ExistInModule(conf.LogWholePath) {
-		bm.Logger = log.NewLogger(nil, log.Options().NoConsole(bm.configer.GetBool(conf.IsDaemon)).FilePaths(bm.configer.GetString(conf.LogWholePath)))
+	if bm.cfg.ExistInModule(conf.LogWholePath) {
+		bm.Logger = log.NewLogger(nil, log.Options().NoConsole(bm.cfg.GetBool(conf.IsDaemon)).FilePaths(bm.cfg.GetString(conf.LogWholePath)))
 		bm.SetLogName(bm.moduleID)
 	} else {
 		bm.Logger = log.GetDefaultLogger().Clone()
@@ -96,11 +96,11 @@ func (bm *BaseModule) InitModule(configer conf.ModuleConfig) error {
 	bm.Syslog("[BaseModule.InitModule] Module initializing...")
 	bm.Server.SetLogger(bm.Logger)
 	bm.Server.Init(bm.moduleID)
-	bm.Server.InitSubnet(bm.configer)
+	bm.Server.InitSubnet(bm.cfg)
 
 	// gateway初始化
-	if gateaddr := bm.configer.GetString(conf.GateTCPAddr); gateaddr != "" {
-		bm.Server.InitGate(gateaddr)
+	if gateAddr := bm.cfg.GetString(conf.GateTCPAddr); gateAddr != "" {
+		bm.Server.InitGate(gateAddr)
 	}
 
 	bm.TimerManager.RegTimer(time.Second*5, 0, false, bm.watchLoadToLog)
@@ -112,13 +112,13 @@ func (bm *BaseModule) AfterInitModule() {
 	bm.Syslog("[BaseModule.AfterInitModule] Module initialization complete", log.String("ModuleID", bm.GetModuleID()))
 }
 
-// GetConfiger 获取模块的配置
-func (bm *BaseModule) GetConfiger() *conf.ModuleConfig {
-	return bm.configer
+// GetConfig 获取模块的配置
+func (bm *BaseModule) GetConfig() *conf.ModuleConfig {
+	return bm.cfg
 }
 
 // GetModuleID 获取模块的ID，模块的ID有模块类型和模块编号确定，如
-// moduleid = fmt.Sprintf("%s%d", typ, num)
+// moduleID = fmt.Sprintf("%s%d", typ, num)
 func (bm *BaseModule) GetModuleID() string {
 	return bm.moduleID
 }

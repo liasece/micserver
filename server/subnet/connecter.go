@@ -58,7 +58,7 @@ func (manager *Manager) TryConnectServer(id string, addr string) {
 	if manager.serverexitchan == nil {
 		manager.serverexitchan = make(map[string]chan bool)
 	}
-	if _, finded := manager.serverexitchan[id]; !finded {
+	if _, fined := manager.serverexitchan[id]; !fined {
 		manager.serverexitchan[id] = make(chan bool, 100)
 	} else {
 		manager.Syslog("[Manager.TryConnectServer] The daemon thread has been started and will not be started again", log.String("ModuleID", id))
@@ -130,7 +130,7 @@ func (manager *Manager) onClientConnected(conn *connect.Server) {
 	// 构造登陆消息
 	sendmsg := &servercomm.SLoginCommand{}
 	sendmsg.ModuleID = manager.myServerInfo.ModuleID
-	sendmsg.ModuleAddr = manager.moudleConf.GetString(conf.SubnetTCPAddr)
+	sendmsg.ModuleAddr = manager.moduleConf.GetString(conf.SubnetTCPAddr)
 	sendmsg.ConnectPriority = conn.ConnectPriority
 	// 发送登陆请求
 	conn.SendCmd(sendmsg)

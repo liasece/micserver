@@ -67,12 +67,12 @@ func (manager *Manager) onConnectRecv(conn *connect.Server, msgbin *msg.MessageB
 		curtime := time.Now().Unix()
 		if conn.IsTerminateTimeout(curtime) {
 			manager.onClientDisconnected(conn)
-			manager.Error("[Manager.onConnectRecv] Prolonged failure to verify, disconnect", log.String("TmpID[%s]", conn.GetTempID()))
+			manager.Error("[Manager.onConnectRecv] Prolonged failure to verify, disconnect", log.String("TempID[%s]", conn.GetTempID()))
 			return
 		}
 		if conn.IsTerminateForce() {
 			manager.onClientDisconnected(conn)
-			manager.Syslog("[Manager.onConnectRecv] The server is actively disconnected", log.String("TmpID[%s]", conn.GetTempID()))
+			manager.Syslog("[Manager.onConnectRecv] The server is actively disconnected", log.String("TempID[%s]", conn.GetTempID()))
 			return
 		}
 	}
@@ -80,7 +80,7 @@ func (manager *Manager) onConnectRecv(conn *connect.Server, msgbin *msg.MessageB
 	case servercomm.STestCommandID:
 		recvmsg := &servercomm.STestCommand{}
 		recvmsg.ReadBinary([]byte(msgbin.ProtoData))
-		manager.Syslog("[Manager.onConnectRecv] Server test message received", log.Int("MsgLen", msgbin.GetTotalLength()), log.Uint32("No", recvmsg.Testno))
+		manager.Syslog("[Manager.onConnectRecv] Server test message received", log.Int("MsgLen", msgbin.GetTotalLength()), log.Uint32("No", recvmsg.TestNO))
 		return
 	case servercomm.STimeTickCommandID:
 		recvmsg := &servercomm.STimeTickCommand{}
@@ -96,15 +96,15 @@ func (manager *Manager) onConnectRecv(conn *connect.Server, msgbin *msg.MessageB
 			conn.Terminate()
 			if recvmsg.Loginfailed == servercomm.LoginRetCodeIdentical {
 				conn.IsNormalDisconnect = true
-				manager.Syslog("[Manager.onConnectRecv] Duplicate connection, no need to connect", log.String("TmpID", conn.GetTempID()))
+				manager.Syslog("[Manager.onConnectRecv] Duplicate connection, no need to connect", log.String("TempID", conn.GetTempID()))
 			} else {
-				manager.Error("[Manager.onConnectRecv] Connection verification failed, disconnected", log.String("TmpID", conn.GetTempID()))
+				manager.Error("[Manager.onConnectRecv] Connection verification failed, disconnected", log.String("TempID", conn.GetTempID()))
 			}
 			return
 		}
 		conn.ModuleInfo = recvmsg.Destination
 		manager.Syslog("[Manager.onConnectRecv] Connection server verification successful",
-			log.String("ModuleID", conn.ModuleInfo.ModuleID), log.String("ipport", conn.ModuleInfo.ModuleAddr))
+			log.String("ModuleID", conn.ModuleInfo.ModuleID), log.String("ipPort", conn.ModuleInfo.ModuleAddr))
 		manager.subnetHook.OnServerJoinSubnet(conn)
 		return
 	case servercomm.SLoginCommandID:

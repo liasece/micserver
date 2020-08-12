@@ -43,9 +43,9 @@ func (cp *ClientPool) LoadOrStore(k string,
 	return res, isLoad
 }
 
-// Get 根据连接的 TmpID 获取连接
-func (cp *ClientPool) Get(tempid string) *Client {
-	if vi, ok := cp.allSockets.Load(tempid); ok {
+// Get 根据连接的 TempID 获取连接
+func (cp *ClientPool) Get(tempID string) *Client {
+	if vi, ok := cp.allSockets.Load(tempID); ok {
 		return vi.(*Client)
 	}
 	return nil
@@ -59,24 +59,24 @@ func (cp *ClientPool) Len() uint32 {
 	return uint32(cp.linkSum)
 }
 
-// remove 根据连接的 TmpID 从连接池移除一个连接
-func (cp *ClientPool) remove(tmpid string) {
-	if _, ok := cp.allSockets.Load(tmpid); !ok {
+// remove 根据连接的 TempID 从连接池移除一个连接
+func (cp *ClientPool) remove(tempID string) {
+	if _, ok := cp.allSockets.Load(tempID); !ok {
 		return
 	}
 	// 删除连接
-	cp.allSockets.Delete(tmpid)
+	cp.allSockets.Delete(tempID)
 	cp.linkSum--
 }
 
 // Add 增加一个连接到连接池中
 func (cp *ClientPool) Add(client *Client) {
-	tmpid := client.GetTempID()
-	_, isLoad := cp.allSockets.LoadOrStore(tmpid, client)
+	tempID := client.GetTempID()
+	_, isLoad := cp.allSockets.LoadOrStore(tempID, client)
 	if !isLoad {
 		cp.linkSum++
 	} else {
-		cp.allSockets.Store(tmpid, client)
+		cp.allSockets.Store(tempID, client)
 	}
 }
 
@@ -94,15 +94,15 @@ func (cp *ClientPool) Range(
 	})
 }
 
-// Remove 根据连接的 TmpID 从连接池移除一个连接
-func (cp *ClientPool) Remove(tempid string) {
-	if vi, ok := cp.allSockets.Load(tempid); ok {
+// Remove 根据连接的 TempID 从连接池移除一个连接
+func (cp *ClientPool) Remove(tempID string) {
+	if vi, ok := cp.allSockets.Load(tempID); ok {
 		client := vi.(*Client)
 		// 关闭消息发送协程
 		client.Shutdown()
 		// 删除连接
-		cp.remove(tempid)
-		client.Debug("[ClientPool.Remove] Disconnect client", log.String("TmpID", tempid), log.Uint32("CurrentNum", cp.Len()))
+		cp.remove(tempID)
+		client.Debug("[ClientPool.Remove] Disconnect client", log.String("TempID", tempID), log.Uint32("CurrentNum", cp.Len()))
 		return
 	}
 }

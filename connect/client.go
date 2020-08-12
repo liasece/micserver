@@ -95,7 +95,7 @@ func (c *Client) Check() bool {
 	// 检查客户端连接是否验证超时
 	if c.IsTerminateTimeout(curtime) {
 		// 客户端超时未通过验证
-		if !c.Session.IsVertify() {
+		if !c.Session.IsVerify() {
 			c.Debug("[Client.Check] Prolonged failure to verify, disconnect")
 		} else {
 			c.Debug("[Client.Check] Long periods of inactivity, disconnect")

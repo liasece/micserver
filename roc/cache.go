@@ -167,17 +167,17 @@ func (c *Cache) RandomObjIDByType(objType ObjType, limitModuleIDs map[string]boo
 	defer c.mutex.Unlock()
 
 	m := c.catchGetTypeMust(objType)
-	tmplist := make([]string, 0)
+	tempList := make([]string, 0)
 	for id, v := range m {
 		if limitModuleIDs == nil || limitModuleIDs[v.moduleID] == true {
-			tmplist = append(tmplist, id)
+			tempList = append(tempList, id)
 		}
 	}
-	lenm := len(tmplist)
+	lenm := len(tempList)
 	if lenm > 0 {
 		// 只有目标类型的对象超过一个，才能从中随机一个
 		n := rand.Intn(lenm)
-		return tmplist[n]
+		return tempList[n]
 	}
 	return ""
 }

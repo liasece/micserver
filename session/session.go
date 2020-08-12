@@ -32,8 +32,8 @@ const (
 type IModuleSessionOptions interface {
 	GetModuleID() string
 	SInnerSendModuleMsg(gate string, msg msg.IMsgStruct)
-	SInnerSendClientMsg(gateid string, connectid string, msgid uint16, data []byte)
-	SInnerCloseSessionConnect(gateid string, connectid string)
+	SInnerSendClientMsg(gateID string, connectID string, msgID uint16, data []byte)
+	SInnerCloseSessionConnect(gateID string, connectID string)
 }
 
 // NewSessionFromMap 从一个Map结构中实例化一个session
@@ -82,9 +82,9 @@ func (s *Session) set(key TKey, value string) {
 	s.m.Store(string(key), value)
 }
 
-// rangeBinded 遍历所有已绑定的模块
-func (s *Session) rangeBinded(
-	f func(moduletype string, moduleid string) bool) {
+// rangeBind 遍历所有已绑定的模块
+func (s *Session) rangeBind(
+	f func(moduletype string, moduleID string) bool) {
 	s.m.Range(func(ki, vi interface{}) bool {
 		k := ki.(string)
 		v := vi.(string)
@@ -101,12 +101,12 @@ func (s *Session) rangeBinded(
 	})
 }
 
-// GetBindedList 获取该 Session 绑定的所有模块
+// GetBindList 获取该 Session 绑定的所有模块
 // 返回值 键为模块类型，值为模块ID
-func (s *Session) GetBindedList() map[string]string {
+func (s *Session) GetBindList() map[string]string {
 	res := make(map[string]string)
-	s.rangeBinded(func(moduletype string, moduleid string) bool {
-		res[moduletype] = moduleid
+	s.rangeBind(func(moduletype string, moduleID string) bool {
+		res[moduletype] = moduleID
 		return true
 	})
 	return res
@@ -188,9 +188,9 @@ func (s *Session) HasKey(key TKey) bool {
 	return ok
 }
 
-// IsVertify 判断当前Session是否已经经过验证，如果一个客户端连接经过了验证，则一定会存在一个
+// IsVerify 判断当前Session是否已经经过验证，如果一个客户端连接经过了验证，则一定会存在一个
 // 用户UUID绑定到此Session上。
-func (s *Session) IsVertify() bool {
+func (s *Session) IsVerify() bool {
 	if !s.HasKey(SessionKeyUUID) {
 		return false
 	}
@@ -210,22 +210,22 @@ func (s *Session) getServerSyncMsg() *servercomm.SUpdateSession {
 	return smsg
 }
 
-// SyncToBindedModule 同步 Session 到 所有已绑定的模块
-func (s *Session) SyncToBindedModule(mod IModuleSessionOptions) {
+// SyncToBindModule 同步 Session 到 所有已绑定的模块
+func (s *Session) SyncToBindModule(mod IModuleSessionOptions) {
 	msg := s.getServerSyncMsg()
 	msg.FromModuleID = mod.GetModuleID()
-	msg.ToModuleID = "*binded*"
-	s.rangeBinded(func(moduletype string, moduleid string) bool {
-		if moduleid != mod.GetModuleID() {
-			mod.SInnerSendModuleMsg(moduleid, msg)
+	msg.ToModuleID = "*bind*"
+	s.rangeBind(func(moduletype string, moduleID string) bool {
+		if moduleID != mod.GetModuleID() {
+			mod.SInnerSendModuleMsg(moduleID, msg)
 		}
 		return true
 	})
 }
 
 // SendMsg 向该Session指定的客户端发送一个消息
-func (s *Session) SendMsg(mod IModuleSessionOptions, gatemoduletype string, msgid uint16, data []byte) {
-	mod.SInnerSendClientMsg(s.GetBind(gatemoduletype), s.GetConnectID(), msgid, data)
+func (s *Session) SendMsg(mod IModuleSessionOptions, gatemoduletype string, msgID uint16, data []byte) {
+	mod.SInnerSendClientMsg(s.GetBind(gatemoduletype), s.GetConnectID(), msgID, data)
 }
 
 // CloseSessionConnect 请求管理该Session的网关关闭该Session的连接

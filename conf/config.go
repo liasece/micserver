@@ -148,13 +148,13 @@ func (tc *TopConfig) InitFlag() {
 		tc.globalProp[k] = v
 	}
 	if cmdLineArgv != nil {
-		if v, ok := cmdLineArgv["isdaemon"]; ok {
+		if v, ok := cmdLineArgv["isDaemon"]; ok {
 			tc.AppConfig.set(IsDaemon, v)
 		}
 		if v, ok := cmdLineArgv["logpath"]; ok {
 			tc.AppConfig.set(LogWholePath, v)
 		}
-		if v, ok := cmdLineArgv["processid"]; ok {
+		if v, ok := cmdLineArgv["processID"]; ok {
 			tc.AppConfig.set(ProcessID, v)
 			if v != "development" {
 				tc.argvModuleList = strings.Split(v, ",")
@@ -192,15 +192,15 @@ func initFlag() map[string]string {
 
 		if len(daemonflag) > 0 {
 			if daemonflag == "true" {
-				mCmdLineArgv["isdaemon"] = "true"
+				mCmdLineArgv["isDaemon"] = "true"
 			} else {
-				mCmdLineArgv["isdaemon"] = "false"
+				mCmdLineArgv["isDaemon"] = "false"
 			}
 		}
 		if len(processflag) > 0 {
-			mCmdLineArgv["processid"] = processflag
+			mCmdLineArgv["processID"] = processflag
 		} else {
-			mCmdLineArgv["processid"] = "development"
+			mCmdLineArgv["processID"] = "development"
 		}
 		if len(logpathflag) > 0 {
 			mCmdLineArgv["logpath"] = logpathflag
