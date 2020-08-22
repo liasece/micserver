@@ -4,10 +4,15 @@ import (
 	"github.com/liasece/micserver/util/conv"
 )
 
+// BaseModuleConfig origin module config
+type BaseModuleConfig struct {
+	ID       string      `json:"id"`
+	Settings *BaseConfig `json:"settings"`
+}
+
 // ModuleConfig 模块的配置，也包括了该模块所属的App配置
 type ModuleConfig struct {
-	ID          string      `json:"id"`
-	Settings    *BaseConfig `json:"settings"`
+	BaseModuleConfig
 	AppSettings *BaseConfig `json:"-"`
 }
 

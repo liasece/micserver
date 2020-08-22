@@ -8,6 +8,10 @@ import (
 type AppConfig struct {
 	*BaseConfig `json:"settings"`
 	Modules     map[string]*ModuleConfig `json:"modules"`
+
+	// ConfigPath if not empty, will load the config file order the list, the configuration loaded later will override the configuration loaded earlier,
+	// however, using the configuration actively specified by the option will always override the file-loaded option. Default nil.
+	ConfigPaths []string `json:"-"`
 }
 
 // buildModuleIDFromMapkey 将模块配置中的模块ID设置为模块配置json块的键值

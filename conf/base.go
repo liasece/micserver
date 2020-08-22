@@ -105,3 +105,53 @@ func (bf *BaseConfig) GetStringSlice(key ConfigKey) []string {
 	}
 	return conv.MustInterfaceToStringSlice(v)
 }
+
+// Version config
+func (bf *BaseConfig) Version() string {
+	return bf.GetString(Version)
+}
+
+// ProcessID config
+func (bf *BaseConfig) ProcessID() string {
+	return bf.GetString(ProcessID)
+}
+
+// LogWholePath config
+func (bf *BaseConfig) LogWholePath() string {
+	return bf.GetString(LogWholePath)
+}
+
+// LogLevel config
+func (bf *BaseConfig) LogLevel() string {
+	return bf.GetString(LogLevel)
+}
+
+// SubnetTCPAddr config
+func (bf *BaseConfig) SubnetTCPAddr() string {
+	return bf.GetString(SubnetTCPAddr)
+}
+
+// SubnetNoChan config
+func (bf *BaseConfig) SubnetNoChan() bool {
+	return bf.GetBool(SubnetNoChan)
+}
+
+// GateTCPAddr config
+func (bf *BaseConfig) GateTCPAddr() string {
+	return bf.GetString(GateTCPAddr)
+}
+
+// IsDaemon config
+func (bf *BaseConfig) IsDaemon() bool {
+	return bf.GetBool(IsDaemon)
+}
+
+// MsgThreadNum config
+func (bf *BaseConfig) MsgThreadNum() int {
+	return int(bf.GetInt64(MsgThreadNum))
+}
+
+// AsynchronousSyncRocbind config
+func (bf *BaseConfig) AsynchronousSyncRocbind() bool {
+	return bf.GetBool(AsynchronousSyncRocbind)
+}
