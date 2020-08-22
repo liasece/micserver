@@ -37,28 +37,28 @@ func (c *Cache) catchGetTypeMust(objType ObjType) objIDToServerMap {
 	if c.catchType == nil {
 		c.catchType = make(map[ObjType]objIDToServerMap)
 	}
-	if v, ok := c.catchType[objType]; !ok {
+	v, ok := c.catchType[objType]
+	if !ok {
 		v = make(objIDToServerMap)
 		c.catchType[objType] = v
 		return v
-	} else {
-		return v
 	}
+	return v
 }
 
 func (c *Cache) catchGetServerMust(moduleID string) *catchServerInfo {
 	if c.catchServer == nil {
 		c.catchServer = make(serverInfoMap)
 	}
-	if v, ok := c.catchServer[moduleID]; !ok {
+	v, ok := c.catchServer[moduleID]
+	if !ok {
 		v = &catchServerInfo{
 			moduleID: moduleID,
 		}
 		c.catchServer[moduleID] = v
 		return v
-	} else {
-		return v
 	}
+	return v
 }
 
 // Set 添加目标对象
