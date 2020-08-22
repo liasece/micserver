@@ -49,7 +49,7 @@ func (rocManager *Manager) RegObj(obj IObj) error {
 	objtype := obj.GetROCObjType()
 	roc := rocManager.GetROC(objtype)
 	if roc == nil {
-		return ErrUnregisterROC
+		return ErrUnregisteredROC
 	}
 	return roc.RegObj(obj)
 }
@@ -64,11 +64,10 @@ func (rocManager *Manager) GetROC(objtype ObjType) *ROC {
 }
 
 // CallPathDecode 解码ROC调用路径
-func (rocManager *Manager) CallPathDecode(kstr string) (ObjType, string) {
-	return kstrDecode(kstr)
+func (rocManager *Manager) CallPathDecode(pathStr string) (ObjType, string) {
+	return pathStrDecode(pathStr)
 }
 
-// kstr的格式必须为 ROC 远程对象调用那样定义的格式
 // getObj (对象类型)([对象的键])
 func (rocManager *Manager) getObj(objType ObjType, objID string) (IObj, bool) {
 	roc := rocManager.GetROC(objType)
@@ -78,8 +77,7 @@ func (rocManager *Manager) getObj(objType ObjType, objID string) (IObj, bool) {
 	return roc.GetObj(objID)
 }
 
-// GetObj kstr的格式必须为 ROC 远程对象调用那样定义的格式
-// (对象类型)([对象的键])
+// GetObj (对象类型)([对象的键])
 func (rocManager *Manager) GetObj(objType ObjType, objID string) (IObj, bool) {
 	return rocManager.getObj(objType, objID)
 }

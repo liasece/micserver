@@ -21,23 +21,23 @@ func O(objType ObjType, objID string) *Path {
 	return res
 }
 
-// kstr的格式必须为 ROC 远程对象调用那样定义的格式，如：
-// kstrDecode 对象类型[对象的键]
-func kstrDecode(kstr string) (ObjType, string) {
+// pathStr的格式必须为 ROC 远程对象调用那样定义的格式，如：
+// pathStrDecode 对象类型[对象的键]
+func pathStrDecode(pathStr string) (ObjType, string) {
 	t := ""
 	key := ""
-	inkey := false
-	for _, k := range kstr {
+	inKey := false
+	for _, k := range pathStr {
 		if k == '[' {
-			inkey = true
+			inKey = true
 		} else if k == ']' {
-			inkey = false
+			inKey = false
 		} else if k == '.' {
 			break
 		} else {
-			if key == "" && !inkey {
+			if key == "" && !inKey {
 				t = t + fmt.Sprintf("%c", k)
-			} else if t != "" && inkey {
+			} else if t != "" && inKey {
 				key = key + fmt.Sprintf("%c", k)
 			} else {
 				return "", ""
@@ -54,7 +54,7 @@ func NewPath(pathstr string) *Path {
 	if len(strs) < 1 {
 		return res
 	}
-	t, id := kstrDecode(strs[0])
+	t, id := pathStrDecode(strs[0])
 	res.objType = ObjType(t)
 	res.objID = id
 	res.strs = strs[1:]
